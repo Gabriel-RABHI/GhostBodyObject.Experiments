@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Common/">
+    <Project Path="GhostBodyObject.BenchmarkRunner/GhostBodyObject.BenchmarkRunner.csproj" />
+  </Folder>
+  <Folder Name="/Runtime/" />
+  <Project Path="GhostBodyObject.Experiments/GhostBodyObject.Experiments.csproj" />
+</Solution>
