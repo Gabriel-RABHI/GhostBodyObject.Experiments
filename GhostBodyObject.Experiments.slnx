@@ -2,6 +2,9 @@
   <Folder Name="/Common/">
     <Project Path="GhostBodyObject.BenchmarkRunner/GhostBodyObject.BenchmarkRunner.csproj" />
   </Folder>
-  <Folder Name="/Runtime/" />
+  <Folder Name="/Runtime/">
+    <Project Path="GhostBodyObject.Common.Tests/GhostBodyObject.Common.Tests.csproj" />
+    <Project Path="GhostBodyObject.Common/GhostBodyObject.Common.csproj" />
+  </Folder>
   <Project Path="GhostBodyObject.Experiments/GhostBodyObject.Experiments.csproj" />
 </Solution>
