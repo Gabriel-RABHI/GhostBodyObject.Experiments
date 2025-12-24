@@ -1,5 +1,6 @@
 ﻿using GhostBodyObject.Common.Memory;
 using System;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -8,13 +9,9 @@ namespace GhostBodyObject.Common.Tests.Memory;
 public class TransientGhostMemoryAllocatorShould
 {
     // Helper to get the underlying array identity to check for reallocations
-    private static byte[]? GetUnderlyingArray(Memory<byte> memory)
+    private static byte[]? GetUnderlyingArray(PinnedMemory<byte> memory)
     {
-        if (MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> segment))
-        {
-            return segment.Array;
-        }
-        return null;
+        return memory.MemoryOwner as byte[];
     }
 
     [Fact]
@@ -40,10 +37,10 @@ public class TransientGhostMemoryAllocatorShould
 
         // In the Arena strategy, the underlying array is the large shared page (64KB default).
         // We verify that we got a slice of a larger array.
-        bool hasArray = MemoryMarshal.TryGetArray(mem, out ArraySegment<byte> segment);
+        bool hasArray = (mem.MemoryOwner as Byte[]) != null;
         Assert.True(hasArray);
-        Assert.NotNull(segment.Array);
-        Assert.True(segment.Array!.Length > 100);
+        Assert.NotNull(mem.MemoryOwner as Byte[]);
+        Assert.True((mem.MemoryOwner as Byte[]).Length > 100);
     }
 
     [Fact]
@@ -56,12 +53,12 @@ public class TransientGhostMemoryAllocatorShould
         Assert.Equal(size, mem.Length);
 
         // For large blocks, it allocates a dedicated array.
-        bool hasArray = MemoryMarshal.TryGetArray(mem, out ArraySegment<byte> segment);
+        bool hasArray = (mem.MemoryOwner as Byte[]) != null;
         Assert.True(hasArray);
-        Assert.NotNull(segment.Array);
+        Assert.NotNull(mem.MemoryOwner as Byte[]);
 
         // Verify it is a dedicated array (length close to requested size)
-        Assert.True(segment.Array!.Length >= size);
+        Assert.True((mem.MemoryOwner as Byte[]).Length >= size);
     }
 
     [Fact]
@@ -91,6 +88,7 @@ public class TransientGhostMemoryAllocatorShould
     {
         // 1. Allocate 100 bytes. (Physical ~128)
         var mem = TransientGhostMemoryAllocator.Allocate(100);
+        var owner = mem.MemoryOwner;
         var originalArray = GetUnderlyingArray(mem);
         mem.Span[0] = 0xBB;
 
@@ -103,6 +101,22 @@ public class TransientGhostMemoryAllocatorShould
 
         // Simpler check: ensure we can write to the new end without crashing
         mem.Span[199] = 0xFF;
+    }
+
+    [Fact]
+    public void Reallocate_When_Growing_Small_Capacity()
+    {
+        // 1. Allocate 100 bytes. (Physical ~128)
+        var mem = TransientGhostMemoryAllocator.Allocate(100);
+        var owner = mem.MemoryOwner;
+        var originalArray = GetUnderlyingArray(mem);
+        mem.Span[0] = 0xBB;
+
+        // 2. Resize to 200 bytes (Exceeds physical 128).
+        TransientGhostMemoryAllocator.Resize(ref mem, 110);
+
+        // Assertions
+        Assert.Equal(owner, mem.MemoryOwner);
     }
 
     [Fact]

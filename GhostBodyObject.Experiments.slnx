@@ -1,10 +1,13 @@
 <Solution>
-  <Folder Name="/Common/">
+  <Folder Name="/0-Measures/">
     <Project Path="GhostBodyObject.BenchmarkRunner/GhostBodyObject.BenchmarkRunner.csproj" />
   </Folder>
-  <Folder Name="/Runtime/">
+  <Folder Name="/1-Common/">
+    <Project Path="GhostBodyObject.Common.Benchmarks/GhostBodyObject.Common.Benchmarks.csproj" Id="732f8069-3c06-48bb-b8fc-46bcf9514dd8" />
     <Project Path="GhostBodyObject.Common.Tests/GhostBodyObject.Common.Tests.csproj" />
     <Project Path="GhostBodyObject.Common/GhostBodyObject.Common.csproj" />
   </Folder>
+  <Folder Name="/2-Objects/" />
+  <Folder Name="/3-Storage/" />
   <Project Path="GhostBodyObject.Experiments/GhostBodyObject.Experiments.csproj" />
 </Solution>

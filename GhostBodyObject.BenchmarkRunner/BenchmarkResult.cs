@@ -4,8 +4,9 @@ namespace GhostBodyObject.BenchmarkRunner
 {
     public class BenchmarkResult
     {
-        public const int LABEL_PADDING = 50;
+        public const int LABEL_PADDING = 60;
         public const int VALUE_PADDING = 20;
+        public const string INDENT = "    ";
 
         public TimeSpan Duration { get; init; }
         public long BytesAllocated { get; init; }
@@ -24,30 +25,29 @@ namespace GhostBodyObject.BenchmarkRunner
             table.AddColumn(new TableColumn("Label").PadRight(2));
             table.AddColumn(new TableColumn("Value").RightAligned());
 
-            AnsiConsole.WriteLine();
-            AnsiConsole.Write(new Rule($"[cyan]{label}[/]").Centered().RuleStyle("blue dim"));
+            AnsiConsole.Write(new Rule($"[blue]{label}[/]").Centered().RuleStyle("blue dim"));
             AnsiConsole.WriteLine();
 
             if (Gen0 + Gen1 + Gen2 == 0)
                 table.AddRow(
-                    "[Gray]Garbage Collector (gen 0, 1, 2)[/]".PadRight(LABEL_PADDING),
+                    $"{INDENT}[gray]Garbage Collector (gen 0, 1, 2)[/]".PadRight(LABEL_PADDING),
                     $"[Green]None[/]".PadLeft(VALUE_PADDING));
             else
                 table.AddRow(
-                    "[red]Garbage Collector (gen 0, 1, 2)[/]".PadRight(LABEL_PADDING),
+                    $"{INDENT}[gray]Garbage Collector (gen 0, 1, 2)[/]".PadRight(LABEL_PADDING),
                     $"[red]{Gen0} / {Gen1} / {Gen2}[/]".PadLeft(VALUE_PADDING));
 
             if (BytesAllocated == 0)
                 table.AddRow(
-                    "[Gray]Memory Used[/]".PadRight(LABEL_PADDING),
+                    $"{INDENT}[gray]Memory Used[/]".PadRight(LABEL_PADDING),
                     $"[Green]None[/]".PadLeft(VALUE_PADDING));
             else
                 table.AddRow(
-                    "[red]Memory Used[/]".PadRight(LABEL_PADDING),
+                    $"{INDENT}[gray]Memory Used[/]".PadRight(LABEL_PADDING),
                     $"[red]{FormatBytes(BytesAllocated)}[/]".PadLeft(VALUE_PADDING));
 
             table.AddRow(
-                "[yellow]Duration[/]".PadRight(LABEL_PADDING),
+                $"{INDENT}[gray]Duration[/]".PadRight(LABEL_PADDING),
                 $"[yellow]{Duration.TotalMilliseconds:N0} ms[/]".PadLeft(VALUE_PADDING));
 
             AnsiConsole.Write(table);
@@ -72,11 +72,11 @@ namespace GhostBodyObject.BenchmarkRunner
             table.AddColumn(new TableColumn("Value").RightAligned());
 
             table.AddRow(
-                "[Gray]Operation cost (ns)[/]".PadRight(LABEL_PADDING),
+                $"{INDENT}[Gray]Operation cost (ns)[/]".PadRight(LABEL_PADDING),
                 $"[White]{nsPerOp:N2}[/]".PadLeft(VALUE_PADDING));
 
             table.AddRow(
-                "[Gray]Operations per second[/]".PadRight(LABEL_PADDING),
+                $"{INDENT}[Gray]Operations per second[/]".PadRight(LABEL_PADDING),
                 $"[White]{opsPerSec:N0}[/]".PadLeft(VALUE_PADDING));
 
             AnsiConsole.Write(table);

@@ -1,4 +1,6 @@
 ﻿using Spectre.Console;
+using System;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace GhostBodyObject.BenchmarkRunner
@@ -8,6 +10,15 @@ namespace GhostBodyObject.BenchmarkRunner
         public static void DiscoverAndShow()
         {
             DiscoverAndShowAsync().GetAwaiter().GetResult();
+        }
+
+        public static void WriteWarningLine(string content)
+        {
+            Console.BackgroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(content);
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.BackgroundColor = ConsoleColor.Black;
         }
 
         public static async Task DiscoverAndShowAsync()
@@ -22,6 +33,15 @@ namespace GhostBodyObject.BenchmarkRunner
             AnsiConsole.MarkupLine("[grey]Simple Brut Force Benchmarks Runner[/]");
             AnsiConsole.WriteLine();
 
+            if (Debugger.IsAttached)
+            {
+                WriteWarningLine("Debugger is attached : this may slowdown execution.");
+                AnsiConsole.WriteLine();
+            }
+#if DEBUG
+            WriteWarningLine("DEBUG directive defined : this will slowdown execution. Please, compile and run in Release.");
+            AnsiConsole.WriteLine();
+#endif
             while (true)
             {
                 var padding = benchmarks.Max(b => b.Attribute.Category.Length);
@@ -36,6 +56,11 @@ namespace GhostBodyObject.BenchmarkRunner
                 try
                 {
                     var instance = (BenchmarkBase)Activator.CreateInstance(selection.Type);
+
+                    AnsiConsole.MarkupLine("[blue]********************************************************************************[/]");
+                    AnsiConsole.MarkupLine($"[blue]******** {selection.Attribute.Name}[/]");
+                    AnsiConsole.MarkupLine("[blue]********************************************************************************[/]");
+
 
                     if (selection.Method.ReturnType == typeof(Task))
                         await (Task)selection.Method.Invoke(instance, null);

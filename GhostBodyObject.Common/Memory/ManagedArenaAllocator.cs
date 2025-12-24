@@ -32,7 +32,7 @@ namespace GhostBodyObject.Common.Memory
         /// <returns>A Memory<byte> instance representing the allocated block of memory.</returns>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when the specified size exceeds the default page size.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Memory<byte> Allocate(int size)
+        public static PinnedMemory<byte> Allocate(int size)
         {
             if ((uint)size > DefaultPageSize)
                 throw new ArgumentOutOfRangeException(nameof(size));
@@ -48,7 +48,7 @@ namespace GhostBodyObject.Common.Memory
             }
             _offset = offset + size;
 
-            return new Memory<byte>(buffer, offset, size);
+            return new PinnedMemory<byte>(buffer, offset, size);
         }
     }
 }
