@@ -1,21 +1,32 @@
-MIT License
+Ghost Body Object (GBO) Community License v1.0
+Copyright (c) 2026 Gabriel RABHI. All rights reserved.
 
-Copyright (c) [year] [fullname]
+1. Preamble
+The Ghost Body Object (GBO) technology is designed to revolutionize memory management, reduce infrastructure costs, and enable high-performance distributed systems. This license aims to foster broad adoption, innovation, and educational use by individuals and small businesses, while ensuring that large commercial entities deriving significant financial value from the Software contribute to its long-term sustainability.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+2. Definitions
+"The Software" refers to the Ghost Body Object code, libraries, and associated documentation.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+"The Licensor" refers to Gabriel RABHI.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+"Licensee" refers to any individual or legal entity exercising rights under this License.
+
+"Revenue Limit" is defined as $2,000,000 USD (Two Million US Dollars) in Gross Annual Revenue (or equivalent funding/investment) in the Licensee's most recent fiscal year.
+
+3. Grant of Rights (Below Revenue Limit)
+Subject to the terms and conditions of this License, the Licensor hereby grants the Licensee a royalty-free, non-exclusive, worldwide license to use, copy, modify, merge, publish, distribute, and sublicense the Software, provided that the Licensee falls below the Revenue Limit.
+
+For these users, the rights granted are functionally equivalent to the Apache License 2.0, including the requirement to preserve copyright notices.
+
+4. Commercial Use (Above Revenue Limit)
+If the Licensee (including its subsidiaries and affiliates) exceeds the Revenue Limit, the grants in Section 3 do not apply.
+
+To use the Software in a production environment, or to distribute products that rely upon the Software, such Licensees must obtain a GBO Commercial License from the Licensor. Use of the Software by entities above the Revenue Limit for evaluation, development, or testing purposes is permitted for a period not exceeding 30 days, after which a Commercial License is required.
+
+5. Limitations
+No "Service Wrapping": Regardless of revenue, you may not offer the Software as a standalone "Database-as-a-Service" (DBaaS) or "Memory-as-a-Service" to third parties without a Commercial License.
+
+Attribution: All copies of the Software must retain the original copyright notice and this license document.
+
+6. Disclaimer of Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
