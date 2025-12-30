@@ -33,6 +33,9 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         [FieldOffset(8)]
         private readonly ulong _random;
 
+        [FieldOffset(8)]
+        private readonly int _upperRandom;
+
         // ---------------------------------------------------------
         // Constants & Masks
         // ---------------------------------------------------------
@@ -44,6 +47,18 @@ namespace GhostBodyObject.Repository.Ghost.Structs
 
         // Epoch: 2024-01-01 (Adjust as needed to reset the 9-year loop)
         private static readonly long EpochTicks = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+
+        public ulong RandomPart
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _random;
+        }
+
+        public int UpperRandomPart
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _upperRandom;
+        }
 
         // ---------------------------------------------------------
         // Construction

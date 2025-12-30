@@ -1,11 +1,14 @@
 ﻿using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
+using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Structs;
 using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
-    public sealed unsafe class MemorySegmentStore
+
+
+    public sealed unsafe class MemorySegmentStore : ISegmentStore
     {
         private MemorySegmentHolder[] _segmentHolders;
         private byte*[] _segmentPointers;
