@@ -7,7 +7,11 @@
     <Project Path="GhostBodyObject.Common.Tests/GhostBodyObject.Common.Tests.csproj" />
     <Project Path="GhostBodyObject.Common/GhostBodyObject.Common.csproj" />
   </Folder>
-  <Folder Name="/2-Objects/" />
-  <Folder Name="/3-Storage/" />
+  <Folder Name="/2-Repository/">
+    <Project Path="GhostBodyObject.Repository.Benchmarks/GhostBodyObject.Repository.Benchmarks.csproj" Id="14581737-6835-438c-a2eb-1f1d189600b8" />
+    <Project Path="GhostBodyObject.Repository.Tests/GhostBodyObject.Repository.Tests.csproj" Id="dcdc959e-46d9-454d-96dc-0baa40041a23" />
+    <Project Path="GhostBodyObject.Repository/GhostBodyObject.Repository.csproj" Id="9b7ac0a9-8468-435b-a165-35ea32d3dd23" />
+  </Folder>
+  <Folder Name="/3-Generator/" />
   <Project Path="GhostBodyObject.Experiments/GhostBodyObject.Experiments.csproj" />
 </Solution>

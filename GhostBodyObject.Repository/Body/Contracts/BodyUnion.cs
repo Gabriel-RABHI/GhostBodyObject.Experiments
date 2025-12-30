@@ -1,16 +1,12 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace GhostBodyObject.Experiments.BabyBody
+namespace GhostBodyObject.Repository.Body.Contracts
 {
-    public interface IEntityBody
-    {
-    }
-
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 32)]
     public class BodyUnion : IEntityBody
     {
         [FieldOffset(0)]
-        public GhostContext _context;
+        public object _context;
 
         [FieldOffset(8)]
         public IntPtr _vTablePtr;

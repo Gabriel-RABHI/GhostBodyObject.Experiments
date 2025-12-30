@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using GhostBodyObject.Repository.Ghost.Structs;
+using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Experiments.BabyBody
 {

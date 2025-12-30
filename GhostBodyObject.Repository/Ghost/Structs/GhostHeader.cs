@@ -1,7 +1,6 @@
-﻿using GhostBodyObject.Common.Objects;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
-namespace GhostBodyObject.Experiments.BabyBody
+namespace GhostBodyObject.Repository.Ghost.Structs
 {
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
     public unsafe struct GhostHeader
@@ -16,16 +15,16 @@ namespace GhostBodyObject.Experiments.BabyBody
         public GhostId Id;
 
         [FieldOffset(16)]
-        public ushort ModelVersion;
-
-        [FieldOffset(18)]
-        public ushort Flags;
-
-        [FieldOffset(20)]
-        public int MutationCounter;
+        public long TxnId;
 
         [FieldOffset(24)]
-        public int TxnId;
+        public ushort ModelVersion;
+
+        [FieldOffset(26)]
+        public ushort Flags;
+
+        [FieldOffset(28)]
+        public int MutationCounter;
 
         // ---------------------------------------------------------
         // Zero Fields

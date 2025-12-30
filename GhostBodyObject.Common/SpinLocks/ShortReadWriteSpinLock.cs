@@ -10,7 +10,7 @@ namespace GhostBodyObject.Common.SpinLocks
     /// </remarks>
     public struct ShortReadWriteSpinLock
     {
-        private const int _maxReaders = int.MaxValue / 2;
+        private const int MAX_READERS = int.MaxValue / 2;
 
         private int _count;
 
@@ -38,10 +38,10 @@ namespace GhostBodyObject.Common.SpinLocks
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EnterWrite()
         {
-            if (Interlocked.CompareExchange(ref _count, -1024, 0) != 0)
+            if (Interlocked.CompareExchange(ref _count, -MAX_READERS, 0) != 0)
             {
                 var spinner = new SpinWait();
-                while (Interlocked.CompareExchange(ref _count, -1024, 0) != 0)
+                while (Interlocked.CompareExchange(ref _count, -MAX_READERS, 0) != 0)
                 {
                     spinner.SpinOnce();
                 }
@@ -68,6 +68,6 @@ namespace GhostBodyObject.Common.SpinLocks
         /// Releases the write lock.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ExitWrite() => Interlocked.Add(ref _count, 1024);
+        public void ExitWrite() => Interlocked.Add(ref _count, MAX_READERS);
     }
 }

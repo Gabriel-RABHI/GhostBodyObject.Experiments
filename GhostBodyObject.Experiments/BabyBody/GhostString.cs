@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using GhostBodyObject.Repository.Body.Contracts;
+using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Experiments.BabyBody
 {

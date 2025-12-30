@@ -1,4 +1,4 @@
-﻿namespace GhostBodyObject.Common.Constants
+﻿namespace GhostBodyObject.Repository.Ghost.Constants
 {
     public enum GhostIdKind : byte
     {

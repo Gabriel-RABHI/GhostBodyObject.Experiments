@@ -1,5 +1,5 @@
-﻿using GhostBodyObject.Common.Constants;
-using GhostBodyObject.Common.Objects;
+﻿using GhostBodyObject.Repository.Ghost.Constants;
+using GhostBodyObject.Repository.Ghost.Structs;
 using System;
 using System.Runtime.InteropServices;
 using Xunit;

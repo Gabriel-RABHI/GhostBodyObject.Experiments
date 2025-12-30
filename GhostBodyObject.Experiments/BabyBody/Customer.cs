@@ -1,7 +1,9 @@
-﻿using GhostBodyObject.Common.Constants;
-using GhostBodyObject.Common.Memory;
+﻿using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Common.Objects;
 using GhostBodyObject.Common.SpinLocks;
+using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Ghost.Constants;
+using GhostBodyObject.Repository.Ghost.Structs;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -10,56 +12,8 @@ using System.Text;
 
 namespace GhostBodyObject.Experiments.BabyBody
 {
-    [StructLayout(LayoutKind.Explicit, Size = 4)]
-    public unsafe struct ArrayMapSmallEntry
-    {
-        // The backing field occupies 4 bytes (32 bits) at Offset 0
-        [FieldOffset(0)]
-        private uint _data;
 
-        // Helper constants for masks
-        private const uint ValueSizeMask = 0x1F;      // 5 bits (0000 0000 0001 1111)
-        private const uint ArrayLengthMask = 0x7FF;   // 11 bits (0000 0111 1111 1111)
-        private const uint ArrayOffsetMask = 0xFFFF;  // 16 bits (1111 1111 1111 1111)
-
-        /// <summary>
-        /// Gets or sets the ValueSize (5 bits).
-        /// Range: 0 to 31
-        /// </summary>
-        public uint ValueSize
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _data & ValueSizeMask;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => _data = (_data & ~ValueSizeMask) | (value & ValueSizeMask);
-        }
-
-        /// <summary>
-        /// Gets or sets the ArrayLength (11 bits).
-        /// Range: 0 to 2047
-        /// </summary>
-        public uint ArrayLength
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (_data >> 5) & ArrayLengthMask;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => _data = (_data & ~(ArrayLengthMask << 5)) | ((value & ArrayLengthMask) << 5);
-        }
-
-        /// <summary>
-        /// Gets or sets the ArrayOffset (16 bits).
-        /// Range: 0 to 65535
-        /// </summary>
-        public uint ArrayOffset
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (_data >> 16) & ArrayOffsetMask;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => _data = (_data & ~(ArrayOffsetMask << 16)) | ((value & ArrayOffsetMask) << 16);
-        }
-    }
-
-    public unsafe static class Customer_VectorTables
+    public unsafe static class Customer_VectorRegistry
     {
         private static int _ghostSize;
         private static PinnedMemory<byte> _initialGhost;
@@ -68,7 +22,7 @@ namespace GhostBodyObject.Experiments.BabyBody
 
         public static Customer_VectorTable* Standalone { get; private set; }
 
-        static Customer_VectorTables()
+        static Customer_VectorRegistry()
         {
             Standalone = (Customer_VectorTable*)NativeMemory.Alloc((nuint)sizeof(Customer_VectorTable));
             var f = new GhostHeaderIncrementer();
@@ -241,8 +195,8 @@ namespace GhostBodyObject.Experiments.BabyBody
         {
             unsafe
             {
-                _vTable = Customer_VectorTables.Standalone;
-                _data = Customer_VectorTables.CreateGhost();
+                _vTable = Customer_VectorRegistry.Standalone;
+                _data = Customer_VectorRegistry.CreateGhost();
             }
         }
 

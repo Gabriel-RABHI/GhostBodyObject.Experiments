@@ -1,12 +1,12 @@
-﻿using GhostBodyObject.Common.Constants;
-using GhostBodyObject.Common.Utilities;
+﻿using GhostBodyObject.Common.Utilities;
+using GhostBodyObject.Repository.Ghost.Constants;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace GhostBodyObject.Common.Objects
+namespace GhostBodyObject.Repository.Ghost.Structs
 {
     /// <summary>
     /// A 16-byte unmanaged Ghost Identifier.
@@ -15,6 +15,9 @@ namespace GhostBodyObject.Common.Objects
     [StructLayout(LayoutKind.Explicit, Size = 16)]
     public unsafe struct GhostId : IEquatable<GhostId>, IComparable<GhostId>
     {
+        public const ushort MAX_TYPE_ID = 0x1FFF; // 13 bits
+        public const ushort MAX_KIND = 0x007; // 3 bits
+
         // ---------------------------------------------------------
         // Field Layout
         // ---------------------------------------------------------

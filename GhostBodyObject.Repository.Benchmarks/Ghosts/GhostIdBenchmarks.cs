@@ -1,9 +1,6 @@
 ﻿using GhostBodyObject.BenchmarkRunner;
-using GhostBodyObject.Common.Constants;
-using GhostBodyObject.Common.Objects;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using GhostBodyObject.Repository.Ghost.Constants;
+using GhostBodyObject.Repository.Ghost.Structs;
 
 namespace GhostBodyObject.Common.Benchmarks.Objects
 {
