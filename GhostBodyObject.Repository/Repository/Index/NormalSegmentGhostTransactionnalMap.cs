@@ -267,6 +267,8 @@ public unsafe class SegmentGhostTransactionnalMap
 
     public int Count => _count;
 
+    public int Capacity => _capacity;
+
     public SegmentGhostTransactionnalMap(ISegmentStore store, int initialCapacity = InitialCapacity)
     {
         _store = store;
@@ -322,6 +324,9 @@ public unsafe class SegmentGhostTransactionnalMap
             int index = h->Id.UpperRandomPart & _mask;
             int firstTombstoneIndex = -1; // Optimization: Insert into first grave found
 
+            GhostId newId = h->Id;
+            long newTxnId = h->TxnId;
+
             while (true)
             {
                 // Read value directly (atomic 64-bit read)
@@ -358,8 +363,17 @@ public unsafe class SegmentGhostTransactionnalMap
                 {
                     return;
                 }
-                // Note: Logic for colliding IDs (different TxnId) is handled by linear probing
-                // We just continue to the next slot.
+                // 4. Check for logical duplicate (same Id + TxnId but different reference)
+                else
+                {
+                    var existingHeader = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    if (existingHeader != null && existingHeader->Id == newId && existingHeader->TxnId == newTxnId)
+                    {
+                        // Logical duplicate found - update the reference to the new one
+                        _entries[index] = r;
+                        return;
+                    }
+                }
 
                 index = (index + 1) & _mask;
             }

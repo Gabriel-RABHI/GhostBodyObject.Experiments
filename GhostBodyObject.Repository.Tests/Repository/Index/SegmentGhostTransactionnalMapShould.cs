@@ -46,6 +46,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
 
             public FakeSegmentStoreRecord NewHeader(GhostId id, long txnId)
             {
+                ++_nextOffset;
                 return CreateRecord(id, txnId);
             }
 
@@ -339,6 +340,244 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
 
             var id = new GhostId(GhostIdKind.Entity, 99, 99, 99);
             Assert.False(map.Get(id, 100, out _));
+        }
+
+        [Fact]
+        public void Handle_Large_Insert_And_Chunked_Removal_With_Capacity_And_Visibility_Check()
+        {
+            var store = new FakeSegmentStore();
+            var map = new SegmentGhostTransactionnalMap(store, initialCapacity: 16);
+
+            const int totalItems = 500;
+            const int chunkSize = 100;
+            const long baseTxnId = 100;
+
+            var records = new List<FakeSegmentStore.FakeSegmentStoreRecord>();
+
+            // ---------------------------------------------------------
+            // PHASE 1: Insert all items
+            // ---------------------------------------------------------
+            for (int i = 0; i < totalItems; i++)
+            {
+                var rec = store.NewHeader(baseTxnId + i);
+                records.Add(rec);
+            }
+            store.Update(map);
+
+            // Verify all items inserted
+            Assert.Equal(totalItems, map.Count);
+
+            // Capacity should have grown (started at 16, now holding 500 items)
+            // With 0.75 load factor, capacity should be at least 500/0.75 ≈ 667 -> next power of 2 = 1024
+            Assert.True(map.Capacity >= totalItems, $"Capacity {map.Capacity} should be >= {totalItems}");
+
+            int initialCapacity = map.Capacity;
+
+            // Verify all items are visible
+            foreach (var rec in records)
+            {
+                bool found = map.Get(rec.Header.Id, baseTxnId + totalItems, out var result);
+                Assert.True(found, $"Item with TxnId {rec.Header.TxnId} should be found");
+                Assert.Equal(rec.Reference.Value, result.Value);
+            }
+
+            // ---------------------------------------------------------
+            // PHASE 2: Remove items in chunks and verify state after each chunk
+            // ---------------------------------------------------------
+            int remainingItems = totalItems;
+
+            for (int chunkStart = 0; chunkStart < totalItems; chunkStart += chunkSize)
+            {
+                int chunkEnd = Math.Min(chunkStart + chunkSize, totalItems);
+                int itemsToRemoveInChunk = chunkEnd - chunkStart;
+
+                // Mark chunk for deletion
+                for (int i = chunkStart; i < chunkEnd; i++)
+                {
+                    store.MarkForDeletion(records[i].Header.Id, records[i].Header.TxnId);
+                }
+                store.Update(map);
+
+                remainingItems -= itemsToRemoveInChunk;
+
+                // Verify Count matches expected remaining
+                Assert.Equal(remainingItems, map.Count);
+
+                // Verify removed items are no longer visible
+                for (int i = chunkStart; i < chunkEnd; i++)
+                {
+                    bool found = map.Get(records[i].Header.Id, baseTxnId + totalItems, out _);
+                    Assert.False(found, $"Removed item at index {i} should NOT be found");
+                }
+
+                // Verify remaining items are still visible
+                for (int i = chunkEnd; i < totalItems; i++)
+                {
+                    bool found = map.Get(records[i].Header.Id, baseTxnId + totalItems, out var result);
+                    Assert.True(found, $"Remaining item at index {i} should still be found");
+                    Assert.Equal(records[i].Reference.Value, result.Value);
+                }
+
+                // Capacity check: should shrink when count drops significantly
+                // The map shrinks when tombstones accumulate or count drops below thresholds
+                if (remainingItems == 0)
+                {
+                    // When all items are removed, capacity might shrink to minimum
+                    Assert.True(map.Capacity <= initialCapacity, 
+                        $"Capacity {map.Capacity} should be <= initial {initialCapacity} after all removals");
+                }
+            }
+
+            // ---------------------------------------------------------
+            // PHASE 3: Final state verification
+            // ---------------------------------------------------------
+            Assert.Equal(0, map.Count);
+
+            // Verify capacity has potentially shrunk (or at least not grown)
+            Assert.True(map.Capacity <= initialCapacity, 
+                $"Final capacity {map.Capacity} should be <= initial {initialCapacity}");
+
+            // Verify no items are visible via enumerator
+            var enumerator = map.GetEnumerator();
+            int enumCount = 0;
+            while (enumerator.MoveNext())
+            {
+                enumCount++;
+            }
+            Assert.Equal(0, enumCount);
+
+            // Verify deduplicated enumerator also returns nothing
+            var dedupEnumerator = map.GetDeduplicatedEnumerator(baseTxnId + totalItems);
+            int dedupCount = 0;
+            while (dedupEnumerator.MoveNext())
+            {
+                dedupCount++;
+            }
+            Assert.Equal(0, dedupCount);
+        }
+
+        [Fact]
+        public void Handle_Mixed_Versions_During_Chunked_Removal()
+        {
+            var store = new FakeSegmentStore();
+            var map = new SegmentGhostTransactionnalMap(store, initialCapacity: 16);
+
+            const int entityCount = 50;
+            const int versionsPerEntity = 5;
+
+            var entities = new List<GhostId>();
+            var allRecords = new Dictionary<GhostId, List<FakeSegmentStore.FakeSegmentStoreRecord>>();
+
+            // ---------------------------------------------------------
+            // PHASE 1: Insert multiple versions per entity
+            // ---------------------------------------------------------
+            for (int e = 0; e < entityCount; e++)
+            {
+                var id = new GhostId(GhostIdKind.Entity, (ushort)e, (ulong)e, XorShift64.Next());
+                entities.Add(id);
+                allRecords[id] = new List<FakeSegmentStore.FakeSegmentStoreRecord>();
+
+                for (int v = 0; v < versionsPerEntity; v++)
+                {
+                    long txnId = (e * 100) + (v * 10); // e.g., entity 0: 0, 10, 20, 30, 40
+                    var rec = store.NewHeader(id, txnId);
+                    allRecords[id].Add(rec);
+                }
+            }
+            store.Update(map);
+
+            int totalRecords = entityCount * versionsPerEntity;
+            Assert.Equal(totalRecords, map.Count);
+
+            // ---------------------------------------------------------
+            // PHASE 2: Verify visibility at different transaction points
+            // ---------------------------------------------------------
+            foreach (var id in entities)
+            {
+                var versions = allRecords[id];
+                int entityIndex = entities.IndexOf(id);
+
+                // Query at txnId that should see version 2 (txnId = entityIndex*100 + 20)
+                long queryTxn = (entityIndex * 100) + 25; // Between version 2 (20) and version 3 (30)
+                bool found = map.Get(id, queryTxn, out var result);
+                Assert.True(found);
+
+                var expectedTxnId = (entityIndex * 100) + 20; // Version 2
+                Assert.Equal(expectedTxnId, store.ToGhostHeaderPointer(result)->TxnId);
+            }
+
+            // ---------------------------------------------------------
+            // PHASE 3: Remove older versions (keep only latest 2 per entity)
+            // ---------------------------------------------------------
+            int removedCount = 0;
+            foreach (var id in entities)
+            {
+                var versions = allRecords[id];
+                // Remove versions 0, 1, 2 (keep 3 and 4)
+                for (int v = 0; v < 3; v++)
+                {
+                    store.MarkForDeletion(versions[v].Header.Id, versions[v].Header.TxnId);
+                    removedCount++;
+                }
+            }
+            store.Update(map);
+
+            int expectedRemaining = totalRecords - removedCount;
+            Assert.Equal(expectedRemaining, map.Count);
+
+            // ---------------------------------------------------------
+            // PHASE 4: Verify visibility after partial removal
+            // ---------------------------------------------------------
+            foreach (var id in entities)
+            {
+                var versions = allRecords[id];
+                int entityIndex = entities.IndexOf(id);
+
+                // Query at txnId that would have seen version 2 before removal
+                // Now should see version 3 (the lowest remaining)
+                long queryTxn = (entityIndex * 100) + 35; // Between version 3 (30) and version 4 (40)
+                bool found = map.Get(id, queryTxn, out var result);
+                Assert.True(found);
+
+                var expectedTxnId = (entityIndex * 100) + 30; // Version 3 (now lowest remaining)
+                Assert.Equal(expectedTxnId, store.ToGhostHeaderPointer(result)->TxnId);
+
+                // Query at very high txnId should see version 4 (latest)
+                long highQueryTxn = (entityIndex * 100) + 100;
+                found = map.Get(id, highQueryTxn, out result);
+                Assert.True(found);
+
+                expectedTxnId = (entityIndex * 100) + 40; // Version 4 (latest)
+                Assert.Equal(expectedTxnId, store.ToGhostHeaderPointer(result)->TxnId);
+
+                // Query at txnId before remaining versions should find nothing
+                long lowQueryTxn = (entityIndex * 100) + 25; // Before version 3 (30)
+                found = map.Get(id, lowQueryTxn, out _);
+                Assert.False(found, "Should not find any version before remaining versions");
+            }
+
+            // ---------------------------------------------------------
+            // PHASE 5: Remove all remaining and verify empty state
+            // ---------------------------------------------------------
+            foreach (var id in entities)
+            {
+                var versions = allRecords[id];
+                // Remove versions 3 and 4
+                for (int v = 3; v < versionsPerEntity; v++)
+                {
+                    store.MarkForDeletion(versions[v].Header.Id, versions[v].Header.TxnId);
+                }
+            }
+            store.Update(map);
+
+            Assert.Equal(0, map.Count);
+
+            // Verify no entity is visible
+            foreach (var id in entities)
+            {
+                bool found = map.Get(id, long.MaxValue, out _);
+                Assert.False(found, "No entity should be visible after complete removal");
+            }
         }
     }
 }
