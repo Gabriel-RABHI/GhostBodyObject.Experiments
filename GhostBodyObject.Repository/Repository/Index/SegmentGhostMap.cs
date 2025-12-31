@@ -4,255 +4,24 @@ using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Structs;
 using System.Runtime.CompilerServices;
 
-/*
-public unsafe class NormalSegmentGhostTransactionnalMap
-{
-    private const float LoadFactor = 0.75f;
-    private const float ShrinkFactor = 0.25f; // Shrink when 25% full
-    private const int InitialCapacity = 16;
-
-    private ISegmentStore _store;
-    private SegmentReference[] _entries;
-    private int _count;
-    private int _capacity;
-    private int _mask;
-    private int _resizeThreshold; // When to grow (High Watermark)
-    private int _shrinkThreshold; // When to shrink (Low Watermark)
-
-    private ShortSpinLock _lock;
-
-    public int Count => _count;
-
-    public NormalSegmentGhostTransactionnalMap(ISegmentStore store, int initialCapacity = InitialCapacity)
-    {
-        _store = store;
-        if (initialCapacity < InitialCapacity) initialCapacity = InitialCapacity;
-        _capacity = PowerOf2(initialCapacity);
-        _mask = _capacity - 1;
-        _entries = new SegmentReference[_capacity];
-
-        UpdateThresholds();
-    }
-
-    /// <summary>
-    /// Adds a specific version of the entry.
-    /// Supports multiple entries with the same Id but different TxnId.
-    /// </summary>
-    public void Set(SegmentReference r, GhostHeader* h)
-    {
-#if WRITE_THREAD_SAFE
-        _lock.Enter();
-        try
-        {
-#endif
-            if (_count >= _resizeThreshold)
-                Resize(_capacity * 2);
-
-            int index = h->Id.UpperRandomPart & _mask;
-
-            while (true)
-            {
-                SegmentReference current = _entries[index];
-                if (current.IsEmpty)
-                {
-                    _entries[index] = r;
-                    _count++;
-                    return;
-                }
-                if (current.Value == r.Value)
-                    return;
-                index = (index + 1) & _mask;
-            }
-#if WRITE_THREAD_SAFE
-        }
-        finally { _lock.Exit(); }
-#endif
-    }
-
-    /// <summary>
-    /// Finds the entry with the specified Id and the highest TxnId <= maxTxnId.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Get(GhostId id, long maxTxnId, out SegmentReference r)
-    {
-        var entries = _entries;
-        int index = id.UpperRandomPart & _mask;
-        int bestIndex = -1;
-        long bestTxnFound = long.MinValue;
-#if READ_THREAD_SAFE
-        _lock.Enter();
-        try {
-#endif
-
-        while (true)
-        {
-            SegmentReference current = entries[index];
-            if (current.IsEmpty)
-            {
-                if (bestIndex != -1)
-                {
-                    r = entries[bestIndex];
-                    return true;
-                }
-                r = default;
-                return false;
-            }
-
-            var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
-            if (h != null && h->Id == id)
-            {
-                var txnId = h->TxnId;
-                if (txnId <= maxTxnId)
-                {
-                    if (txnId == maxTxnId)
-                    {
-                        r = current;
-                        return true;
-                    }
-                    if (txnId > bestTxnFound)
-                    {
-                        bestTxnFound = txnId;
-                        bestIndex = index;
-                    }
-                }
-            }
-
-            index = (index + 1) & _mask;
-        }
-#if READ_THREAD_SAFE
-        }
-        finally { _lock.Exit(); }
-#endif
-    }
-
-    /// <summary>
-    /// Removes a specific version (Id + TxnId).
-    /// </summary>
-    public bool Remove(GhostId id, long txnId)
-    {
-        int index = id.UpperRandomPart & _mask;
-#if WRITE_THREAD_SAFE
-        _lock.Enter();
-        try
-        {
-#endif
-            while (true)
-            {
-                SegmentReference entry = _entries[index];
-
-                if (entry.IsEmpty)
-                    return false;
-
-                var h = (GhostHeader*)_store.ToGhostHeaderPointer(entry);
-                if (h != null && h->Id == id && h->TxnId == txnId)
-                {
-                    _count--;
-                    ShiftBack(index, id);
-                    if (_count < _shrinkThreshold && _capacity > InitialCapacity)
-                        Resize(_capacity / 2);
-                    return true;
-                }
-
-                index = (index + 1) & _mask;
-            }
-#if WRITE_THREAD_SAFE
-        }
-        finally { _lock.Exit(); }
-#endif
-    }
-
-    /// <summary>
-    /// Fills the empty slot at <paramref name="gapIndex"/> by shifting 
-    /// subsequent colliding items backward.
-    /// </summary>
-    private void ShiftBack(int gapIndex, GhostId id)
-    {
-        int curr = (gapIndex + 1) & _mask;
-
-        while (true)
-        {
-            SegmentReference currentEntry = _entries[curr];
-            if (currentEntry.IsEmpty)
-            {
-                _entries[gapIndex] = default;
-                return;
-            }
-            int idealSlot = id.UpperRandomPart & _mask;
-            bool needsShift;
-            if (idealSlot <= curr)
-            {
-                needsShift = (idealSlot <= gapIndex) && (gapIndex < curr);
-                needsShift = !(idealSlot <= gapIndex && gapIndex < curr);
-            }
-            else
-            {
-                needsShift = !(idealSlot <= gapIndex || gapIndex < curr);
-            }
-            int distToGap = (gapIndex - idealSlot + _capacity) & _mask;
-            int distToCurr = (curr - idealSlot + _capacity) & _mask;
-
-            if (distToGap < distToCurr)
-            {
-                _entries[gapIndex] = currentEntry;
-                gapIndex = curr;
-            }
-
-            curr = (curr + 1) & _mask;
-        }
-    }
-
-    private void Resize(int newCapacity)
-    {
-        var oldEntries = _entries;
-        int oldCapacity = _capacity;
-
-        _capacity = newCapacity;
-        _mask = _capacity - 1;
-        _entries = new SegmentReference[_capacity];
-        UpdateThresholds();
-
-        // Re-insert all active items
-        var count = 0;
-        for (int i = 0; i < oldCapacity; i++)
-        {
-            SegmentReference e = oldEntries[i];
-            if (!e.IsEmpty)
-            {
-                var h = (GhostHeader*)_store.ToGhostHeaderPointer(e);
-                if (h != null)
-                {
-                    int index = h->Id.UpperRandomPart & _mask;
-                    while (!_entries[index].IsEmpty)
-                        index = (index + 1) & _mask;
-                    _entries[index] = e;
-                    count++;
-                }
-            }
-        }
-        _count = count;
-    }
-
-    private void UpdateThresholds()
-    {
-        _resizeThreshold = (int)(_capacity * LoadFactor);
-        _shrinkThreshold = (int)(_capacity * ShrinkFactor);
-    }
-
-    private static int PowerOf2(int n)
-    {
-        if (n < 2) return 2;
-        n--; n |= n >> 1; n |= n >> 2; n |= n >> 4; n |= n >> 8; n |= n >> 16;
-        return n + 1;
-    }
-}
-*/
-
-public unsafe class SegmentGhostTransactionnalMap
+/// <summary>
+/// Represents a high-performance, tombstone-aware hash map for managing segment references and their associated
+/// metadata, supporting efficient versioned lookups, insertions, and removals.
+/// </summary>
+/// <remarks>SegmentGhostMap is designed for scenarios where segment entries may be frequently updated or removed,
+/// and where versioned access is required. The map uses tombstones to mark removed entries, enabling efficient probing
+/// and minimizing unnecessary allocations. It supports snapshot isolation for enumeration, allowing safe iteration even
+/// if the map is resized concurrently. Thread safety is provided for mutation operations (such as Set and Remove) via
+/// internal locking, but callers should be aware that enumerators operate on a snapshot and do not reflect subsequent
+/// changes. The map automatically resizes and reclaims tombstones to maintain performance as the number of entries
+/// changes.</remarks>
+public sealed unsafe class SegmentGhostMap<TSegmentStore>
+        where TSegmentStore : ISegmentStore
 {
     private const float LoadFactor = 0.75f;
     private const int InitialCapacity = 16;
 
-    private readonly ISegmentStore _store;
+    private readonly TSegmentStore _store;
     private SegmentReference[] _entries;
 
     private int _count;             // Number of valid, live items
@@ -269,7 +38,7 @@ public unsafe class SegmentGhostTransactionnalMap
 
     public int Capacity => _capacity;
 
-    public SegmentGhostTransactionnalMap(ISegmentStore store, int initialCapacity = InitialCapacity)
+    public SegmentGhostMap(TSegmentStore store, int initialCapacity = InitialCapacity)
     {
         _store = store;
         if (initialCapacity < InitialCapacity) initialCapacity = InitialCapacity;

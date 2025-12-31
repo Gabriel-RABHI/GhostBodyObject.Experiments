@@ -25,7 +25,7 @@ namespace GhostBodyObject.Experiments.BabyBody
         static Customer_VectorRegistry()
         {
             Standalone = (Customer_VectorTable*)NativeMemory.Alloc((nuint)sizeof(Customer_VectorTable));
-            var f = new GhostHeaderIncrementer();
+            var f = new GhostHeaderIncrementor();
             Standalone->CreatedOn_FieldOffset = f.Push<DateTime>();    // CreatedOn : 40
             Standalone->CustomerCode_FieldOffset = f.Push<int>();         // CustomerCode : 48
             Standalone->Active_FieldOffset = f.Push<bool>();        // Active : 49

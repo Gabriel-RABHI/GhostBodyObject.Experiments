@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
-
-
     public sealed unsafe class MemorySegmentStore : ISegmentStore
     {
         private MemorySegmentHolder[] _segmentHolders;

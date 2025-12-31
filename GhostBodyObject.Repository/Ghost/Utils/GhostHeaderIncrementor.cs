@@ -3,7 +3,15 @@ using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Experiments.BabyBody
 {
-    public class GhostHeaderIncrementer
+    /// <summary>
+    /// Provides functionality for incrementally calculating memory offsets for ghost header structures, supporting
+    /// type-based size advancement and alignment padding.
+    /// </summary>
+    /// <remarks>This class is typically used when constructing or serializing binary data structures that
+    /// require precise control over field offsets and alignment. Offsets are advanced based on the size of types or by
+    /// applying specific padding to meet alignment requirements. The initial offset is set to the size of the ghost
+    /// header structure.</remarks>
+    public class GhostHeaderIncrementor
     {
         private int _offset = GhostHeader.SIZE;
 

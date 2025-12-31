@@ -17,6 +17,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
     {
         public const ushort MAX_TYPE_ID = 0x1FFF; // 13 bits
         public const ushort MAX_KIND = 0x007; // 3 bits
+        public const ushort MAX_TYPE_COMBO = ushort.MaxValue; // 16 bits
 
         // ---------------------------------------------------------
         // Field Layout
@@ -25,6 +26,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         // Bits 61-63 (3 bits)  : Kind
         // Bits 48-60 (13 bits) : Type Identifier
         // Bits 00-47 (48 bits) : Timestamp (Microseconds)
+
         [FieldOffset(0)]
         private readonly ulong _header;
 
@@ -35,6 +37,13 @@ namespace GhostBodyObject.Repository.Ghost.Structs
 
         [FieldOffset(8)]
         private readonly int _upperRandom;
+
+
+        [FieldOffset(12)]
+        private readonly int _lowerRandom;
+
+        [FieldOffset(0)]
+        private readonly ushort _typeCombo;
 
         // ---------------------------------------------------------
         // Constants & Masks
@@ -58,6 +67,12 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _upperRandom;
+        }
+
+        public int LowerRandomPart
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _lowerRandom;
         }
 
         // ---------------------------------------------------------
@@ -114,6 +129,12 @@ namespace GhostBodyObject.Repository.Ghost.Structs
                 long ticks = (long)(_header & TimestampMask) * 10;
                 return new DateTime(EpochTicks + ticks, DateTimeKind.Utc);
             }
+        }
+
+        public ushort TypeCombo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _typeCombo;
         }
 
         // ---------------------------------------------------------

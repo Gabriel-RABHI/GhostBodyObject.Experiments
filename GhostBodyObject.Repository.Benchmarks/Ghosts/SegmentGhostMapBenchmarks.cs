@@ -4,17 +4,21 @@ using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Structs;
+using GhostBodyObject.Repository.Repository.Index;
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
+using LocalMapType = ShardedSegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.PinnedSegmentStore>;
+using System.Runtime.CompilerServices;
+
 namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 {
-    public unsafe class SegmentGhostTransactionnalMapBenchmarks : BenchmarkBase
+    public unsafe class SegmentGhostMapBenchmarks : BenchmarkBase
     {
-        private const int COUNT = 10_000_000;
+        private const int COUNT = 1_000_000;
 
         // ---------------------------------------------------------
         // FAST PINNED STORE IMPLEMENTATION FOR BENCHMARKS
@@ -46,6 +50,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 Offset = (uint)(index * sizeof(GhostHeader))
             };
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
                 => (GhostHeader*)((byte*)_basePointer + reference.Offset);
         }
@@ -63,7 +68,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_Set_Insertion()
         {
             using var store = new PinnedSegmentStore(COUNT);
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new LocalMapType(store);
 
             // Prepare all data outside the measured loop
             var entries = new PreparedEntry[COUNT];
@@ -100,7 +105,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_Get_Lookup()
         {
             using var store = new PinnedSegmentStore(COUNT);
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new LocalMapType(store);
 
             // Prepare and insert all data
             var ids = new GhostId[COUNT];
@@ -141,7 +146,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             int totalEntries = ENTITY_COUNT * VERSIONS_PER_ENTITY;
 
             using var store = new PinnedSegmentStore(totalEntries);
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new LocalMapType(store);
 
             // Prepare all data outside the measured loop
             var entries = new PreparedEntry[totalEntries];
@@ -185,7 +190,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_Remove()
         {
             using var store = new PinnedSegmentStore(COUNT);
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new LocalMapType(store);
 
             AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
 
@@ -223,7 +228,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_Enumeration()
         {
             using var store = new PinnedSegmentStore(COUNT);
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new LocalMapType(store);
 
             // Insert all data
             for (int i = 0; i < COUNT; i++)
@@ -263,7 +268,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             int totalEntries = ENTITY_COUNT * VERSIONS_PER_ENTITY;
 
             using var store = new PinnedSegmentStore(totalEntries);
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new LocalMapType(store);
 
             // Insert all data with multiple versions per entity
             var rnd = new Random(12345);
@@ -283,7 +288,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 }
             }
 
-            AnsiConsole.WriteLine($"Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
 
             for (var thCount = 1; thCount <= Environment.ProcessorCount; thCount++)
             {

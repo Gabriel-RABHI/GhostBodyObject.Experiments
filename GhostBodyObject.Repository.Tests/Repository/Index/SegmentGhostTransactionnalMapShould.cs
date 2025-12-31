@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using static GhostBodyObject.Repository.Tests.Repository.Index.SegmentGhostTransactionnalMapShould;
 
 namespace GhostBodyObject.Repository.Tests.Repository.Index
 {
@@ -87,7 +88,8 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                 return null;
             }
 
-            public void Update(SegmentGhostTransactionnalMap map)
+            public void Update<TSegmentStore>(SegmentGhostMap<TSegmentStore> map)
+                where TSegmentStore : ISegmentStore
             {
                 foreach (var r in _store)
                 {
@@ -119,7 +121,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         public void Store_Multiple_Unique_Headers()
         {
             var store = new FakeSegmentStore();
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store);
 
             store.NewHeader(10);
             store.NewHeader(10);
@@ -134,7 +136,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         public void Retrieve_Correct_Version_By_TransactionId()
         {
             var store = new FakeSegmentStore();
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store);
 
             var id = new GhostId(GhostIdKind.Entity, 1, 1, 1);
 
@@ -164,7 +166,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         public void Handle_Duplicates_Idempotency()
         {
             var store = new FakeSegmentStore();
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store);
             var id = new GhostId(GhostIdKind.Entity, 1, 1, 1);
 
             // Add the EXACT same header (ID + TxnId) twice
@@ -182,7 +184,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         public void Remove_Specific_Version()
         {
             var store = new FakeSegmentStore();
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store);
             var id = new GhostId(GhostIdKind.Entity, 1, 1, 1);
 
             store.NewHeader(id, 10); // v1
@@ -208,7 +210,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         {
             var store = new FakeSegmentStore();
             // Start small (Capacity 16)
-            var map = new SegmentGhostTransactionnalMap(store, initialCapacity: 16);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store, initialCapacity: 16);
             int itemsToAdd = 100;
 
             var ids = new List<GhostId>();
@@ -235,7 +237,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         public void Reuse_Tombstones()
         {
             var store = new FakeSegmentStore();
-            var map = new SegmentGhostTransactionnalMap(store, initialCapacity: 16);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store, initialCapacity: 16);
             var id = new GhostId(GhostIdKind.Entity, 1, 1, 1);
 
             // 1. Insert
@@ -264,7 +266,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         public void Deduplication_Enumerator_Winner_Takes_All()
         {
             var store = new FakeSegmentStore();
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store);
             var idA = new GhostId(GhostIdKind.Entity, 1, 1, 1);
             var idB = new GhostId(GhostIdKind.Entity, 2, 2, 2);
 
@@ -314,7 +316,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         {
             var store = new FakeSegmentStore();
             // Start with tiny capacity to force collisions easily
-            var map = new SegmentGhostTransactionnalMap(store, initialCapacity: 4);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store, initialCapacity: 4);
 
             // We cannot easily force hash collisions with random IDs, 
             // but filling the map > 1 item in a size 4 map guarantees interaction.
@@ -336,7 +338,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         public void Return_False_On_Missing_Keys()
         {
             var store = new FakeSegmentStore();
-            var map = new SegmentGhostTransactionnalMap(store);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store);
 
             var id = new GhostId(GhostIdKind.Entity, 99, 99, 99);
             Assert.False(map.Get(id, 100, out _));
@@ -346,7 +348,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         public void Handle_Large_Insert_And_Chunked_Removal_With_Capacity_And_Visibility_Check()
         {
             var store = new FakeSegmentStore();
-            var map = new SegmentGhostTransactionnalMap(store, initialCapacity: 16);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store, initialCapacity: 16);
 
             const int totalItems = 500;
             const int chunkSize = 100;
@@ -460,7 +462,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         public void Handle_Mixed_Versions_During_Chunked_Removal()
         {
             var store = new FakeSegmentStore();
-            var map = new SegmentGhostTransactionnalMap(store, initialCapacity: 16);
+            var map = new SegmentGhostMap<FakeSegmentStore>(store, initialCapacity: 16);
 
             const int entityCount = 50;
             const int versionsPerEntity = 5;

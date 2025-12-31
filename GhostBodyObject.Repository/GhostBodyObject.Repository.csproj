@@ -12,8 +12,4 @@
     <ProjectReference Include="..\GhostBodyObject.Common\GhostBodyObject.Common.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Transaction\" />
-  </ItemGroup>
-
 </Project>

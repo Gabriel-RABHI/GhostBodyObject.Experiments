@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using GhostBodyObject.Repository.Ghost.Constants;
+using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Repository.Ghost.Structs
 {
@@ -21,7 +22,10 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         public ushort ModelVersion;
 
         [FieldOffset(26)]
-        public ushort Flags;
+        public GhostStatus Status;
+
+        [FieldOffset(27)]
+        public byte Flags;
 
         [FieldOffset(28)]
         public int MutationCounter;
