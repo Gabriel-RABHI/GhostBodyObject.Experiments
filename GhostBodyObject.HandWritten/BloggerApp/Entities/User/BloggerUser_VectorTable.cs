@@ -25,9 +25,16 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public int CustomerCodeTiers_MapEntryOffset;
 
+        public int CustomerName_MapEntryIndex;
+
+        public int CustomerCodeTiers_MapEntryIndex;
+
+
         // ---------------------------------------------------------
         // Setters
         // ---------------------------------------------------------
+        public delegate*<BloggerUser, Memory<byte>, int, void> SwapAnyArray;
+
         public delegate*<BloggerUser, bool, void> Active_Setter;
 
         public delegate*<BloggerUser, int, void> CustomerCode_Setter;

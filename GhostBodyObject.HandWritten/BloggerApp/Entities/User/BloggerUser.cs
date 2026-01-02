@@ -71,7 +71,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 unsafe
                 {
                     var stringOffset = _data.Get<ArrayMapSmallEntry>(_vTable->CustomerName_MapEntryOffset);
-                    return new GhostString(this, _data.Slice((int)stringOffset.ArrayOffset, (int)stringOffset.ArrayLength));
+                    return new GhostString(this, _vTable->CustomerName_MapEntryIndex, _data.Slice((int)stringOffset.ArrayOffset, (int)stringOffset.ArrayLength));
                 }
             }
         }

@@ -34,6 +34,10 @@ namespace GhostBodyObject.Experiments.BabyBody
             Standalone->CustomerName_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
             Standalone->CustomerCodeTiers_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
 
+            // -------- Indexes
+            Standalone->CustomerName_MapEntryIndex = 0;
+            Standalone->CustomerCodeTiers_MapEntryIndex = 1;
+
             // -------- Function Pointers -------- //
             Standalone->Active_Setter = &Customer_VectorTables_Standalone.Active_Setter;
             Standalone->CustomerCode_Setter = &Customer_VectorTables_Standalone.CustomerCode_Setter;
@@ -102,6 +106,10 @@ namespace GhostBodyObject.Experiments.BabyBody
         public int CustomerName_MapEntryOffset;
 
         public int CustomerCodeTiers_MapEntryOffset;
+
+        public int CustomerName_MapEntryIndex;
+
+        public int CustomerCodeTiers_MapEntryIndex;
 
         // ---------------------------------------------------------
         // Setters
@@ -217,7 +225,7 @@ namespace GhostBodyObject.Experiments.BabyBody
                 unsafe
                 {
                     var stringOffset = _data.Get<ArrayMapSmallEntry>(_vTable->CustomerName_MapEntryOffset);
-                    return new GhostString(this, _data.Slice((int)stringOffset.ArrayOffset, (int)stringOffset.ArrayLength));
+                    return new GhostString(this, _data.Slice((int)stringOffset.ArrayOffset, _vTable->CustomerName_MapEntryOffset));
                 }
             }
         }

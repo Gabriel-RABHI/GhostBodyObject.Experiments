@@ -17,12 +17,13 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         static VectorTableRegistry()
         {
-            UpdateRegistry();
+            if (_versionToTable == null)
+                UpdateRegistry();
         }
 
         public static unsafe void UpdateRegistry()
         {
-            // 1. Search for all compatible Builder classes in the AppDomain
+            // -------- 1. Search for all compatible Builder classes in the AppDomain
             var validBuilders = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(assembly =>
                 {
@@ -67,7 +68,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
             if (validBuilders.Count == 0) return;
 
-            // 2. Determine if we need to expand the array
+            // -------- 2. Determine if we need to expand the array
             int maxFoundVersion = validBuilders.Max(x => x.Version);
 
             // Ensure _topVersion covers the new max (always growing)
@@ -76,13 +77,13 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 _topVersion = maxFoundVersion;
             }
 
-            // 3. Reallocate unmanaged memory to fit the new size
+            // -------- 3. Reallocate unmanaged memory to fit the new size
             // NativeMemory.Realloc handles NULL input (acts as Alloc) and copies data if moving
             nuint newSize = (nuint)(sizeof(VectorTableRecord) * _topVersion);
             void* newPtr = NativeMemory.Realloc(_versionToTable, newSize);
             _versionToTable = (VectorTableRecord*)newPtr;
 
-            // 4. Populate the table
+            // -------- 4. Populate the table
             foreach (var builder in validBuilders)
             {
                 // Invoke GetTableRecord()

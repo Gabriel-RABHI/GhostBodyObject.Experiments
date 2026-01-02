@@ -7,10 +7,11 @@ namespace GhostBodyObject.Experiments.BabyBody
     {
         private readonly IEntityBody _body;
         private readonly PinnedMemory<byte> _data;
+        private readonly int _arrayIndex;
 
         public int Length => _data.Length;
 
-        public GhostString(IEntityBody _body, PinnedMemory<byte> data)
+        public GhostString(IEntityBody _body, int _arrayIndex, PinnedMemory<byte> data)
         {
             _data = data;
         }

@@ -13,6 +13,10 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.OpenReadContext(repository))
             {
                 var user = new BloggerUser();
+
+                user.Active = true;
+                user.Active = false;
+
                 var txn = BloggerContext.Transaction;
                 using (BloggerContext.OpenReadContext(repository))
                 {

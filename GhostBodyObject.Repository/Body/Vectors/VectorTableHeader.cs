@@ -6,7 +6,7 @@ namespace GhostBodyObject.Repository.Body.Vectors
     public unsafe struct VectorTableHeader
     {
         [FieldOffset(0)]
-        public ushort TypeIdentifier;
+        public ushort TypeCombo;
 
         [FieldOffset(2)]
         public short ModelVersion;
@@ -15,15 +15,15 @@ namespace GhostBodyObject.Repository.Body.Vectors
         public bool ReadOnly;
 
         [FieldOffset(5)]
-        public bool Large;
+        public bool LargeArrays;
 
         [FieldOffset(8)]
-        public int ArrayMapOffset;
+        public int MinimalGhostSize;
 
         [FieldOffset(12)]
-        public int ArrayMapLength;
+        public int ArrayMapOffset;
 
         [FieldOffset(16)]
-        public int MinimalGhostSize;
+        public int ArrayMapLength;
     }
 }
