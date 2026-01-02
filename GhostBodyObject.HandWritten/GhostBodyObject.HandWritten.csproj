@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Blogger\Model\" />
-    <Folder Include="SimpleShop\Model\" />
-    <Folder Include="SimpleShop\" />
-    <Folder Include="SimpleShop\Repository\" />
+    <Folder Include="BloggerApp\Model\" />
+    <Folder Include="SimpleShopApp\Model\" />
+    <Folder Include="SimpleShopApp\" />
+    <Folder Include="SimpleShopApp\Repository\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,7 +2,7 @@
 using GhostBodyObject.HandWritten.Blogger.Entities;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 
-namespace GhostBodyObject.HandWritten.Tests.Blogger
+namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 {
     public class BloggerContextShould
     {
@@ -10,11 +10,11 @@ namespace GhostBodyObject.HandWritten.Tests.Blogger
         public void OpenAndAssignTransactions()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenContext(repository))
+            using (BloggerContext.OpenRead(repository))
             {
                 var user = new BloggerUser();
                 var txn = BloggerContext.Transaction;
-                using (BloggerContext.OpenContext(repository))
+                using (BloggerContext.OpenRead(repository))
                 {
                     var user2 = new BloggerUser();
                     var txn2 = BloggerContext.Transaction;
