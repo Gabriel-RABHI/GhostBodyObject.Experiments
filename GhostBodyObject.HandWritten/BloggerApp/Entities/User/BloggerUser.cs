@@ -62,7 +62,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             }
         }
 
-        public GhostString CustomerName
+        public GhostStringUtf16 FirstName
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -70,8 +70,8 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 GuardLocalScope();
                 unsafe
                 {
-                    var stringOffset = _data.Get<ArrayMapSmallEntry>(_vTable->CustomerName_MapEntryOffset);
-                    return new GhostString(this, _vTable->CustomerName_MapEntryIndex, _data.Slice((int)stringOffset.ArrayOffset, (int)stringOffset.ArrayLength));
+                    var stringOffset = _data.Get<ArrayMapSmallEntry>(_vTable->FirstName_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->First_MapEntryIndex, _data.Slice((int)stringOffset.ArrayOffset, (int)stringOffset.ArrayLength));
                 }
             }
         }

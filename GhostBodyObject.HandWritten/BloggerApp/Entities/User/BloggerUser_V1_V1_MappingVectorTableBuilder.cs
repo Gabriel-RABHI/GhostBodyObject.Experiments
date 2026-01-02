@@ -52,14 +52,16 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         {
             var vt = (BloggerUser_VectorTable*)NativeMemory.Alloc((nuint)sizeof(BloggerUser_VectorTable));
             var f = new GhostHeaderIncrementor();
+
+            // -------- FIELDS SEQUENCE -------- //
             vt->CreatedOn_FieldOffset = f.Push<DateTime>();      // CreatedOn : 40
             vt->CustomerCode_FieldOffset = f.Push<int>();        // CustomerCode : 48
             vt->Active_FieldOffset = f.Push<bool>();             // Active : 49
             f.Padd(4); // -> 52
-            vt->CustomerName_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->FirstName_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
             vt->CustomerCodeTiers_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
 
-            vt->CustomerName_MapEntryIndex = 0;
+            vt->First_MapEntryIndex = 0;
             vt->CustomerCodeTiers_MapEntryIndex = 1;
 
             // -------- STANDARD FIELDS -------- //
@@ -67,7 +69,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             vt->Std.ModelVersion = (short)SourceVersion;
             vt->Std.ReadOnly = false;
             vt->Std.LargeArrays = false;
-            vt->Std.ArrayMapOffset = vt->CustomerName_MapEntryOffset;
+            vt->Std.ArrayMapOffset = vt->FirstName_MapEntryOffset;
             vt->Std.ArrayMapLength = 2;
 
             // -------- LENGHT -------- //
@@ -82,7 +84,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             var vt = GetCommon();
 
             // -------- Function Pointers -------- //
-            vt->SwapAnyArray = &Initial_SwapAnyArray;
+            vt->Std.SwapAnyArray = &Initial_SwapAnyArray;
             vt->Active_Setter = &Initial_Active_Setter;
             vt->CustomerCode_Setter = &Initial_CustomerCode_Setter;
             vt->CreatedOn_Setter = &Initial_CreatedOn_Setter;
@@ -97,8 +99,8 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             return body;
         }
 
-        public static unsafe void Initial_SwapAnyArray(BloggerUser body, Memory<byte> src, int arrayIndex)
-            => Standalone_SwapAnyArray(InitialToStandalone(body), src, arrayIndex);
+        public static unsafe void Initial_SwapAnyArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
+            => InitialToStandalone(Unsafe.As<BloggerUser>(body)).SwapAnyArray(src, arrayIndex);
 
         public static unsafe void Initial_Active_Setter(BloggerUser body, bool value)
             => Standalone_Active_Setter(InitialToStandalone(body), value);
@@ -118,30 +120,15 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             var vt = GetCommon();
 
             // -------- Function Pointers -------- //
-            vt->SwapAnyArray = &Standalone_SwapAnyArray;
+            vt->Std.SwapAnyArray = &Standalone_SwapAnyArray;
             vt->Active_Setter = &Standalone_Active_Setter;
             vt->CustomerCode_Setter = &Standalone_CustomerCode_Setter;
             vt->CreatedOn_Setter = &Standalone_CreatedOn_Setter;
             return vt;
         }
 
-        public static unsafe void Standalone_SwapAnyArray(BloggerUser body, Memory<byte> src, int arrayIndex)
-        {
-            var union = Unsafe.As<BodyUnion>(body);
-            var _vt = (VectorTableHeader*)union._vTablePtr;
-            if (_vt->LargeArrays)
-            {
-                ArrayMapLargeEntry* mapEntry = (ArrayMapLargeEntry*)(union._data.Ptr + _vt->ArrayMapOffset + (arrayIndex * sizeof(ArrayMapLargeEntry)));
-                if (mapEntry->PhysicalSize != src.Length)
-                {
-
-                }
-                union._data = TransientGhostMemoryAllocator.Resize(union._data.Length);
-            } else
-            {
-
-            }
-        }
+        public static unsafe void Standalone_SwapAnyArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
+            => Unsafe.As<BloggerUser>(body).SwapAnyArray(src, arrayIndex);
 
         public static unsafe void Standalone_Active_Setter(BloggerUser body, bool value)
         {

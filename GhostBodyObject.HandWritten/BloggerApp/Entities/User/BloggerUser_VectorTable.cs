@@ -21,11 +21,12 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         // ---------------------------------------------------------
         // Array Map Offsets
         // ---------------------------------------------------------
-        public int CustomerName_MapEntryOffset;
+        public int FirstName_MapEntryOffset;
 
         public int CustomerCodeTiers_MapEntryOffset;
 
-        public int CustomerName_MapEntryIndex;
+        // -------- Indexes for quick access
+        public int First_MapEntryIndex;
 
         public int CustomerCodeTiers_MapEntryIndex;
 
@@ -33,7 +34,6 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         // ---------------------------------------------------------
         // Setters
         // ---------------------------------------------------------
-        public delegate*<BloggerUser, Memory<byte>, int, void> SwapAnyArray;
 
         public delegate*<BloggerUser, bool, void> Active_Setter;
 

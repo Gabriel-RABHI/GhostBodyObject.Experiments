@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using GhostBodyObject.Repository.Body.Contracts;
+using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Repository.Body.Vectors
 {
@@ -25,5 +26,8 @@ namespace GhostBodyObject.Repository.Body.Vectors
 
         [FieldOffset(16)]
         public int ArrayMapLength;
+
+        [FieldOffset(20)]
+        public delegate*<BodyUnion, ReadOnlySpan<byte>, int, void> SwapAnyArray;
     }
 }

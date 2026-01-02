@@ -134,10 +134,10 @@ namespace GhostBodyObject.Experiments.BabyBody
         int CustomerCode { get; set; }
 
         [EntityProperty(4)]
-        GhostString CustomerName { get; }
+        GhostStringUtf16 CustomerName { get; }
 
         [EntityProperty(5)]
-        GhostString CustomerCodeTiers { get; }
+        GhostStringUtf16 CustomerCodeTiers { get; }
 
         /*
         [FieldOffset(52)]
@@ -217,7 +217,7 @@ namespace GhostBodyObject.Experiments.BabyBody
             set => _vTable->Active_Setter(this, value);
         }
 
-        public GhostString CustomerName
+        public GhostStringUtf16 CustomerName
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -225,7 +225,8 @@ namespace GhostBodyObject.Experiments.BabyBody
                 unsafe
                 {
                     var stringOffset = _data.Get<ArrayMapSmallEntry>(_vTable->CustomerName_MapEntryOffset);
-                    return new GhostString(this, _data.Slice((int)stringOffset.ArrayOffset, _vTable->CustomerName_MapEntryOffset));
+                    return new GhostStringUtf16();
+                    //return new GhostString(this, _data.Slice((int)stringOffset.ArrayOffset, _vTable->CustomerName_MapEntryOffset), _vTable->Fir);
                 }
             }
         }

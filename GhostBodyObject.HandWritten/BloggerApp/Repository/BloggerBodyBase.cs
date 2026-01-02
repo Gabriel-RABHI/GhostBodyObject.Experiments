@@ -85,56 +85,281 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         /// shifted to accommodate the change. This shift respect the needed alignement. Arrays are sorted by value size.
         /// Callers should ensure that the source buffer is valid and that the index
         /// refers to an existing array in the Array Map.</remarks>
-        /// <param name="src">A memory buffer containing the new data to copy into the target array. The length of this buffer must match
+        /// <param name="src">A span containing the new data to copy into the target array. The length of this buffer must match
         /// the expected size for the array at the specified index.</param>
         /// <param name="arrayIndex">The zero-based index of the array to be updated.</param>
-        protected unsafe void SwapAnyArray(Memory<byte> src, int arrayIndex)
+        public unsafe void SwapAnyArray(ReadOnlySpan<byte> src, int arrayIndex)
         {
             // This method must move arrays taking care of alignements and offsets.
-            // To compute alignement, the arrays are sorted from largest to smallest entries values size.
-            // Align the next array to next array value soze, align all the nexts arrays correctly because the value size is decreasing for next arrays.
-            // It takes care of zero-length arrays as well.
+            // Arrays are sorted from largest to smallest value size: [8, 4, 4, 2, 2, 1, 1]
+            // Key insight: Once aligned to the next array's value size, all subsequent arrays
+            // are naturally aligned (since value sizes are decreasing).
+            // This allows a single block copy for all subsequent arrays.
             var _vt = (VectorTableHeader*)_vTablePtr;
             if (_vt->LargeArrays)
             {
-                ArrayMapLargeEntry* mapEntry = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset + (arrayIndex * sizeof(ArrayMapLargeEntry)));
-                // -------- Check that src lenght is a multiple of value size
-                if (src.Length % mapEntry->ValueSize != 0)
-                    throw new ArrayTypeMismatchException($"Array value size ({mapEntry->ValueSize}) and source array size ({src.Length}) missmatch.");
-                if (mapEntry->PhysicalSize == src.Length)
-                {
-                    // -------- Fit with actual reservation --------
-                    // if the lenght is 0, return
-                    // if not, copy the data at the current offset
-                    // all other arrays map entries remains unchanged
-                }
-                else
-                {
-                    // compute the physical array size difference
-                    var diff = 0;
+                SwapAnyArrayLarge(src, arrayIndex, _vt);
+            }
+            else
+            {
+                SwapAnyArraySmall(src, arrayIndex, _vt);
+            }
+        }
 
-                    if (diff > 0)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int AlignTo(int offset, int alignment)
+        {
+            if (alignment <= 1) return offset;
+            int mask = alignment - 1;
+            return (offset + mask) & ~mask;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private unsafe void SwapAnyArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        {
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = mapEntry->ValueSize;
+
+            // Check that src length is a multiple of value size
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = (int)mapEntry->ArrayOffset;
+            int arrayCount = _vt->ArrayMapLength;
+
+            if (currentPhysicalSize == src.Length)
+            {
+                // -------- Exact fit: just copy data --------
+                if (src.Length == 0)
+                    return;
+                fixed (byte* srcPtr = src)
+                {
+                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                }
+                return;
+            }
+
+            // -------- Size changed: need to shift subsequent arrays --------
+            int oldTotalSize = TotalSize;
+            int newArrayEnd = currentOffset + src.Length;
+            bool hasSubsequentArrays = arrayIndex + 1 < arrayCount;
+
+            if (!hasSubsequentArrays)
+            {
+                // Last array: just resize and copy
+                if (src.Length > currentPhysicalSize)
+                    TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
+                
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
                     {
-                        // -------- New data larger
-                        // resize buffer - be careful with alignement
-                        // update offsets in map entries
-                        // move the next arrays at end to liberate space
-                        // copy new data
-                        TransientGhostMemoryAllocator.Resize(ref _data, TotalSize + diff);
-                    } else
-                    {
-                        // -------- New data shorter
-                        // shift next arrays back - be careful with alignement
-                        // update offsets in map entries
-                        // copy new data
-                        TransientGhostMemoryAllocator.Resize(ref _data, TotalSize + diff);
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                     }
+                }
+                
+                if (src.Length < currentPhysicalSize)
+                    TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
+
+                mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+                return;
+            }
+
+            // Get next array info for alignment
+            ArrayMapLargeEntry* nextEntry = mapBase + arrayIndex + 1;
+            int nextValueSize = nextEntry->ValueSize;
+            int oldNextOffset = (int)nextEntry->ArrayOffset;
+            int tailLength = oldTotalSize - oldNextOffset;
+
+            // Align new position for subsequent arrays (all naturally aligned after this)
+            // delta == 0 is possible when sizes differ but alignment padding absorbs the difference
+            int newNextOffset = AlignTo(newArrayEnd, nextValueSize);
+            int delta = newNextOffset - oldNextOffset;
+
+            if (delta == 0)
+            {
+                // No shift needed, just copy new data
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
+                    {
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    }
+                }
+                mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+                return;
+            }
+
+            int newTotalSize = oldTotalSize + delta;
+
+            if (delta > 0)
+            {
+                // -------- Growing: resize first, then move tail backward (from end) --------
+                TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize);
+                mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                mapEntry = mapBase + arrayIndex;
+
+                // Move all subsequent arrays in one block (use memmove semantics for overlapping)
+                if (tailLength > 0)
+                {
+                    Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
                 }
             }
             else
             {
-
+                // -------- Shrinking: move tail forward first, then resize --------
+                if (tailLength > 0)
+                {
+                    Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                }
+                TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize);
+                mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                mapEntry = mapBase + arrayIndex;
             }
+
+            // Update all subsequent array offsets with uniform delta
+            for (int i = arrayIndex + 1; i < arrayCount; i++)
+            {
+                ArrayMapLargeEntry* entry = mapBase + i;
+                entry->ArrayOffset = (uint)((int)entry->ArrayOffset + delta);
+            }
+
+            // Copy new data
+            if (src.Length > 0)
+            {
+                fixed (byte* srcPtr = src)
+                {
+                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                }
+            }
+
+            mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private unsafe void SwapAnyArraySmall(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        {
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = (int)mapEntry->ValueSize;
+
+            // Check that src length is a multiple of value size
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = mapEntry->ArrayOffset;
+            int arrayCount = _vt->ArrayMapLength;
+
+            if (currentPhysicalSize == src.Length)
+            {
+                // -------- Exact fit: just copy data --------
+                if (src.Length == 0)
+                    return;
+                fixed (byte* srcPtr = src)
+                {
+                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                }
+                return;
+            }
+
+            // -------- Size changed: need to shift subsequent arrays --------
+            int oldTotalSize = TotalSize;
+            int newArrayEnd = currentOffset + src.Length;
+            bool hasSubsequentArrays = arrayIndex + 1 < arrayCount;
+
+            if (!hasSubsequentArrays)
+            {
+                // Last array: just resize and copy
+                if (src.Length > currentPhysicalSize)
+                    TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
+                
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
+                    {
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    }
+                }
+                
+                if (src.Length < currentPhysicalSize)
+                    TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
+
+                mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+                return;
+            }
+
+            // Get next array info for alignment
+            ArrayMapSmallEntry* nextEntry = mapBase + arrayIndex + 1;
+            int nextValueSize = (int)nextEntry->ValueSize;
+            int oldNextOffset = nextEntry->ArrayOffset;
+            int tailLength = oldTotalSize - oldNextOffset;
+
+            // Align new position for subsequent arrays (all naturally aligned after this)
+            // delta == 0 is possible when sizes differ but alignment padding absorbs the difference
+            int newNextOffset = AlignTo(newArrayEnd, nextValueSize);
+            int delta = newNextOffset - oldNextOffset;
+
+            if (delta == 0)
+            {
+                // No shift needed, just copy new data
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
+                    {
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    }
+                }
+                mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+                return;
+            }
+
+            int newTotalSize = oldTotalSize + delta;
+
+            if (delta > 0)
+            {
+                // -------- Growing: resize first, then move tail backward (from end) --------
+                TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize);
+                mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                mapEntry = mapBase + arrayIndex;
+
+                // Move all subsequent arrays in one block (use memmove semantics for overlapping)
+                if (tailLength > 0)
+                {
+                    Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                }
+            }
+            else
+            {
+                // -------- Shrinking: move tail forward first, then resize --------
+                if (tailLength > 0)
+                {
+                    Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                }
+                TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize);
+                mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                mapEntry = mapBase + arrayIndex;
+            }
+
+            // Update all subsequent array offsets with uniform delta
+            for (int i = arrayIndex + 1; i < arrayCount; i++)
+            {
+                ArrayMapSmallEntry* entry = mapBase + i;
+                entry->ArrayOffset = (ushort)(entry->ArrayOffset + delta);
+            }
+
+            // Copy new data
+            if (src.Length > 0)
+            {
+                fixed (byte* srcPtr = src)
+                {
+                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                }
+            }
+
+            mapEntry->ArrayLength = (uint)(src.Length / valueSize);
         }
     }
 }
