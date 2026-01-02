@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Blogger\Model\" />
+    <Folder Include="SimpleShop\Model\" />
+    <Folder Include="SimpleShop\" />
+    <Folder Include="SimpleShop\Repository\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GhostBodyObject.Repository\GhostBodyObject.Repository.csproj" />
+  </ItemGroup>
+
+</Project>

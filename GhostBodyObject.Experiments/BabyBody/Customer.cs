@@ -34,7 +34,6 @@ namespace GhostBodyObject.Experiments.BabyBody
             Standalone->CustomerCodeTiers_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
 
             // -------- Function Pointers -------- //
-            Standalone->Std.SwapAnyArray = &Customer_VectorTables_Standalone.SwapAnyArray;
             Standalone->Active_Setter = &Customer_VectorTables_Standalone.Active_Setter;
             Standalone->CustomerCode_Setter = &Customer_VectorTables_Standalone.CustomerCode_Setter;
             Standalone->CreatedOn_Setter = &Customer_VectorTables_Standalone.CreatedOn_Setter;

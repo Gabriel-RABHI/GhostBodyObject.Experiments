@@ -2,7 +2,7 @@
 {
     public enum SegmentImplementationType : int
     {
-        InMemory = 0,
-        MemoryMappedFile = 1
+        LOHPinnedMemory = 0,
+        ProtectedMemoryMappedFile = 1
     }
 }

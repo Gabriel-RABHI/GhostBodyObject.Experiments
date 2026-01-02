@@ -13,12 +13,18 @@ namespace GhostBodyObject.Repository.Repository
 {
     public class GhostRepository
     {
+        /// <summary>
+        /// The underlying Memory Segment Store where Ghost data is stored.
+        /// </summary>
         private readonly MemorySegmentStore _store;
+        /// <summary>
+        /// The ghost index that reference memory segment.
+        /// </summary>
         private readonly RepositoryGhostIndex<MemorySegmentStore> _index;
         private readonly List<WeakReference<RepositoryTransaction>> _transactions;
         private readonly IBodyFactory[] _bodyFactories;
 
-        public GhostRepository(SegmentImplementationType segmentType = SegmentImplementationType.InMemory, string path = default)
+        public GhostRepository(SegmentImplementationType segmentType = SegmentImplementationType.LOHPinnedMemory, string path = default)
         {
             _store = new MemorySegmentStore(segmentType);
             _index = new RepositoryGhostIndex<MemorySegmentStore>(_store);
@@ -32,14 +38,14 @@ namespace GhostBodyObject.Repository.Repository
         // -----------------------------------------------------------------------------
 
         // TODO : to replace with a struct Enumerator to avoid allocations.
-        public IEnumerable<TBody> EnumerateGhostTable<TBody>(ushort typeCombo, ulong txnId)
+        protected IEnumerable<TBody> EnumerateGhostTable<TBody>(ushort typeCombo, ulong txnId)
             where TBody : IEntityBody
         {
             // -------- For Principle -------- //
             throw new NotSupportedException();
         }
 
-        public TBody Retreive<TBody>(GhostId id, ulong txnId)
+        protected TBody Retreive<TBody>(GhostId id, ulong txnId)
             where TBody : IEntityBody
         {
             // -------- For Principle -------- //

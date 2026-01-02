@@ -28,7 +28,30 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void DecrementSegmentReferenceCount(int segmentId)
         {
-            _segmentHolders[segmentId].DecrementReferenceCount();
+            if (_segmentHolders[segmentId].DecrementReferenceCount())
+            {
+                RebuildSegmentHolders();
+            }
+        }
+
+        public void RebuildSegmentHolders()
+        {
+            var newHolders = new MemorySegmentHolder[_segmentHolders.Length];
+            for (int i = 0; i < _segmentHolders.Length; i++)
+            {
+                if (_segmentHolders[i] != null && _segmentHolders[i].ReferenceCount > 0)
+                    newHolders[i] = _segmentHolders[i];
+            }
+        }
+
+        /// <summary>
+        /// Gets an array containing all current memory segment holders. Is used by Transactions to keeo segments alive.
+        /// </summary>
+        /// <returns>An array of <see cref="MemorySegmentHolder"/> objects representing the current memory segment holders. The
+        /// array may be empty if no holders are present.</returns>
+        public MemorySegmentHolder[] GetHolders()
+        {
+            return _segmentHolders;
         }
 
         public int CreateSegment(int capacity)

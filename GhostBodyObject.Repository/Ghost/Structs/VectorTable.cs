@@ -24,8 +24,5 @@ namespace GhostBodyObject.Experiments.BabyBody
 
         [FieldOffset(12)]
         public int ArrayMapLength;
-
-        [FieldOffset(16)]
-        public delegate*<Customer, Memory<byte>, int, void> SwapAnyArray;
     }
 }

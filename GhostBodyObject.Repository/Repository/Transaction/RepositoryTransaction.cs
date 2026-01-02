@@ -6,19 +6,30 @@ using System.Text;
 
 namespace GhostBodyObject.Repository.Repository.Transaction
 {
-    internal class RepositoryTransaction
+    public class RepositoryTransaction
     {
         private readonly GhostRepository _repository;
+        private readonly bool _isReadOnly;
+
+        public RepositoryTransaction(GhostRepository repository, bool isReadOnly)
+        {
+            _repository = repository;
+            _isReadOnly = isReadOnly;
+        }
+
+        public bool IsReadOnly => _isReadOnly;
+
+        public volatile bool IsBusy;
 
         // TODO : to replace with a struct Enumerator to avoid allocations.
-        public IEnumerable<TBody> EnumerateGhostTable<TBody>(ushort typeCombo, ulong txnId)
+        protected IEnumerable<TBody> EnumerateGhostTable<TBody>(ushort typeCombo, ulong txnId)
             where TBody : IEntityBody
         {
             // -------- For Principle -------- //
             throw new NotSupportedException();
         }
 
-        public TBody Retreive<TBody>(GhostId id, ulong txnId)
+        protected TBody Retreive<TBody>(GhostId id, ulong txnId)
             where TBody : IEntityBody
         {
             // -------- For Principle -------- //
