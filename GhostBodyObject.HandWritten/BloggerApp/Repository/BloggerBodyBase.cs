@@ -1,13 +1,24 @@
-﻿using System.Runtime.CompilerServices;
+﻿using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Repository.Transaction;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.HandWritten.Blogger.Repository
 {
     // ---------------------------------------------------------
     // 3. The Base Entity
     // ---------------------------------------------------------
-    public abstract class BloggerBodyBase
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 32)]
+    public abstract class BloggerBodyBase : IEntityBody
     {
-        private readonly BloggerTransaction _ownerTransaction;
+        [FieldOffset(0)]
+        protected BloggerTransaction _ownerTransaction;
+
+        [FieldOffset(8)]
+        protected IntPtr _vTablePtr;
+
+        [FieldOffset(16)]
+        protected PinnedMemory<byte> _data;
 
         public BloggerTransaction Transaction => _ownerTransaction;
 

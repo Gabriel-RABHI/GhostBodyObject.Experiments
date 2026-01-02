@@ -1,6 +1,6 @@
 ﻿using GhostBodyObject.HandWritten.Blogger;
-using GhostBodyObject.HandWritten.Blogger.Entities;
 using GhostBodyObject.HandWritten.Blogger.Repository;
+using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 
 namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 {
@@ -10,11 +10,11 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         public void OpenAndAssignTransactions()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenRead(repository))
+            using (BloggerContext.OpenReadContext(repository))
             {
                 var user = new BloggerUser();
                 var txn = BloggerContext.Transaction;
-                using (BloggerContext.OpenRead(repository))
+                using (BloggerContext.OpenReadContext(repository))
                 {
                     var user2 = new BloggerUser();
                     var txn2 = BloggerContext.Transaction;
@@ -23,6 +23,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     Assert.True(user.Transaction != txn2);
                     Assert.True(user2.Transaction != txn);
                     Assert.True(user2.Transaction == txn2);
+
                     BloggerContext.Transaction.Commit();
                 }
                 Assert.True(BloggerContext.Transaction == txn);

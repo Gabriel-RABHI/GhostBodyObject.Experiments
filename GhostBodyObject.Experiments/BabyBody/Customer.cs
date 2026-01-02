@@ -2,6 +2,7 @@
 using GhostBodyObject.Common.Objects;
 using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Body.Vectors;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using System;
@@ -84,7 +85,7 @@ namespace GhostBodyObject.Experiments.BabyBody
         // ---------------------------------------------------------
         // Standard Fields
         // ---------------------------------------------------------
-        public VectorTable Std;
+        public VectorTableHeader Std;
 
         // ---------------------------------------------------------
         // Value Field Offsets

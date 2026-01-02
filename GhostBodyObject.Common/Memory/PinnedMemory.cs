@@ -147,6 +147,32 @@ public readonly unsafe struct PinnedMemory<T> : IEquatable<PinnedMemory<T>> wher
         => *(T*)(_ptr + offset);
 
     /// <summary>
+    /// Writes a value of the specified struct type at the given byte offset from the base pointer.
+    /// </summary>
+    /// <remarks>This method performs an unsafe write operation directly to memory. The caller must ensure
+    /// that the offset is within the bounds of the allocated memory region and that the memory is properly aligned for
+    /// the type T. Incorrect usage may result in data corruption or application crashes.</remarks>
+    /// <typeparam name="T">The value type to write. Must be an unmanaged struct.</typeparam>
+    /// <param name="offset">The byte offset from the base pointer at which to write the value.</param>
+    /// <param name="value">The value to write at the specified offset.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe void Set<T>(T value) where T : struct
+        => *(T*)_ptr = value;
+
+    /// <summary>
+    /// Reads a value of type <typeparamref name="T"/> from the underlying memory at the specified byte offset.
+    /// </summary>
+    /// <remarks>The caller is responsible for ensuring that the offset is within the bounds of the underlying
+    /// memory and that the memory is properly aligned for the type <typeparamref name="T"/>. Reading from an invalid
+    /// offset or with incorrect alignment may result in undefined behavior.</remarks>
+    /// <typeparam name="T">The value type to read from memory. Must be an unmanaged struct.</typeparam>
+    /// <param name="offset">The zero-based byte offset from the start of the memory region at which to read the value.</param>
+    /// <returns>The value of type <typeparamref name="T"/> read from the specified offset in memory.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe T Get<T>() where T : struct
+        => *(T*)_ptr;
+
+    /// <summary>
     /// Writes the contents of the specified value type array to the underlying memory at the given byte offset.
     /// </summary>
     /// <remarks>The method copies the entire contents of the source array into the underlying memory starting

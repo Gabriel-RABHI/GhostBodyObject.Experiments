@@ -1,14 +1,12 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace GhostBodyObject.Experiments.BabyBody
+namespace GhostBodyObject.Repository.Body.Vectors
 {
-
-
     [StructLayout(LayoutKind.Explicit)]
-    public unsafe struct VectorTable
+    public unsafe struct VectorTableHeader
     {
         [FieldOffset(0)]
-        public short TypeIdentifier;
+        public ushort TypeIdentifier;
 
         [FieldOffset(2)]
         public short ModelVersion;
@@ -24,5 +22,8 @@ namespace GhostBodyObject.Experiments.BabyBody
 
         [FieldOffset(12)]
         public int ArrayMapLength;
+
+        [FieldOffset(16)]
+        public int MinimalGhostSize;
     }
 }

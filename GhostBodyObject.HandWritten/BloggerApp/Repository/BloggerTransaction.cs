@@ -1,4 +1,5 @@
-﻿using GhostBodyObject.HandWritten.Blogger.Entities;
+﻿using GhostBodyObject.HandWritten.BloggerApp.Entities.Post;
+using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.Repository.Repository.Transaction;
 
 namespace GhostBodyObject.HandWritten.Blogger.Repository

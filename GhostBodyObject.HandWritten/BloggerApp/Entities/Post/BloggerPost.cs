@@ -1,12 +1,9 @@
 ﻿using GhostBodyObject.HandWritten.Blogger.Repository;
 using System.Runtime.CompilerServices;
 
-namespace GhostBodyObject.HandWritten.Blogger.Entities
+namespace GhostBodyObject.HandWritten.BloggerApp.Entities.Post
 {
-    // ---------------------------------------------------------
-    // 4. The Customer Entity (User Code)
-    // ---------------------------------------------------------
-    public sealed class BloggerUser : BloggerBodyBase
+    public sealed class BloggerPost : BloggerBodyBase
     {
         private string _name;
         private int _age;

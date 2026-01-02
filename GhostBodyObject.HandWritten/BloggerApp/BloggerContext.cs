@@ -15,7 +15,7 @@ namespace GhostBodyObject.HandWritten.Blogger
         private static void OnContextChanged(AsyncLocalValueChangedArgs<BloggerTransaction?> args)
             => FastCache = args.CurrentValue;
 
-        public static IBloggerScope OpenRead(BloggerRepository repository, bool readOnly = false)
+        public static IBloggerScope OpenReadContext(BloggerRepository repository, bool readOnly = false)
         {
             var parent = FastCache;
             var newToken = new BloggerTransaction(repository, parent);
