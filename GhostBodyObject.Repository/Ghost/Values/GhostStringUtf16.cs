@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace GhostBodyObject.Experiments.BabyBody
+namespace GhostBodyObject.Repository
 {
     /// <summary>
     /// A ref struct that wraps UTF-16 string data stored in pinned memory, providing string-like semantics

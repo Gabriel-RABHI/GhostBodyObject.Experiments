@@ -21,6 +21,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 {
                     user.FirstName = "John - " + i;
                 }
+
+                user.FirstName.LastIndexOf("o");
                 /*
                 for (int i = 0; i < 200_000_000; i++)
                 {

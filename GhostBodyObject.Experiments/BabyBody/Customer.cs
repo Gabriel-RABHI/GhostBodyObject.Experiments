@@ -1,6 +1,7 @@
 ﻿using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Common.Objects;
 using GhostBodyObject.Common.SpinLocks;
+using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Body.Vectors;
 using GhostBodyObject.Repository.Ghost.Constants;

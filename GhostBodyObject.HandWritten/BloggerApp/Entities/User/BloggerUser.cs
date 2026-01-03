@@ -1,6 +1,6 @@
 ﻿using GhostBodyObject.Common.Memory;
-using GhostBodyObject.Experiments.BabyBody;
 using GhostBodyObject.HandWritten.Blogger.Repository;
+using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
 using System.Runtime.CompilerServices;
