@@ -165,7 +165,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
-                for (int i = 0; i < COUNT * 10; i++)
+                for (int i = 0; i < COUNT; i++)
                 {
                     var user = new BloggerUser();
                     var istring = i.ToString();
@@ -181,7 +181,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                     user.Hobbies = "American Cinema" + istring;
                     user.LastName = "Travolta" + istring;
                     user.Presentation = "One of the most iconic actor." + istring;
-                    users.Add(new BloggerUser());
+                    users.Add(user);
                 }
                 RunGCCollect("Collect #1 retainned BloggerUser.");
                 RunGCCollect("Collect #2 retainned BloggerUser.");
@@ -196,7 +196,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             Thread.Sleep(1000);
 
             var pocousers = new List<UserPOCO>();
-            for (int i = 0; i < COUNT * 10; i++)
+            for (int i = 0; i < COUNT; i++)
             {
                 var user = new UserPOCO();
                 var istring = i.ToString();
@@ -212,11 +212,13 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                 user.Hobbies = "American Cinema" + istring;
                 user.LastName = "Travolta" + istring;
                 user.Presentation = "One of the most iconic actor." + istring;
-                pocousers.Add(new UserPOCO());
+                pocousers.Add(user);
             }
             RunGCCollect("Collect #1 retainned UserPOCO.");
             RunGCCollect("Collect #2 retainned UserPOCO.");
             Console.WriteLine("Done." + pocousers.Count);
+
+            Thread.Sleep(10000);
 
             pocousers.Clear();
 
