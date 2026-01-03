@@ -114,7 +114,8 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             return (offset + mask) & ~mask;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe void SwapAnyArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
         {
             ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
@@ -149,10 +150,8 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             if (!hasSubsequentArrays)
             {
                 // Last array: just resize and copy
-                if (src.Length > currentPhysicalSize)
+                if (src.Length > currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
                 {
-                    TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
-                    // Re-fetch pointers after potential reallocation
                     mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
                     mapEntry = mapBase + arrayIndex;
                 }
@@ -165,10 +164,8 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                     }
                 }
                 
-                if (src.Length < currentPhysicalSize)
+                if (src.Length < currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
                 {
-                    TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
-                    // Re-fetch pointers after potential reallocation
                     mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
                     mapEntry = mapBase + arrayIndex;
                 }
@@ -207,10 +204,11 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             if (delta > 0)
             {
                 // -------- Growing: resize first, then move tail backward (from end) --------
-                TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize);
-                mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
-                mapEntry = mapBase + arrayIndex;
-
+                if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                {
+                    mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
                 // Move all subsequent arrays in one block (use memmove semantics for overlapping)
                 if (tailLength > 0)
                 {
@@ -221,12 +219,12 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             {
                 // -------- Shrinking: move tail forward first, then resize --------
                 if (tailLength > 0)
-                {
                     Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                {
+                    mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
                 }
-                TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize);
-                mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
-                mapEntry = mapBase + arrayIndex;
             }
 
             // Update all subsequent array offsets with uniform delta
@@ -248,7 +246,8 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             mapEntry->ArrayLength = (uint)(src.Length / valueSize);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe void SwapAnyArraySmall(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
         {
             ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
@@ -283,12 +282,10 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             if (!hasSubsequentArrays)
             {
                 // Last array: just resize and copy
-                if (src.Length > currentPhysicalSize)
+                if (src.Length > currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
                 {
-                    TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
-                    // Re-fetch pointers after potential reallocation
-                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
-                    mapEntry = mapBase + arrayIndex;
+                        mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapEntry = mapBase + arrayIndex;
                 }
                 
                 if (src.Length > 0)
@@ -299,12 +296,10 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                     }
                 }
                 
-                if (src.Length < currentPhysicalSize)
+                if (src.Length < currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
                 {
-                    TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
-                    // Re-fetch pointers after potential reallocation
-                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
-                    mapEntry = mapBase + arrayIndex;
+                        mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapEntry = mapBase + arrayIndex;
                 }
 
                 mapEntry->ArrayLength = (uint)(src.Length / valueSize);
@@ -341,9 +336,11 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             if (delta > 0)
             {
                 // -------- Growing: resize first, then move tail backward (from end) --------
-                TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize);
-                mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
-                mapEntry = mapBase + arrayIndex;
+                if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                {
+                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
 
                 // Move all subsequent arrays in one block (use memmove semantics for overlapping)
                 if (tailLength > 0)
@@ -358,9 +355,11 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                 {
                     Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
                 }
-                TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize);
-                mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
-                mapEntry = mapBase + arrayIndex;
+                if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                {
+                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
             }
 
             // Update all subsequent array offsets with uniform delta

@@ -51,19 +51,20 @@ namespace GhostBodyObject.Common.Memory
         /// </summary>
         /// <param name="block">The current memory block reference (will be updated).</param>
         /// <param name="newSize">The new required size.</param>
-        public static unsafe void Resize(ref PinnedMemory<byte> block, int newSize)
+        /// <returns>True if the memory block base address changed (reallocation occurred), false otherwise.</returns>
+        public static unsafe bool Resize(ref PinnedMemory<byte> block, int newSize)
         {
             if (newSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(newSize));
             if (block.IsEmpty)
             {
                 block = Allocate(newSize);
-                return;
+                return true; // Address changed (was empty, now allocated)
             }
             if (newSize == 0)
             {
                 block = PinnedMemory<byte>.Empty;
-                return;
+                return true; // Address changed (was allocated, now empty)
             }
 
             // -------- Get Underlying Array info
@@ -104,7 +105,7 @@ namespace GhostBodyObject.Common.Memory
                         // Reuse existing array
                         // Dedicated blocks always start at offset 0
                         block = new PinnedMemory<byte>(segment, 0, newSize);
-                        return;
+                        return false; // Same base address
                     }
                 }
                 else
@@ -126,7 +127,7 @@ namespace GhostBodyObject.Common.Memory
                         // Reuse existing block (slice)
                         // We must preserve the pointer (offset)
                         block = new PinnedMemory<byte>(block.MemoryOwner, block.Ptr, newSize);
-                        return;
+                        return false; // Same base address
                     }
                 }
             }
@@ -137,6 +138,7 @@ namespace GhostBodyObject.Common.Memory
             var bytesToCopy = Math.Min(block.Length, newSize);
             block.Slice(0, bytesToCopy).CopyTo(newBlock);
             block = newBlock;
+            return true; // Address changed
         }
     }
 }

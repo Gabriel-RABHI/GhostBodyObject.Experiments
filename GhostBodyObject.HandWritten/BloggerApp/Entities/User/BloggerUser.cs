@@ -414,7 +414,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 }
             }
         }
-        
+
 
         public string FirstNameString
         {
@@ -442,5 +442,47 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 }
             }
         }
+
+        /*
+        private bool _mapped = false, _readOnly = false;
+        private void ToStandalone() { }
+
+        public string FirstNameStringInline
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                //GuardLocalScope();
+                unsafe
+                {
+                    var stringOffset = _data.Get<ArrayMapSmallEntry>(_vTable->FirstName_MapEntryOffset);
+                    return new string((char*)this._data.Ptr, stringOffset.ArrayOffset, (int)stringOffset.ArrayLength / 2);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                
+                using (GuardWriteScope())
+                {
+                    unsafe
+                    {
+                        if (_mapped)
+                        {
+                            if (_readOnly)
+                                throw new InvalidOperationException("Cannot modify a read-only Ghost object.");
+                            else
+                                ToStandalone();
+                        }
+                        if (_vTable->FirstName_MapEntryOffset > 0)
+                        {
+                            _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->FirstName_MapEntryIndex);
+                        }
+                    }
+                }
+            }
+        }
+        */
     }
 }
