@@ -96,6 +96,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             var union = Unsafe.As<BodyUnion>(body);
             union._data = TransientGhostMemoryAllocator.Allocate(union._data.Length);
             union._vTablePtr = (nint)_record.Standalone;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->FirstName_MapEntryOffset) = new ArrayMapSmallEntry() { ArrayLength = 0, ValueSize = sizeof(char), ArrayOffset = (ushort)body._vTable->Std.MinimalGhostSize };
             return body;
         }
 
