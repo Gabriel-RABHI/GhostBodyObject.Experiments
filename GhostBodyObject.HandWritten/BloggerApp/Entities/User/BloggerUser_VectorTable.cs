@@ -12,7 +12,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         // ---------------------------------------------------------
         // Value Field Offsets
         // ---------------------------------------------------------
-        public int CreatedOn_FieldOffset;
+        public int BirthDate_FieldOffset;
 
         public int CustomerCode_FieldOffset;
 
@@ -39,6 +39,6 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public delegate*<BloggerUser, int, void> CustomerCode_Setter;
 
-        public delegate*<BloggerUser, DateTime, void> CreatedOn_Setter;
+        public delegate*<BloggerUser, DateTime, void> BirthDate_Setter;
     }
 }

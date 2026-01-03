@@ -54,7 +54,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             var f = new GhostHeaderIncrementor();
 
             // -------- FIELDS SEQUENCE -------- //
-            vt->CreatedOn_FieldOffset = f.Push<DateTime>();      // CreatedOn : 40
+            vt->BirthDate_FieldOffset = f.Push<DateTime>();      // CreatedOn : 40
             vt->CustomerCode_FieldOffset = f.Push<int>();        // CustomerCode : 48
             vt->Active_FieldOffset = f.Push<bool>();             // Active : 49
             f.Padd(4); // -> 52
@@ -87,7 +87,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             vt->Std.SwapAnyArray = &Initial_SwapAnyArray;
             vt->Active_Setter = &Initial_Active_Setter;
             vt->CustomerCode_Setter = &Initial_CustomerCode_Setter;
-            vt->CreatedOn_Setter = &Initial_CreatedOn_Setter;
+            vt->BirthDate_Setter = &Initial_BirthDate_Setter;
             return vt;
         }
 
@@ -107,12 +107,10 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             => Standalone_Active_Setter(InitialToStandalone(body), value);
 
         public static unsafe void Initial_CustomerCode_Setter(BloggerUser body, int value)
-        {
-        }
+            => Standalone_CustomerCode_Setter(InitialToStandalone(body), value);
 
-        public static unsafe void Initial_CreatedOn_Setter(BloggerUser body, DateTime value)
-        {
-        }
+        public static unsafe void Initial_BirthDate_Setter(BloggerUser body, DateTime value)
+            => Standalone_BirthDate_Setter(InitialToStandalone(body), value);
         #endregion
 
         #region STANDALONE
@@ -124,7 +122,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             vt->Std.SwapAnyArray = &Standalone_SwapAnyArray;
             vt->Active_Setter = &Standalone_Active_Setter;
             vt->CustomerCode_Setter = &Standalone_CustomerCode_Setter;
-            vt->CreatedOn_Setter = &Standalone_CreatedOn_Setter;
+            vt->BirthDate_Setter = &Standalone_BirthDate_Setter;
             return vt;
         }
 
@@ -132,17 +130,13 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             => Unsafe.As<BloggerUser>(body).SwapAnyArray(src, arrayIndex);
 
         public static unsafe void Standalone_Active_Setter(BloggerUser body, bool value)
-        {
-            Unsafe.As<BodyUnion>(body)._data.Set<bool>(body._vTable->Active_FieldOffset, value);
-        }
+            => Unsafe.As<BodyUnion>(body)._data.Set<bool>(body._vTable->Active_FieldOffset, value);
 
         public static unsafe void Standalone_CustomerCode_Setter(BloggerUser body, int value)
-        {
-        }
+            => Unsafe.As<BodyUnion>(body)._data.Set<int>(body._vTable->CustomerCode_FieldOffset, value);
 
-        public static unsafe void Standalone_CreatedOn_Setter(BloggerUser body, DateTime value)
-        {
-        }
+        public static unsafe void Standalone_BirthDate_Setter(BloggerUser body, DateTime value)
+            => Unsafe.As<BodyUnion>(body)._data.Set<DateTime>(body._vTable->BirthDate_FieldOffset, value);
         #endregion
     }
 }

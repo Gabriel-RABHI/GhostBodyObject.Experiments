@@ -44,6 +44,46 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             }
         }
 
+        public unsafe DateTime BirthDate
+
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                GuardLocalScope();
+                return _data.Get<DateTime>(_vTable->BirthDate_FieldOffset);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                using (GuardWriteScope())
+                {
+                    _vTable->BirthDate_Setter(this, value);
+                }
+            }
+        }
+
+        public unsafe int CustomerCode
+
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                GuardLocalScope();
+                return _data.Get<int>(_vTable->CustomerCode_FieldOffset);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                using (GuardWriteScope())
+                {
+                    _vTable->CustomerCode_Setter(this, value);
+                }
+            }
+        }
+
         public unsafe bool Active
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -93,57 +133,57 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         
         public GhostStringUtf16 LastName
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 Pseudonyme
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 Presentation
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 City
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 Country
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 CompanyName
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 Address1
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 Address2
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 Address3
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 ZipCode
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
 
         public GhostStringUtf16 Hobbies
         {
-            get => new GhostStringUtf16(); set;
+            get => throw new NotImplementedException(); set => throw new NotImplementedException();
         }
         
 
