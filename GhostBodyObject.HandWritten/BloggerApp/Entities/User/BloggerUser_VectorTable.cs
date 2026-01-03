@@ -23,12 +23,52 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         // ---------------------------------------------------------
         public int FirstName_MapEntryOffset;
 
-        public int CustomerCodeTiers_MapEntryOffset;
+        public int LastName_MapEntryOffset;
+
+        public int Pseudonyme_MapEntryOffset;
+
+        public int Presentation_MapEntryOffset;
+
+        public int City_MapEntryOffset;
+
+        public int Country_MapEntryOffset;
+
+        public int CompanyName_MapEntryOffset;
+
+        public int Address1_MapEntryOffset;
+
+        public int Address2_MapEntryOffset;
+
+        public int Address3_MapEntryOffset;
+
+        public int ZipCode_MapEntryOffset;
+
+        public int Hobbies_MapEntryOffset;
 
         // -------- Indexes for quick access
-        public int First_MapEntryIndex;
+        public int FirstName_MapEntryIndex;
 
-        public int CustomerCodeTiers_MapEntryIndex;
+        public int LastName_MapEntryIndex;
+
+        public int Pseudonyme_MapEntryIndex;
+
+        public int Presentation_MapEntryIndex;
+
+        public int City_MapEntryIndex;
+
+        public int Country_MapEntryIndex;
+
+        public int CompanyName_MapEntryIndex;
+
+        public int Address1_MapEntryIndex;
+
+        public int Address2_MapEntryIndex;
+
+        public int Address3_MapEntryIndex;
+
+        public int ZipCode_MapEntryIndex;
+
+        public int Hobbies_MapEntryIndex;
 
 
         // ---------------------------------------------------------

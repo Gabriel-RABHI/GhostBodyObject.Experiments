@@ -12,7 +12,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
     // ---------------------------------------------------------
     // 4. The Customer Entity (User Code)
     // ---------------------------------------------------------
-    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 32)]
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
     public class BloggerUser : BloggerBodyBase
     {
         public int ModelVersion => 1;
@@ -108,82 +108,311 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                GuardLocalScope();
                 unsafe
                 {
+                    GuardLocalScope();
                     var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->FirstName_MapEntryOffset);
-                    // PhysicalSize = ArrayLength * ValueSize (in bytes)
-                    return new GhostStringUtf16(this, _vTable->First_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                    return new GhostStringUtf16(this, _vTable->FirstName_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
                 }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                using (GuardWriteScope())
+                unsafe
                 {
-                    unsafe
+                    using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->First_MapEntryIndex);
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->FirstName_MapEntryIndex);
                     }
                 }
             }
         }
 
-        
         public GhostStringUtf16 LastName
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->LastName_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->LastName_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->LastName_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 Pseudonyme
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->Pseudonyme_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->Pseudonyme_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Pseudonyme_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 Presentation
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->Presentation_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->Presentation_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Presentation_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 City
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->City_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->City_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->City_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 Country
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->Country_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->Country_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Country_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 CompanyName
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->CompanyName_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->CompanyName_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->CompanyName_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 Address1
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->Address1_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->Address1_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Address1_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 Address2
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->Address2_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->Address2_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Address2_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 Address3
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->Address3_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->Address3_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Address3_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 ZipCode
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->ZipCode_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->ZipCode_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->ZipCode_MapEntryIndex);
+                    }
+                }
+            }
         }
 
         public GhostStringUtf16 Hobbies
         {
-            get => throw new NotImplementedException(); set => throw new NotImplementedException();
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                unsafe
+                {
+                    GuardLocalScope();
+                    var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->Hobbies_MapEntryOffset);
+                    return new GhostStringUtf16(this, _vTable->Hobbies_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                unsafe
+                {
+                    using (GuardWriteScope())
+                    {
+                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Hobbies_MapEntryIndex);
+                    }
+                }
+            }
         }
         
 
@@ -208,7 +437,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                     unsafe
                     {
                         var union = Unsafe.As<BodyUnion>(this);
-                        _vTable->Std.SwapAnyArray(union, MemoryMarshal.AsBytes(value.AsSpan()), _vTable->First_MapEntryIndex);
+                        _vTable->Std.SwapAnyArray(union, MemoryMarshal.AsBytes(value.AsSpan()), _vTable->FirstName_MapEntryIndex);
                     }
                 }
             }

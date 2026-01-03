@@ -2,7 +2,7 @@
 
 namespace GhostBodyObject.Repository.Body.Contracts
 {
-    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 32)]
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
     public class BodyUnion : IEntityBody
     {
         [FieldOffset(0)]

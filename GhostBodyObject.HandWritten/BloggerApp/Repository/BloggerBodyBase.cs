@@ -12,7 +12,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
     // ---------------------------------------------------------
     // 3. The Base Entity
     // ---------------------------------------------------------
-    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 32)]
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
     public abstract class BloggerBodyBase : IEntityBody
     {
         [FieldOffset(0)]
@@ -150,7 +150,12 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             {
                 // Last array: just resize and copy
                 if (src.Length > currentPhysicalSize)
+                {
                     TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
+                    // Re-fetch pointers after potential reallocation
+                    mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
                 
                 if (src.Length > 0)
                 {
@@ -161,7 +166,12 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                 }
                 
                 if (src.Length < currentPhysicalSize)
+                {
                     TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
+                    // Re-fetch pointers after potential reallocation
+                    mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
 
                 mapEntry->ArrayLength = (uint)(src.Length / valueSize);
                 return;
@@ -274,7 +284,12 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             {
                 // Last array: just resize and copy
                 if (src.Length > currentPhysicalSize)
+                {
                     TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
+                    // Re-fetch pointers after potential reallocation
+                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
                 
                 if (src.Length > 0)
                 {
@@ -285,7 +300,12 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                 }
                 
                 if (src.Length < currentPhysicalSize)
+                {
                     TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd);
+                    // Re-fetch pointers after potential reallocation
+                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
 
                 mapEntry->ArrayLength = (uint)(src.Length / valueSize);
                 return;

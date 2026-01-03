@@ -17,5 +17,11 @@
             .PrintToConsole($"GC.Collect")
             .PrintSpace();
         }
+
+        [BruteForceBenchmark("", "Quit", "Z-SYS")]
+        public void Quit()
+        {
+            Environment.Exit(0);
+        }
     }
 }

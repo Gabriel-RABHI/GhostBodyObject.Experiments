@@ -54,15 +54,39 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             var f = new GhostHeaderIncrementor();
 
             // -------- FIELDS SEQUENCE -------- //
-            vt->BirthDate_FieldOffset = f.Push<DateTime>();      // CreatedOn : 40
-            vt->CustomerCode_FieldOffset = f.Push<int>();        // CustomerCode : 48
-            vt->Active_FieldOffset = f.Push<bool>();             // Active : 49
-            f.Padd(4); // -> 52
-            vt->FirstName_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
-            vt->CustomerCodeTiers_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->BirthDate_FieldOffset = f.Push<DateTime>();      // BirthDate : 8 bytes
+            vt->CustomerCode_FieldOffset = f.Push<int>();        // CustomerCode : 4 bytes
+            vt->Active_FieldOffset = f.Push<bool>();             // Active : 1 byte
+            f.Padd(4); // Padding to align
 
-            vt->First_MapEntryIndex = 0;
-            vt->CustomerCodeTiers_MapEntryIndex = 1;
+            // -------- ARRAY MAP ENTRIES SPACE RESERVATION -------- //
+            // 12 string properties, each with an ArrayMapSmallEntry (4 bytes each)
+            vt->FirstName_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->LastName_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->Pseudonyme_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->Presentation_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->City_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->Country_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->CompanyName_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->Address1_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->Address2_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->Address3_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->ZipCode_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+            vt->Hobbies_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
+
+            // -------- ARRAY MAP ENTRIES INDEXES -------- //
+            vt->FirstName_MapEntryIndex = 0;
+            vt->LastName_MapEntryIndex = 1;
+            vt->Pseudonyme_MapEntryIndex = 2;
+            vt->Presentation_MapEntryIndex = 3;
+            vt->City_MapEntryIndex = 4;
+            vt->Country_MapEntryIndex = 5;
+            vt->CompanyName_MapEntryIndex = 6;
+            vt->Address1_MapEntryIndex = 7;
+            vt->Address2_MapEntryIndex = 8;
+            vt->Address3_MapEntryIndex = 9;
+            vt->ZipCode_MapEntryIndex = 10;
+            vt->Hobbies_MapEntryIndex = 11;
 
             // -------- STANDARD FIELDS -------- //
             vt->Std.TypeCombo = new GhostId(GhostIdKind.Entity, (ushort)TypeIdentifier, default, default).TypeCombo;
@@ -70,15 +94,15 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             vt->Std.ReadOnly = false;
             vt->Std.LargeArrays = false;
             vt->Std.ArrayMapOffset = vt->FirstName_MapEntryOffset;
-            vt->Std.ArrayMapLength = 2;
+            vt->Std.ArrayMapLength = 12; // 12 string properties
 
-            // -------- LENGHT -------- //
+            // -------- LENGTH -------- //
             vt->Std.MinimalGhostSize = f.Offset;
             return vt;
         }
         #endregion
 
-        #region STANDALONE
+        #region INITIAL
         public static BloggerUser_VectorTable* GetInitial()
         {
             var vt = GetCommon();
@@ -96,7 +120,28 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             var union = Unsafe.As<BodyUnion>(body);
             union._data = TransientGhostMemoryAllocator.Allocate(union._data.Length);
             union._vTablePtr = (nint)_record.Standalone;
-            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->FirstName_MapEntryOffset) = new ArrayMapSmallEntry() { ArrayLength = 0, ValueSize = sizeof(char), ArrayOffset = (ushort)body._vTable->Std.MinimalGhostSize };
+
+            var emptyString = new ArrayMapSmallEntry()
+            {
+                ArrayLength = 0,
+                ValueSize = sizeof(char),
+                ArrayOffset = (ushort)body._vTable->Std.MinimalGhostSize
+            };
+            
+            // Initialize all 12 string properties as empty
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->FirstName_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->LastName_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->Pseudonyme_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->Presentation_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->City_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->Country_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->CompanyName_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->Address1_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->Address2_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->Address3_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->ZipCode_MapEntryOffset) = emptyString;
+            *(ArrayMapSmallEntry*)(union._data.Ptr + body._vTable->Hobbies_MapEntryOffset) = emptyString;
+            
             return body;
         }
 

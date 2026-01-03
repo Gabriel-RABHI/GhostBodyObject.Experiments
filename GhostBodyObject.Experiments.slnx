@@ -14,6 +14,7 @@
   </Folder>
   <Folder Name="/3-Generator/" />
   <Folder Name="/4-Reference/">
+    <Project Path="GhostBodyObject.HandWritten.Benchmarks/GhostBodyObject.HandWritten.Benchmarks.csproj" Id="5c0cb33e-779d-45a4-9ad7-37e865142080" />
     <Project Path="GhostBodyObject.HandWritten.Tests/GhostBodyObject.HandWritten.Tests.csproj" Id="94f66966-6710-4c9a-9042-3ff6d509c947" />
     <Project Path="GhostBodyObject.HandWritten/GhostBodyObject.HandWritten.csproj" Id="3f3a0224-21dc-4137-b264-5b511594252a" />
   </Folder>
