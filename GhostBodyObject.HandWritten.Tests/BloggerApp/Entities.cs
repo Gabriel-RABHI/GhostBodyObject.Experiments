@@ -89,7 +89,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
 
                 Assert.Equal("JT", user.Pseudonyme);
 
-                user.Presentation = "One of the most iconic actor.";
+                Assert.Equal("One of the most iconic actor.", user.Presentation);
                 user.Presentation = "Microsoft Founder.";
                 Assert.Equal("Microsoft Founder.", user.Presentation);
 

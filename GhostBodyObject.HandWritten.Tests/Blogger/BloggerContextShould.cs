@@ -15,20 +15,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 var user = new BloggerUser();
 
                 user.Active = true;
-                user.Active = false;
-                
-                for (int i=0; i < 200_000_000; i++)
-                {
-                    user.FirstName = "John - " + i;
-                }
 
-                user.FirstName.LastIndexOf("o");
-                /*
-                for (int i = 0; i < 200_000_000; i++)
-                {
-                    user.FirstNameString = "John - " + i;
-                }
-                */
                 var txn = BloggerContext.Transaction;
                 using (BloggerContext.OpenReadContext(repository))
                 {
@@ -44,23 +31,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 }
                 Assert.True(BloggerContext.Transaction == txn);
             }
-        }
-
-        public class PocoBloggerUser
-        {
-            public bool Active { get; set; }
-            public string FirstName { get; set; }
-
-        }
-
-        [Fact]
-        public void AssignPoco()
-        {
-                var user = new PocoBloggerUser();
-                for (int i = 0; i < 200_000_000; i++)
-                {
-                    user.FirstName = "John - " + i;
-                }
         }
     }
 }
