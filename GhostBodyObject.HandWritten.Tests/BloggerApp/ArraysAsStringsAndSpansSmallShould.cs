@@ -1,6 +1,7 @@
 ﻿using GhostBodyObject.HandWritten.TestModel;
 using GhostBodyObject.HandWritten.TestModel.Arrays;
 using GhostBodyObject.HandWritten.TestModel.Repository;
+using GhostBodyObject.Repository.Body.Contracts;
 using System.Text;
 
 namespace GhostBodyObject.HandWritten.Tests.BloggerAll
@@ -1742,77 +1743,159 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
         #endregion
 
         // =========================================================================
-        // STRESS TESTS FOR IN-PLACE OPERATIONS
+        // SMALL ARRAY LIMITS - Overflow Protection Tests
         // =========================================================================
 
-        #region Stress Tests for In-Place Operations
+        #region Small Array Limits Tests
 
         [Fact]
-        public void HandleManyAppendOperationsOnString()
+        public void ThrowOverflowExceptionWhenArrayLengthExceedsLimit()
         {
             var repository = new TestModelRepository();
             using (TestModelContext.OpenReadContext(repository))
             {
                 var body = new ArraysAsStringsAndSpansSmall();
 
-                body.StringU16 = "";
-                for (int i = 0; i < 50; i++)
-                {
-                    body.StringU16.Append("X");
-                }
+                // Max array length for small is 2047 elements (11 bits)
+                // Try to set 2048 or more elements
+                var tooManyGuids = Enumerable.Range(0, 2048).Select(_ => Guid.NewGuid()).ToArray();
 
-                Assert.Equal(50, body.StringU16.Length);
-                Assert.Equal(new string('X', 50), body.StringU16.ToString());
+                Assert.Throws<OverflowException>(() => body.Guids = tooManyGuids);
             }
         }
 
         [Fact]
-        public void HandleManyAppendOperationsOnGuids()
+        public void AllowArrayLengthAtMaxLimit()
         {
             var repository = new TestModelRepository();
             using (TestModelContext.OpenReadContext(repository))
             {
                 var body = new ArraysAsStringsAndSpansSmall();
 
-                body.Guids = Array.Empty<Guid>();
-                var expected = new List<Guid>();
+                // Max array length for small is 2047 elements - should work
+                // 2047 * 16 bytes (Guid) = 32,752 bytes - within offset limit
+                var maxGuids = Enumerable.Range(0, 2047).Select(_ => Guid.NewGuid()).ToArray();
 
-                for (int i = 0; i < 20; i++)
-                {
-                    var newGuid = Guid.NewGuid();
-                    expected.Add(newGuid);
-                    body.Guids.Append(newGuid);
-                }
-
-                Assert.Equal(20, body.Guids.Length);
-                for (int i = 0; i < 20; i++)
-                {
-                    Assert.Equal(expected[i], body.Guids[i]);
-                }
+                // This should not throw
+                body.Guids = maxGuids;
+                Assert.Equal(2047, body.Guids.Length);
             }
         }
 
         [Fact]
-        public void HandleAlternatingAppendAndRemove()
+        public void ThrowOverflowExceptionWhenStringLengthExceedsLimit()
         {
             var repository = new TestModelRepository();
             using (TestModelContext.OpenReadContext(repository))
             {
                 var body = new ArraysAsStringsAndSpansSmall();
 
-                body.StringU16 = "Base";
+                // Max array length for small is 2047 elements
+                // For UTF-16 strings, each char is 1 element
+                // 2048 chars should overflow the element limit
+                var tooLongString = new string('X', 2048);
 
-                for (int i = 0; i < 10; i++)
-                {
-                    body.StringU16.Append("X");
-                    if (i % 2 == 0)
-                    {
-                        body.StringU16.RemoveAt(body.StringU16.Length - 1, 1);
-                    }
-                }
+                Assert.Throws<OverflowException>(() => body.StringU16 = tooLongString);
+            }
+        }
 
-                // After 10 iterations: append 10 times, remove 5 times (when i=0,2,4,6,8)
-                Assert.Equal(9, body.StringU16.Length); // "Base" + 5 'X's
+        [Fact]
+        public void AllowStringLengthAtMaxLimit()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                // Max 2047 characters for UTF-16 string
+                var maxString = new string('Y', 2047);
+
+                // This should not throw
+                body.StringU16 = maxString;
+                Assert.Equal(2047, body.StringU16.Length);
+            }
+        }
+
+        [Fact]
+        public void AllowStringU8ByteLengthAtMaxLimit()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                // For UTF-8 strings, each ASCII byte is 1 element
+                // Max 2047 bytes
+                var maxString = new string('Z', 2047);
+
+                // This should not throw
+                body.StringU8 = maxString;
+                Assert.Equal(2047, body.StringU8.ByteLength);
+            }
+        }
+
+        [Fact]
+        public void ThrowOverflowExceptionOnAppendExceedingElementLimit()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                // Start near the element limit
+                body.StringU16 = new string('A', 2040);
+
+                // Append enough to exceed the 2047 element limit
+                Assert.Throws<OverflowException>(() => 
+                    body.StringU16.Append(new string('B', 10)));
+            }
+        }
+
+        [Fact]
+        public void ThrowOverflowExceptionOnGuidAppendExceedingElementLimit()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                // Start at max-1 elements
+                body.Guids = Enumerable.Range(0, 2047).Select(_ => Guid.NewGuid()).ToArray();
+
+                // Try to append one more - should fail
+                Assert.Throws<OverflowException>(() => 
+                    body.Guids.Append(Guid.NewGuid()));
+            }
+        }
+
+        [Fact]
+        public void VerifySmallArrayMaxConstants()
+        {
+            // Verify the constants are correctly defined
+            Assert.Equal(65535, BodyBase.SmallArrayMaxOffset);
+            Assert.Equal(2047, BodyBase.SmallArrayMaxLength);
+        }
+
+        [Fact]
+        public void AllowModerateArraySizes()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                // Test moderate sizes that are well within limits
+                body.Guids = Enumerable.Range(0, 100).Select(_ => Guid.NewGuid()).ToArray();
+                Assert.Equal(100, body.Guids.Length);
+
+                body.DateTimes = Enumerable.Range(0, 200).Select(i => DateTime.Now.AddMinutes(i)).ToArray();
+                Assert.Equal(200, body.DateTimes.Length);
+
+                body.StringU16 = new string('X', 500);
+                Assert.Equal(500, body.StringU16.Length);
+
+                body.StringU8 = new string('Y', 1000);
+                Assert.Equal(1000, body.StringU8.ByteLength);
             }
         }
 

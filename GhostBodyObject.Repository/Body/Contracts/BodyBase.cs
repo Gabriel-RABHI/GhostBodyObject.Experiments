@@ -9,6 +9,20 @@ namespace GhostBodyObject.Repository.Body.Contracts
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
     public unsafe abstract class BodyBase : IEntityBody
     {
+        // -----------------------------------------------------------------
+        // Small Array Limits Constants
+        // -----------------------------------------------------------------
+        
+        /// <summary>
+        /// Maximum array offset for small arrays (ushort max = 65535).
+        /// </summary>
+        public const int SmallArrayMaxOffset = ushort.MaxValue;
+        
+        /// <summary>
+        /// Maximum array element count for small arrays (11 bits = 2047).
+        /// </summary>
+        public const int SmallArrayMaxLength = 2047;
+
         [FieldOffset(0)]
         protected object _owner;
 
@@ -216,6 +230,55 @@ namespace GhostBodyObject.Repository.Body.Contracts
 
                 mapEntry->ArrayLength = (uint)(src.Length / valueSize);
             }
+            else
+            {
+                // delta != 0: need to shift subsequent arrays
+                int newTotalSize = oldTotalSize + delta;
+
+                if (delta > 0)
+                {
+                    // -------- Growing: resize first, then move tail backward (from end) --------
+                    if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                    {
+                        mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapEntry = mapBase + arrayIndex;
+                    }
+                    // Move all subsequent arrays in one block (use memmove semantics for overlapping)
+                    if (tailLength > 0)
+                    {
+                        Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                    }
+                }
+                else
+                {
+                    // -------- Shrinking: move tail forward first, then resize --------
+                    if (tailLength > 0)
+                        Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                    if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                    {
+                        mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapEntry = mapBase + arrayIndex;
+                    }
+                }
+
+                // Update all subsequent array offsets with uniform delta
+                for (int i = arrayIndex + 1; i < arrayCount; i++)
+                {
+                    ArrayMapLargeEntry* entry = mapBase + i;
+                    entry->ArrayOffset = (uint)((int)entry->ArrayOffset + delta);
+                }
+
+                // Copy new data
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
+                    {
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    }
+                }
+
+                mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+            }
         }
 
         //[MethodImpl(MethodImplOptions.NoInlining)]
@@ -229,6 +292,11 @@ namespace GhostBodyObject.Repository.Body.Contracts
             // Check that src length is a multiple of value size
             if (src.Length % valueSize != 0)
                 throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+
+            // Check array length limit (11 bits = max 2047 elements)
+            int newArrayLength = src.Length / valueSize;
+            if (newArrayLength > SmallArrayMaxLength)
+                throw new OverflowException($"Array length ({newArrayLength}) exceeds the maximum allowed for small arrays ({SmallArrayMaxLength} elements).");
 
             int currentPhysicalSize = mapEntry->PhysicalSize;
             int currentOffset = mapEntry->ArrayOffset;
@@ -249,6 +317,11 @@ namespace GhostBodyObject.Repository.Body.Contracts
             // -------- Size changed: need to shift subsequent arrays --------
             int oldTotalSize = TotalSize;
             int newArrayEnd = currentOffset + src.Length;
+            
+            // Check offset limit (ushort max = 65535)
+            if (newArrayEnd > SmallArrayMaxOffset)
+                throw new OverflowException($"Array end offset ({newArrayEnd}) exceeds the maximum allowed for small arrays ({SmallArrayMaxOffset} bytes).");
+
             bool hasSubsequentArrays = arrayIndex + 1 < arrayCount;
 
             if (!hasSubsequentArrays)
@@ -289,6 +362,11 @@ namespace GhostBodyObject.Repository.Body.Contracts
             int newNextOffset = AlignTo(newArrayEnd, nextValueSize);
             int delta = newNextOffset - oldNextOffset;
 
+            // Check that new total size doesn't exceed small array limits
+            int newTotalSize = oldTotalSize + delta;
+            if (newTotalSize > SmallArrayMaxOffset)
+                throw new OverflowException($"Total ghost size ({newTotalSize}) would exceed the maximum allowed for small arrays ({SmallArrayMaxOffset} bytes).");
+
             if (delta == 0)
             {
                 // No shift needed, just copy new data
@@ -302,8 +380,6 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 mapEntry->ArrayLength = (uint)(src.Length / valueSize);
                 return;
             }
-
-            int newTotalSize = oldTotalSize + delta;
 
             if (delta > 0)
             {
@@ -338,7 +414,13 @@ namespace GhostBodyObject.Repository.Body.Contracts
             for (int i = arrayIndex + 1; i < arrayCount; i++)
             {
                 ArrayMapSmallEntry* entry = mapBase + i;
-                entry->ArrayOffset = (ushort)(entry->ArrayOffset + delta);
+                int newOffset = entry->ArrayOffset + delta;
+                
+                // Verify the new offset fits in ushort
+                if (newOffset > SmallArrayMaxOffset || newOffset < 0)
+                    throw new OverflowException($"Array offset ({newOffset}) exceeds the maximum allowed for small arrays ({SmallArrayMaxOffset} bytes).");
+                    
+                entry->ArrayOffset = (ushort)newOffset;
             }
 
             // Copy new data
