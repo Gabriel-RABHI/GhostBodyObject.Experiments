@@ -1,6 +1,7 @@
 ﻿using GhostBodyObject.HandWritten.TestModel;
 using GhostBodyObject.HandWritten.TestModel.Arrays;
 using GhostBodyObject.HandWritten.TestModel.Repository;
+using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using System.Text;
 
@@ -698,6 +699,1360 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
         #endregion
 
         // =========================================================================
+        // GHOSTSPAN - SETARRAY METHODS
+        // =========================================================================
+
+        #region GhostSpan SetArray Tests
+
+        [Fact]
+        public void SetArrayGuidsFromArray()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.Guids = new[] { Guid.NewGuid() };
+                var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+                body.Guids.SetArray(newGuids);
+
+                Assert.Equal(3, body.Guids.Length);
+                Assert.Equal(newGuids[0], body.Guids[0]);
+                Assert.Equal(newGuids[1], body.Guids[1]);
+                Assert.Equal(newGuids[2], body.Guids[2]);
+            }
+        }
+
+        [Fact]
+        public void SetArrayGuidsFromReadOnlySpan()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.Guids = new[] { Guid.NewGuid() };
+                var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
+                body.Guids.SetArray(newGuids.AsSpan());
+
+                Assert.Equal(2, body.Guids.Length);
+                Assert.Equal(newGuids[0], body.Guids[0]);
+                Assert.Equal(newGuids[1], body.Guids[1]);
+            }
+        }
+
+        [Fact]
+        public void SetArrayDateTimesFromGhostSpan()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var dates1 = new[] { new DateTime(2020, 1, 1), new DateTime(2021, 1, 1) };
+                var dates2 = new[] { new DateTime(2022, 1, 1), new DateTime(2023, 1, 1), new DateTime(2024, 1, 1) };
+                
+                body.DateTimes = dates1;
+                Assert.Equal(2, body.DateTimes.Length);
+                
+                // Create a GhostSpan from array (implicit conversion)
+                GhostBodyObject.Repository.Ghost.Values.GhostSpan<DateTime> sourceSpan = dates2;
+                body.DateTimes.SetArray(sourceSpan);
+
+                Assert.Equal(3, body.DateTimes.Length);
+                Assert.Equal(dates2[0], body.DateTimes[0]);
+                Assert.Equal(dates2[1], body.DateTimes[1]);
+                Assert.Equal(dates2[2], body.DateTimes[2]);
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSPAN - APPENDRANGE/PREPENDRANGE METHODS
+        // =========================================================================
+
+        #region GhostSpan AppendRange/PrependRange Tests
+
+        [Fact]
+        public void AppendRangeToGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var initialGuids = new[] { Guid.NewGuid() };
+                var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
+                
+                body.Guids = initialGuids;
+                body.Guids.AppendRange(newGuids.AsSpan());
+
+                Assert.Equal(3, body.Guids.Length);
+                Assert.Equal(initialGuids[0], body.Guids[0]);
+                Assert.Equal(newGuids[0], body.Guids[1]);
+                Assert.Equal(newGuids[1], body.Guids[2]);
+            }
+        }
+
+        [Fact]
+        public void AppendRangeFromGhostSpanToGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var initialGuids = new[] { Guid.NewGuid() };
+                var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
+                GhostBodyObject.Repository.Ghost.Values.GhostSpan<Guid> toAppend = newGuids;
+                
+                body.Guids = initialGuids;
+                body.Guids.AppendRange(toAppend);
+
+                Assert.Equal(3, body.Guids.Length);
+            }
+        }
+
+        [Fact]
+        public void PrependRangeToGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var initialGuids = new[] { Guid.NewGuid() };
+                var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
+                
+                body.Guids = initialGuids;
+                body.Guids.PrependRange(newGuids.AsSpan());
+
+                Assert.Equal(3, body.Guids.Length);
+                Assert.Equal(newGuids[0], body.Guids[0]);
+                Assert.Equal(newGuids[1], body.Guids[1]);
+                Assert.Equal(initialGuids[0], body.Guids[2]);
+            }
+        }
+
+        [Fact]
+        public void PrependRangeFromGhostSpanToGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var initialGuids = new[] { Guid.NewGuid() };
+                var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
+                GhostBodyObject.Repository.Ghost.Values.GhostSpan<Guid> toPrepend = newGuids;
+                
+                body.Guids = initialGuids;
+                body.Guids.PrependRange(toPrepend);
+
+                Assert.Equal(3, body.Guids.Length);
+                Assert.Equal(newGuids[0], body.Guids[0]);
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSPAN - INSERTRANGEAT METHODS
+        // =========================================================================
+
+        #region GhostSpan InsertRangeAt Tests
+
+        [Fact]
+        public void InsertRangeAtGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guid1 = Guid.NewGuid();
+                var guid2 = Guid.NewGuid();
+                var guid3 = Guid.NewGuid();
+                var guid4 = Guid.NewGuid();
+                
+                body.Guids = new[] { guid1, guid4 };
+                body.Guids.InsertRangeAt(1, new[] { guid2, guid3 }.AsSpan());
+
+                Assert.Equal(4, body.Guids.Length);
+                Assert.Equal(guid1, body.Guids[0]);
+                Assert.Equal(guid2, body.Guids[1]);
+                Assert.Equal(guid3, body.Guids[2]);
+                Assert.Equal(guid4, body.Guids[3]);
+            }
+        }
+
+        [Fact]
+        public void InsertRangeAtFromGhostSpan()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var date1 = new DateTime(2020, 1, 1);
+                var date2 = new DateTime(2021, 1, 1);
+                var date3 = new DateTime(2022, 1, 1);
+                var date4 = new DateTime(2023, 1, 1);
+                
+                GhostBodyObject.Repository.Ghost.Values.GhostSpan<DateTime> toInsert = new[] { date2, date3 };
+                
+                body.DateTimes = new[] { date1, date4 };
+                body.DateTimes.InsertRangeAt(1, toInsert);
+
+                Assert.Equal(4, body.DateTimes.Length);
+                Assert.Equal(date1, body.DateTimes[0]);
+                Assert.Equal(date2, body.DateTimes[1]);
+                Assert.Equal(date3, body.DateTimes[2]);
+                Assert.Equal(date4, body.DateTimes[3]);
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSPAN - REMOVE METHODS
+        // =========================================================================
+
+        #region GhostSpan Remove Tests
+
+        [Fact]
+        public void RemoveFromGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var targetGuid = Guid.NewGuid();
+                var otherGuid1 = Guid.NewGuid();
+                var otherGuid2 = Guid.NewGuid();
+                
+                body.Guids = new[] { otherGuid1, targetGuid, otherGuid2 };
+                bool removed = body.Guids.Remove(targetGuid);
+
+                Assert.True(removed);
+                Assert.Equal(2, body.Guids.Length);
+                Assert.Equal(otherGuid1, body.Guids[0]);
+                Assert.Equal(otherGuid2, body.Guids[1]);
+            }
+        }
+
+        [Fact]
+        public void RemoveNotFoundFromGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guid1 = Guid.NewGuid();
+                var guid2 = Guid.NewGuid();
+                var notInArray = Guid.NewGuid();
+                
+                body.Guids = new[] { guid1, guid2 };
+                bool removed = body.Guids.Remove(notInArray);
+
+                Assert.False(removed);
+                Assert.Equal(2, body.Guids.Length);
+            }
+        }
+
+        [Fact]
+        public void RemoveAllFromGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var duplicateGuid = Guid.NewGuid();
+                var otherGuid = Guid.NewGuid();
+                
+                body.Guids = new[] { duplicateGuid, otherGuid, duplicateGuid, duplicateGuid };
+                int removedCount = body.Guids.RemoveAll(duplicateGuid);
+
+                Assert.Equal(3, removedCount);
+                Assert.Equal(1, body.Guids.Length);
+                Assert.Equal(otherGuid, body.Guids[0]);
+            }
+        }
+
+        [Fact]
+        public void PopFromGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guid1 = Guid.NewGuid();
+                var guid2 = Guid.NewGuid();
+                var guid3 = Guid.NewGuid();
+                
+                body.Guids = new[] { guid1, guid2, guid3 };
+                var popped = body.Guids.Pop();
+
+                Assert.Equal(guid3, popped);
+                Assert.Equal(2, body.Guids.Length);
+                Assert.Equal(guid1, body.Guids[0]);
+                Assert.Equal(guid2, body.Guids[1]);
+            }
+        }
+
+        [Fact]
+        public void ShiftFromGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guid1 = Guid.NewGuid();
+                var guid2 = Guid.NewGuid();
+                var guid3 = Guid.NewGuid();
+                
+                body.Guids = new[] { guid1, guid2, guid3 };
+                var shifted = body.Guids.Shift();
+
+                Assert.Equal(guid1, shifted);
+                Assert.Equal(2, body.Guids.Length);
+                Assert.Equal(guid2, body.Guids[0]);
+                Assert.Equal(guid3, body.Guids[1]);
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSPAN - REPLACERANGE METHODS
+        // =========================================================================
+
+        #region GhostSpan ReplaceRange Tests
+
+        [Fact]
+        public void ReplaceRangeInGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guid1 = Guid.NewGuid();
+                var guid2 = Guid.NewGuid();
+                var guid3 = Guid.NewGuid();
+                var newGuid1 = Guid.NewGuid();
+                var newGuid2 = Guid.NewGuid();
+                var newGuid3 = Guid.NewGuid();
+                
+                body.Guids = new[] { guid1, guid2, guid3 };
+                body.Guids.ReplaceRange(1, 1, new[] { newGuid1, newGuid2, newGuid3 }.AsSpan());
+
+                Assert.Equal(5, body.Guids.Length);
+                Assert.Equal(guid1, body.Guids[0]);
+                Assert.Equal(newGuid1, body.Guids[1]);
+                Assert.Equal(newGuid2, body.Guids[2]);
+                Assert.Equal(newGuid3, body.Guids[3]);
+                Assert.Equal(guid3, body.Guids[4]);
+            }
+        }
+
+        [Fact]
+        public void ReplaceRangeFromGhostSpanInGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var date1 = new DateTime(2020, 1, 1);
+                var date2 = new DateTime(2021, 1, 1);
+                var date3 = new DateTime(2022, 1, 1);
+                var newDate = new DateTime(2025, 1, 1);
+                
+                GhostBodyObject.Repository.Ghost.Values.GhostSpan<DateTime> replacement = new[] { newDate };
+                
+                body.DateTimes = new[] { date1, date2, date3 };
+                body.DateTimes.ReplaceRange(1, 1, replacement);
+
+                Assert.Equal(3, body.DateTimes.Length);
+                Assert.Equal(date1, body.DateTimes[0]);
+                Assert.Equal(newDate, body.DateTimes[1]);
+                Assert.Equal(date3, body.DateTimes[2]);
+            }
+        }
+
+        [Fact]
+        public void ReplaceRangeWithSmallerReplacement()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guids = Enumerable.Range(0, 5).Select(_ => Guid.NewGuid()).ToArray();
+                var newGuid = Guid.NewGuid();
+                
+                body.Guids = guids;
+                body.Guids.ReplaceRange(1, 3, new[] { newGuid }.AsSpan()); // Replace 3 with 1
+
+                Assert.Equal(3, body.Guids.Length);
+                Assert.Equal(guids[0], body.Guids[0]);
+                Assert.Equal(newGuid, body.Guids[1]);
+                Assert.Equal(guids[4], body.Guids[2]);
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSPAN - RESIZE METHOD
+        // =========================================================================
+
+        #region GhostSpan Resize Tests
+
+        [Fact]
+        public void ResizeGuidsToLarger()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guid1 = Guid.NewGuid();
+                body.Guids = new[] { guid1 };
+                body.Guids.Resize(5);
+
+                Assert.Equal(5, body.Guids.Length);
+                Assert.Equal(guid1, body.Guids[0]);
+                Assert.Equal(Guid.Empty, body.Guids[1]); // New elements are default
+                Assert.Equal(Guid.Empty, body.Guids[4]);
+            }
+        }
+
+        [Fact]
+        public void ResizeGuidsToSmaller()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guids = Enumerable.Range(0, 5).Select(_ => Guid.NewGuid()).ToArray();
+                body.Guids = guids;
+                body.Guids.Resize(2);
+
+                Assert.Equal(2, body.Guids.Length);
+                Assert.Equal(guids[0], body.Guids[0]);
+                Assert.Equal(guids[1], body.Guids[1]);
+            }
+        }
+
+        [Fact]
+        public void ResizeGuidsToSameSize()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guids = new[] { Guid.NewGuid(), Guid.NewGuid() };
+                body.Guids = guids;
+                body.Guids.Resize(2);
+
+                Assert.Equal(2, body.Guids.Length);
+                Assert.Equal(guids[0], body.Guids[0]);
+                Assert.Equal(guids[1], body.Guids[1]);
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSPAN - IN-PLACE MODIFICATION METHODS
+        // =========================================================================
+
+        #region GhostSpan InPlace Tests
+
+        [Fact]
+        public void ReverseGuidsInPlace()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guid1 = Guid.NewGuid();
+                var guid2 = Guid.NewGuid();
+                var guid3 = Guid.NewGuid();
+                
+                body.Guids = new[] { guid1, guid2, guid3 };
+                body.Guids.Reverse();
+
+                Assert.Equal(3, body.Guids.Length);
+                Assert.Equal(guid3, body.Guids[0]);
+                Assert.Equal(guid2, body.Guids[1]);
+                Assert.Equal(guid1, body.Guids[2]);
+            }
+        }
+
+        [Fact]
+        public void FillGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var fillGuid = Guid.NewGuid();
+                body.Guids = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+                body.Guids.Fill(fillGuid);
+
+                Assert.Equal(3, body.Guids.Length);
+                Assert.Equal(fillGuid, body.Guids[0]);
+                Assert.Equal(fillGuid, body.Guids[1]);
+                Assert.Equal(fillGuid, body.Guids[2]);
+            }
+        }
+
+        [Fact]
+        public void SortDateTimes()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var date3 = new DateTime(2022, 1, 1);
+                var date1 = new DateTime(2020, 1, 1);
+                var date2 = new DateTime(2021, 1, 1);
+                
+                body.DateTimes = new[] { date3, date1, date2 };
+                body.DateTimes.Sort();
+
+                Assert.Equal(3, body.DateTimes.Length);
+                Assert.Equal(date1, body.DateTimes[0]);
+                Assert.Equal(date2, body.DateTimes[1]);
+                Assert.Equal(date3, body.DateTimes[2]);
+            }
+        }
+
+        [Fact]
+        public void IndexerSetOnGuids()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var guid1 = Guid.NewGuid();
+                var guid2 = Guid.NewGuid();
+                var newGuid = Guid.NewGuid();
+                
+                body.Guids = new[] { guid1, guid2 };
+                
+                // Use ReplaceRange to set a single element at index 1
+                body.Guids.ReplaceRange(1, 1, new[] { newGuid }.AsSpan());
+
+                Assert.Equal(guid1, body.Guids[0]);
+                Assert.Equal(newGuid, body.Guids[1]);
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSTRINGUTF16 - SETSTRING METHODS
+        // =========================================================================
+
+        #region GhostStringUtf16 SetString Tests
+
+        [Fact]
+        public void SetStringU16FromString()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Initial";
+                body.StringU16.SetString("Replaced via SetString");
+
+                Assert.Equal("Replaced via SetString", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void SetStringU16FromReadOnlySpan()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Initial";
+                ReadOnlySpan<char> newValue = "Span Replacement".AsSpan();
+                body.StringU16.SetString(newValue);
+
+                Assert.Equal("Span Replacement", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void SetStringU16FromGhostStringUtf16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Initial";
+                GhostStringUtf16 source = "GhostString Source";
+                body.StringU16.SetString(source);
+
+                Assert.Equal("GhostString Source", body.StringU16.ToString());
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSTRINGUTF16 - ADDITIONAL APPEND/PREPEND TESTS
+        // =========================================================================
+
+        #region GhostStringUtf16 Append/Prepend Tests
+
+        [Fact]
+        public void AppendCharToStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello";
+                body.StringU16.Append('!');
+
+                Assert.Equal("Hello!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void AppendReadOnlySpanToStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello";
+                ReadOnlySpan<char> suffix = ", World!".AsSpan();
+                body.StringU16.Append(suffix);
+
+                Assert.Equal("Hello, World!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void AppendGhostStringUtf16ToStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello";
+                GhostStringUtf16 toAppend = " World";
+                body.StringU16.Append(toAppend);
+
+                Assert.Equal("Hello World", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void PrependCharToStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "World";
+                body.StringU16.Prepend('H');
+
+                Assert.Equal("HWorld", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void PrependReadOnlySpanToStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "World!";
+                ReadOnlySpan<char> prefix = "Hello, ".AsSpan();
+                body.StringU16.Prepend(prefix);
+
+                Assert.Equal("Hello, World!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void PrependGhostStringUtf16ToStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "World";
+                GhostStringUtf16 toPrepend = "Hello ";
+                body.StringU16.Prepend(toPrepend);
+
+                Assert.Equal("Hello World", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void InsertAtReadOnlySpanInStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello World";
+                ReadOnlySpan<char> insert = "Beautiful ".AsSpan();
+                body.StringU16.InsertAt(6, insert);
+
+                Assert.Equal("Hello Beautiful World", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void InsertAtGhostStringUtf16InStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello World";
+                GhostStringUtf16 insert = "Amazing ";
+                body.StringU16.InsertAt(6, insert);
+
+                Assert.Equal("Hello Amazing World", body.StringU16.ToString());
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSTRINGUTF16 - REMOVE METHODS
+        // =========================================================================
+
+        #region GhostStringUtf16 Remove Tests
+
+        [Fact]
+        public void RemoveFromStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello, World! Goodbye!";
+                body.StringU16.RemoveFrom(13); // Remove from "Goodbye!"
+
+                Assert.Equal("Hello, World!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void RemoveFirstCharFromStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello, World!";
+                bool removed = body.StringU16.RemoveFirst('o');
+
+                Assert.True(removed);
+                Assert.Equal("Hell, World!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void RemoveFirstCharNotFoundInStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello, World!";
+                bool removed = body.StringU16.RemoveFirst('x');
+
+                Assert.False(removed);
+                Assert.Equal("Hello, World!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void RemoveFirstStringFromStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello, World! Hello, Universe!";
+                bool removed = body.StringU16.RemoveFirst("Hello, ");
+
+                Assert.True(removed);
+                Assert.Equal("World! Hello, Universe!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void RemoveAllCharsFromStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello, World!";
+                int removed = body.StringU16.RemoveAll('l');
+
+                Assert.Equal(3, removed);
+                Assert.Equal("Heo, Word!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void RemoveAllStringsFromStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "cat dog cat bird cat";
+                int removed = body.StringU16.RemoveAll("cat");
+
+                Assert.Equal(3, removed);
+                Assert.Equal(" dog  bird ", body.StringU16.ToString());
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSTRINGUTF16 - REPLACE METHODS
+        // =========================================================================
+
+        #region GhostStringUtf16 Replace Tests
+
+        [Fact]
+        public void ReplaceRangeWithReadOnlySpanInStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello, World!";
+                ReadOnlySpan<char> replacement = "Universe".AsSpan();
+                body.StringU16.ReplaceRange(7, 5, replacement);
+
+                Assert.Equal("Hello, Universe!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void ReplaceFirstInStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello World Hello Universe";
+                bool replaced = body.StringU16.ReplaceFirst("Hello", "Hi");
+
+                Assert.True(replaced);
+                Assert.Equal("Hi World Hello Universe", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void ReplaceFirstNotFoundInStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello, World!";
+                bool replaced = body.StringU16.ReplaceFirst("Galaxy", "Universe");
+
+                Assert.False(replaced);
+                Assert.Equal("Hello, World!", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void ReplaceAllInPlaceInStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "cat dog cat bird cat";
+                int count = body.StringU16.ReplaceAllInPlace("cat", "CAT");
+
+                Assert.Equal(3, count);
+                Assert.Equal("CAT dog CAT bird CAT", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void ReplaceAllInPlaceWithShorterReplacementInStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hello Hello Hello";
+                int count = body.StringU16.ReplaceAllInPlace("Hello", "Hi");
+
+                Assert.Equal(3, count);
+                Assert.Equal("Hi Hi Hi", body.StringU16.ToString());
+            }
+        }
+
+        [Fact]
+        public void ReplaceAllInPlaceWithLongerReplacementInStringU16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU16 = "Hi Hi Hi";
+                int count = body.StringU16.ReplaceAllInPlace("Hi", "Hello");
+
+                Assert.Equal(3, count);
+                Assert.Equal("Hello Hello Hello", body.StringU16.ToString());
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSTRINGUTF8 - SETSTRING METHODS
+        // =========================================================================
+
+        #region GhostStringUtf8 SetString Tests
+
+        [Fact]
+        public void SetStringU8FromString()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Initial";
+                body.StringU8.SetString("Replaced via SetString");
+
+                Assert.Equal("Replaced via SetString", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void SetStringU8FromGhostStringUtf8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Initial";
+                GhostStringUtf8 source = "GhostStringUtf8 Source";
+                body.StringU8.SetString(source);
+
+                Assert.Equal("GhostStringUtf8 Source", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void SetStringU8FromGhostStringUtf16()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Initial";
+                GhostStringUtf16 source = "UTF16 Source";
+                body.StringU8.SetString(source);
+
+                Assert.Equal("UTF16 Source", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void SetBytesU8FromReadOnlySpan()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Initial";
+                var bytes = System.Text.Encoding.UTF8.GetBytes("Bytes Source");
+                body.StringU8.SetBytes(bytes.AsSpan());
+
+                Assert.Equal("Bytes Source", body.StringU8.ToString());
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSTRINGUTF8 - APPEND/PREPEND TESTS
+        // =========================================================================
+
+        #region GhostStringUtf8 Append/Prepend Tests
+
+        [Fact]
+        public void AppendReadOnlySpanBytesToStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Hello";
+                var suffix = System.Text.Encoding.UTF8.GetBytes(", World!");
+                body.StringU8.Append(suffix.AsSpan());
+
+                Assert.Equal("Hello, World!", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void AppendGhostStringUtf8ToStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Hello";
+                GhostStringUtf8 toAppend = " World";
+                body.StringU8.Append(toAppend);
+
+                Assert.Equal("Hello World", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void AppendGhostStringUtf16ToStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Hello";
+                GhostStringUtf16 toAppend = " UTF16";
+                body.StringU8.Append(toAppend);
+
+                Assert.Equal("Hello UTF16", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void PrependReadOnlySpanBytesToStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "World!";
+                var prefix = System.Text.Encoding.UTF8.GetBytes("Hello, ");
+                body.StringU8.Prepend(prefix.AsSpan());
+
+                Assert.Equal("Hello, World!", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void PrependGhostStringUtf8ToStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "World";
+                GhostStringUtf8 toPrepend = "Hello ";
+                body.StringU8.Prepend(toPrepend);
+
+                Assert.Equal("Hello World", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void PrependGhostStringUtf16ToStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "World";
+                GhostStringUtf16 toPrepend = "UTF16 ";
+                body.StringU8.Prepend(toPrepend);
+
+                Assert.Equal("UTF16 World", body.StringU8.ToString());
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSTRINGUTF8 - REMOVE METHODS
+        // =========================================================================
+
+        #region GhostStringUtf8 Remove Tests
+
+        [Fact]
+        public void RemoveBytesAtStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Hello, World!";
+                body.StringU8.RemoveBytesAt(5, 7); // Remove ", World"
+
+                Assert.Equal("Hello!", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void RemoveBytesFromStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Hello, World! Goodbye!";
+                body.StringU8.RemoveBytesFrom(13);
+
+                Assert.Equal("Hello, World!", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void RemoveFirstBytesFromStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Hello World Hello Universe";
+                var searchBytes = System.Text.Encoding.UTF8.GetBytes("Hello ");
+                bool removed = body.StringU8.RemoveFirstBytes(searchBytes.AsSpan());
+
+                Assert.True(removed);
+                Assert.Equal("World Hello Universe", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void RemoveAllBytesFromStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "cat dog cat bird cat";
+                var searchBytes = System.Text.Encoding.UTF8.GetBytes("cat");
+                int removed = body.StringU8.RemoveAllBytes(searchBytes.AsSpan());
+
+                Assert.Equal(3, removed);
+                Assert.Equal(" dog  bird ", body.StringU8.ToString());
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSTRINGUTF8 - REPLACE METHODS
+        // =========================================================================
+
+        #region GhostStringUtf8 Replace Tests
+
+        [Fact]
+        public void ReplaceBytesRangeWithBytesSpanInStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Hello, World!";
+                var replacement = System.Text.Encoding.UTF8.GetBytes("Universe");
+                body.StringU8.ReplaceBytesRange(7, 5, replacement.AsSpan());
+
+                Assert.Equal("Hello, Universe!", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void ReplaceBytesRangeWithStringInStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Hello, World!";
+                body.StringU8.ReplaceBytesRange(7, 5, "Galaxy");
+
+                Assert.Equal("Hello, Galaxy!", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void ReplaceFirstBytesInStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "cat dog cat bird";
+                var oldValue = System.Text.Encoding.UTF8.GetBytes("cat");
+                var newValue = System.Text.Encoding.UTF8.GetBytes("CAT");
+                bool replaced = body.StringU8.ReplaceFirstBytes(oldValue.AsSpan(), newValue.AsSpan());
+
+                Assert.True(replaced);
+                Assert.Equal("CAT dog cat bird", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void ReplaceAllBytesInPlaceInStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "cat dog cat bird cat";
+                var oldValue = System.Text.Encoding.UTF8.GetBytes("cat");
+                var newValue = System.Text.Encoding.UTF8.GetBytes("CAT");
+                int count = body.StringU8.ReplaceAllBytesInPlace(oldValue.AsSpan(), newValue.AsSpan());
+
+                Assert.Equal(3, count);
+                Assert.Equal("CAT dog CAT bird CAT", body.StringU8.ToString());
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
+        // GHOSTSTRINGUTF8 - INPLACE METHODS
+        // =========================================================================
+
+        #region GhostStringUtf8 InPlace Tests
+
+        [Fact]
+        public void TrimAsciiInPlaceStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "   Hello World   ";
+                body.StringU8.TrimAsciiInPlace();
+
+                Assert.Equal("Hello World", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void TrimAsciiStartInPlaceStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "   Hello World   ";
+                body.StringU8.TrimAsciiStartInPlace();
+
+                Assert.Equal("Hello World   ", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void TrimAsciiEndInPlaceStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "   Hello World   ";
+                body.StringU8.TrimAsciiEndInPlace();
+
+                Assert.Equal("   Hello World", body.StringU8.ToString());
+            }
+        }
+
+        [Fact]
+        public void ReverseBytesInPlaceStringU8()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.StringU8 = "Hello";
+                body.StringU8.ReverseBytesInPlace();
+
+                Assert.Equal("olleH", body.StringU8.ToString());
+            }
+        }
+
+        #endregion
+
+        // =========================================================================
         // DATA INTEGRITY - Ensuring modifications don't corrupt other data
         // =========================================================================
 
@@ -861,7 +2216,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
             {
                 var body = new ArraysAsStringsAndSpansSmall();
 
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 1000; i++)
                 {
                     var length = (i % 50) + 1;
                     body.StringU16 = new string((char)('A' + (i % 26)), length);
@@ -996,7 +2351,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
             }
         }
 
-        [Fact]
+       [Fact]
         public void HandleSingleElementArrays()
         {
             var repository = new TestModelRepository();
@@ -1135,8 +2490,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
                 var dates = new[]
                 {
                     new DateTime(2020, 1, 1),
-                    new DateTime(2021, 1, 1),
-                    new DateTime(2022, 1, 1)
+                    new DateTime(2021, 6, 15),
+                    new DateTime(2022, 12, 31)
                 };
                 body.DateTimes = dates;
 
@@ -1390,6 +2745,40 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
             }
         }
 
+        [Fact]
+        public void RemoveRangeFromDateTimesArray()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                var dates = Enumerable.Range(0, 5).Select(i => DateTime.Now.AddDays(i)).ToArray();
+                body.DateTimes = dates;
+
+                body.DateTimes.RemoveRange(1, 3);
+                Assert.Equal(2, body.DateTimes.Length);
+                Assert.Equal(dates[0], body.DateTimes[0]);
+                Assert.Equal(dates[4], body.DateTimes[1]);
+            }
+        }
+
+        [Fact]
+        public void ClearDateTimesArray()
+        {
+            var repository = new TestModelRepository();
+            using (TestModelContext.OpenReadContext(repository))
+            {
+                var body = new ArraysAsStringsAndSpansSmall();
+
+                body.DateTimes = new[] { DateTime.Now, DateTime.UtcNow };
+                Assert.Equal(2, body.DateTimes.Length);
+
+                body.DateTimes.Clear();
+                Assert.True(body.DateTimes.IsEmpty);
+            }
+        }
+
         #endregion
 
         // =========================================================================
@@ -1429,51 +2818,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
         }
 
         [Fact]
-        public void InsertIntoStringU16()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                body.StringU16 = "Hello!";
-                body.StringU16.InsertAt(5, " World");
-
-                Assert.Equal("Hello World!", body.StringU16.ToString());
-            }
-        }
-
-        [Fact]
-        public void RemoveFromStringU16()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                body.StringU16 = "Hello, World!";
-                body.StringU16.RemoveAt(5, 7); // Remove ", World"
-
-                Assert.Equal("Hello!", body.StringU16.ToString());
-            }
-        }
-
-        [Fact]
-        public void ReplaceRangeInStringU16()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                body.StringU16 = "Hello, World!";
-                body.StringU16.ReplaceRange(7, 5, "Universe"); // Replace "World" with "Universe"
-
-                Assert.Equal("Hello, Universe!", body.StringU16.ToString());
-            }
-        }
-
-        [Fact]
         public void ClearStringU16()
         {
             var repository = new TestModelRepository();
@@ -1485,51 +2829,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
                 body.StringU16.Clear();
 
                 Assert.True(body.StringU16.IsEmpty);
-            }
-        }
-
-        [Fact]
-        public void TrimStringU16InPlace()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                body.StringU16 = "  Hello  ";
-                body.StringU16.TrimInPlace();
-
-                Assert.Equal("Hello", body.StringU16.ToString());
-            }
-        }
-
-        [Fact]
-        public void TrimStartStringU16InPlace()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                body.StringU16 = "  Hello  ";
-                body.StringU16.TrimStartInPlace();
-
-                Assert.Equal("Hello  ", body.StringU16.ToString());
-            }
-        }
-
-        [Fact]
-        public void TrimEndStringU16InPlace()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                body.StringU16 = "  Hello  ";
-                body.StringU16.TrimEndInPlace();
-
-                Assert.Equal("  Hello", body.StringU16.ToString());
             }
         }
 
@@ -1635,267 +2934,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
                 body.StringU8.ToLowerAsciiInPlace();
 
                 Assert.Equal("hello world", body.StringU8.ToString());
-            }
-        }
-
-        #endregion
-
-        // =========================================================================
-        // DATA INTEGRITY DURING IN-PLACE MODIFICATIONS
-        // =========================================================================
-
-        #region Data Integrity During In-Place Modifications
-
-        [Fact]
-        public void MaintainDataIntegrityDuringStringAppend()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Set up all properties
-                var guid = Guid.NewGuid();
-                var date = new DateTime(2024, 6, 15);
-                body.OneInt = 42;
-                body.OneDateTime = date;
-                body.Guids = new[] { guid };
-                body.DateTimes = new[] { date };
-                body.StringU16 = "Initial";
-                body.StringU8 = "UTF8";
-
-                // Perform multiple append operations
-                for (int i = 0; i < 10; i++)
-                {
-                    body.StringU16.Append(" Appended");
-                }
-
-                // Verify other properties are still intact
-                Assert.Equal(42, body.OneInt);
-                Assert.Equal(date, body.OneDateTime);
-                Assert.Equal(guid, body.Guids[0]);
-                Assert.Equal(date, body.DateTimes[0]);
-                Assert.Equal("UTF8", body.StringU8.ToString());
-            }
-        }
-
-        [Fact]
-        public void MaintainDataIntegrityDuringArrayAppend()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Set up all properties
-                body.OneInt = 999;
-                body.StringU16 = "Test String";
-                body.StringU8 = "UTF8 Test";
-                body.Guids = Array.Empty<Guid>();
-
-                // Perform multiple append operations
-                var appendedGuids = new List<Guid>();
-                for (int i = 0; i < 15; i++)
-                {
-                    var newGuid = Guid.NewGuid();
-                    appendedGuids.Add(newGuid);
-                    body.Guids.Append(newGuid);
-                }
-
-                // Verify all properties
-                Assert.Equal(999, body.OneInt);
-                Assert.Equal("Test String", body.StringU16.ToString());
-                Assert.Equal("UTF8 Test", body.StringU8.ToString());
-                Assert.Equal(15, body.Guids.Length);
-                for (int i = 0; i < 15; i++)
-                {
-                    Assert.Equal(appendedGuids[i], body.Guids[i]);
-                }
-            }
-        }
-
-        [Fact]
-        public void MaintainDataIntegrityDuringMixedOperations()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Set up
-                body.OneInt = 123;
-                body.StringU16 = "Hello";
-                body.Guids = new[] { Guid.NewGuid() };
-
-                // Interleave operations
-                body.StringU16.Append(" World");
-                body.Guids.Append(Guid.NewGuid());
-                body.StringU16.Prepend("Say: ");
-                body.Guids.Prepend(Guid.NewGuid());
-
-                // Verify
-                Assert.Equal(123, body.OneInt);
-                Assert.Equal("Say: Hello World", body.StringU16.ToString());
-                Assert.Equal(3, body.Guids.Length);
-            }
-        }
-
-        #endregion
-
-        // =========================================================================
-        // SMALL ARRAY LIMITS - Overflow Protection Tests
-        // =========================================================================
-
-        #region Small Array Limits Tests
-
-        [Fact]
-        public void ThrowOverflowExceptionWhenArrayLengthExceedsLimit()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Max array length for small is 2047 elements (11 bits)
-                // Try to set 2048 or more elements
-                var tooManyGuids = Enumerable.Range(0, 2048).Select(_ => Guid.NewGuid()).ToArray();
-
-                Assert.Throws<OverflowException>(() => body.Guids = tooManyGuids);
-            }
-        }
-
-        [Fact]
-        public void AllowArrayLengthAtMaxLimit()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Max array length for small is 2047 elements - should work
-                // 2047 * 16 bytes (Guid) = 32,752 bytes - within offset limit
-                var maxGuids = Enumerable.Range(0, 2047).Select(_ => Guid.NewGuid()).ToArray();
-
-                // This should not throw
-                body.Guids = maxGuids;
-                Assert.Equal(2047, body.Guids.Length);
-            }
-        }
-
-        [Fact]
-        public void ThrowOverflowExceptionWhenStringLengthExceedsLimit()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Max array length for small is 2047 elements
-                // For UTF-16 strings, each char is 1 element
-                // 2048 chars should overflow the element limit
-                var tooLongString = new string('X', 2048);
-
-                Assert.Throws<OverflowException>(() => body.StringU16 = tooLongString);
-            }
-        }
-
-        [Fact]
-        public void AllowStringLengthAtMaxLimit()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Max 2047 characters for UTF-16 string
-                var maxString = new string('Y', 2047);
-
-                // This should not throw
-                body.StringU16 = maxString;
-                Assert.Equal(2047, body.StringU16.Length);
-            }
-        }
-
-        [Fact]
-        public void AllowStringU8ByteLengthAtMaxLimit()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // For UTF-8 strings, each ASCII byte is 1 element
-                // Max 2047 bytes
-                var maxString = new string('Z', 2047);
-
-                // This should not throw
-                body.StringU8 = maxString;
-                Assert.Equal(2047, body.StringU8.ByteLength);
-            }
-        }
-
-        [Fact]
-        public void ThrowOverflowExceptionOnAppendExceedingElementLimit()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Start near the element limit
-                body.StringU16 = new string('A', 2040);
-
-                // Append enough to exceed the 2047 element limit
-                Assert.Throws<OverflowException>(() => 
-                    body.StringU16.Append(new string('B', 10)));
-            }
-        }
-
-        [Fact]
-        public void ThrowOverflowExceptionOnGuidAppendExceedingElementLimit()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Start at max-1 elements
-                body.Guids = Enumerable.Range(0, 2047).Select(_ => Guid.NewGuid()).ToArray();
-
-                // Try to append one more - should fail
-                Assert.Throws<OverflowException>(() => 
-                    body.Guids.Append(Guid.NewGuid()));
-            }
-        }
-
-        [Fact]
-        public void VerifySmallArrayMaxConstants()
-        {
-            // Verify the constants are correctly defined
-            Assert.Equal(65535, BodyBase.SmallArrayMaxOffset);
-            Assert.Equal(2047, BodyBase.SmallArrayMaxLength);
-        }
-
-        [Fact]
-        public void AllowModerateArraySizes()
-        {
-            var repository = new TestModelRepository();
-            using (TestModelContext.OpenReadContext(repository))
-            {
-                var body = new ArraysAsStringsAndSpansSmall();
-
-                // Test moderate sizes that are well within limits
-                body.Guids = Enumerable.Range(0, 100).Select(_ => Guid.NewGuid()).ToArray();
-                Assert.Equal(100, body.Guids.Length);
-
-                body.DateTimes = Enumerable.Range(0, 200).Select(i => DateTime.Now.AddMinutes(i)).ToArray();
-                Assert.Equal(200, body.DateTimes.Length);
-
-                body.StringU16 = new string('X', 500);
-                Assert.Equal(500, body.StringU16.Length);
-
-                body.StringU8 = new string('Y', 1000);
-                Assert.Equal(1000, body.StringU8.ByteLength);
             }
         }
 

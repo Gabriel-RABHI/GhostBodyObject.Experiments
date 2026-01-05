@@ -388,10 +388,12 @@ namespace GhostBodyObject.Repository
         public int RemoveAll(char value)
         {
             int count = 0;
+            int currentLength = Length;
             int index;
-            while ((index = IndexOf(value)) >= 0)
+            while (currentLength > 0 && (index = AsSpan(0, currentLength).IndexOf(value)) >= 0)
             {
                 RemoveAt(index, 1);
+                currentLength--;
                 count++;
             }
             return count;
@@ -406,10 +408,12 @@ namespace GhostBodyObject.Repository
             if (string.IsNullOrEmpty(value))
                 return 0;
             int count = 0;
+            int currentLength = Length;
             int index;
-            while ((index = IndexOf(value)) >= 0)
+            while (currentLength >= value.Length && (index = AsSpan(0, currentLength).IndexOf(value.AsSpan())) >= 0)
             {
                 RemoveAt(index, value.Length);
+                currentLength -= value.Length;
                 count++;
             }
             return count;
@@ -472,15 +476,42 @@ namespace GhostBodyObject.Repository
             if (string.IsNullOrEmpty(oldValue))
                 return 0;
             newValue ??= string.Empty;
-            int count = 0;
-            int index = 0;
-            while ((index = IndexOf(oldValue, index)) >= 0)
+            
+            // For same-length replacements, we can use simple position tracking
+            if (oldValue.Length == newValue.Length)
             {
-                ReplaceRange(index, oldValue.Length, newValue);
-                index += newValue.Length;
-                count++;
+                int count = 0;
+                int index = 0;
+                while ((index = IndexOf(oldValue, index)) >= 0)
+                {
+                    ReplaceRange(index, oldValue.Length, newValue);
+                    index += newValue.Length;
+                    count++;
+                }
+                return count;
             }
-            return count;
+            
+            // For different-length replacements, use ToString() to get fresh data
+            // and then set the result back
+            string current = ToString();
+            int occurrences = 0;
+            int searchPos = 0;
+            
+            // Count occurrences
+            while ((searchPos = current.IndexOf(oldValue, searchPos, StringComparison.Ordinal)) >= 0)
+            {
+                occurrences++;
+                searchPos += oldValue.Length;
+            }
+            
+            if (occurrences == 0)
+                return 0;
+            
+            // Do the replacement using standard string methods
+            string result = current.Replace(oldValue, newValue);
+            SetString(result);
+            
+            return occurrences;
         }
 
         /// <summary>

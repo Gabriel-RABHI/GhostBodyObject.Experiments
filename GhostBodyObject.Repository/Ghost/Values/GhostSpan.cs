@@ -375,13 +375,28 @@ namespace GhostBodyObject.Repository.Ghost.Values
         public int RemoveAll(T value)
         {
             int count = 0;
+            int currentLength = Length;
             int index;
-            while ((index = IndexOf(value)) >= 0)
+            while (currentLength > 0 && (index = IndexOfInRange(value, currentLength)) >= 0)
             {
                 RemoveAt(index);
+                currentLength--;
                 count++;
             }
             return count;
+        }
+
+        // Helper method for searching within a specified range
+        private int IndexOfInRange(T value, int length)
+        {
+            var span = AsSpan();
+            int searchLength = Math.Min(length, span.Length);
+            for (int i = 0; i < searchLength; i++)
+            {
+                if (EqualityComparer<T>.Default.Equals(span[i], value))
+                    return i;
+            }
+            return -1;
         }
 
         /// <summary>

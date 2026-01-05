@@ -419,10 +419,12 @@ namespace GhostBodyObject.Repository
             if (value.IsEmpty)
                 return 0;
             int count = 0;
+            int currentByteLength = ByteLength;
             int index;
-            while ((index = IndexOfBytes(value)) >= 0)
+            while (currentByteLength >= value.Length && (index = AsBytes(0, currentByteLength).IndexOf(value)) >= 0)
             {
                 RemoveBytesAt(index, value.Length);
+                currentByteLength -= value.Length;
                 count++;
             }
             return count;
@@ -478,11 +480,13 @@ namespace GhostBodyObject.Repository
             if (oldValue.IsEmpty)
                 return 0;
             int count = 0;
-            int index = 0;
-            while ((index = AsBytes(index).IndexOf(oldValue)) >= 0)
+            int searchStart = 0;
+            int relativeIndex;
+            while ((relativeIndex = AsBytes(searchStart).IndexOf(oldValue)) >= 0)
             {
-                ReplaceBytesRange(index, oldValue.Length, newValue);
-                index += newValue.Length;
+                int absoluteIndex = searchStart + relativeIndex;
+                ReplaceBytesRange(absoluteIndex, oldValue.Length, newValue);
+                searchStart = absoluteIndex + newValue.Length;
                 count++;
             }
             return count;
