@@ -125,6 +125,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [Fact]
         public void ForbidInTaskMutations()
         {
+            var COUNT = 100_000_000;
             Assert.Throws(typeof(AggregateException), () =>
             {
                 var repository = new BloggerRepository();
@@ -133,19 +134,19 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     var t1 = Task.Run(() =>
                     {
                         var user = new BloggerUser();
-                        for (int i=0;i<1_000_000_000;i++)
+                        for (int i = 0; i < COUNT; i++)
                             user.Active = !user.Active;
                     });
                     var t2 = Task.Run(() =>
                     {
                         var user = new BloggerUser();
-                        for (int i = 0; i < 1_000_000_000; i++)
+                        for (int i = 0; i < COUNT; i++)
                             user.Active = !user.Active;
                     });
                     var t3 = Task.Run(() =>
                     {
                         var user = new BloggerUser();
-                        for (int i = 0; i < 1_000_000_000; i++)
+                        for (int i = 0; i < COUNT; i++)
                             user.Active = !user.Active;
                     });
                     Task.WaitAll(t1, t2, t3);

@@ -232,6 +232,380 @@ namespace GhostBodyObject.Repository
         }
 
         // -------------------------------------------------------------------------
+        // HIGH-PERFORMANCE STRING MODIFICATION - IN-PLACE OPERATIONS
+        // -------------------------------------------------------------------------
+
+        /// <summary>
+        /// Appends a string to the end (UTF-8 encoded).
+        /// </summary>
+        public unsafe void Append(string value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (string.IsNullOrEmpty(value))
+                return;
+
+            var utf8Bytes = Encoding.UTF8.GetBytes(value);
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->AppendToArray(union, utf8Bytes.AsSpan(), _arrayIndex);
+        }
+
+        /// <summary>
+        /// Appends UTF-8 bytes to the end.
+        /// </summary>
+        public unsafe void Append(ReadOnlySpan<byte> value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (value.IsEmpty)
+                return;
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->AppendToArray(union, value, _arrayIndex);
+        }
+
+        /// <summary>
+        /// Appends another GhostStringUtf8 to the end.
+        /// </summary>
+        public void Append(GhostStringUtf8 value)
+        {
+            Append(value.AsBytes());
+        }
+
+        /// <summary>
+        /// Appends a GhostStringUtf16 to the end (converts to UTF-8).
+        /// </summary>
+        public void Append(GhostStringUtf16 value)
+        {
+            Append(value.ToString());
+        }
+
+        /// <summary>
+        /// Prepends a string to the beginning (UTF-8 encoded).
+        /// </summary>
+        public unsafe void Prepend(string value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (string.IsNullOrEmpty(value))
+                return;
+
+            var utf8Bytes = Encoding.UTF8.GetBytes(value);
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->PrependToArray(union, utf8Bytes.AsSpan(), _arrayIndex);
+        }
+
+        /// <summary>
+        /// Prepends UTF-8 bytes to the beginning.
+        /// </summary>
+        public unsafe void Prepend(ReadOnlySpan<byte> value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (value.IsEmpty)
+                return;
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->PrependToArray(union, value, _arrayIndex);
+        }
+
+        /// <summary>
+        /// Prepends another GhostStringUtf8 to the beginning.
+        /// </summary>
+        public void Prepend(GhostStringUtf8 value)
+        {
+            Prepend(value.AsBytes());
+        }
+
+        /// <summary>
+        /// Prepends a GhostStringUtf16 to the beginning (converts to UTF-8).
+        /// </summary>
+        public void Prepend(GhostStringUtf16 value)
+        {
+            Prepend(value.ToString());
+        }
+
+        /// <summary>
+        /// Inserts a string at the specified byte offset (UTF-8 encoded).
+        /// </summary>
+        public unsafe void InsertBytesAt(int byteOffset, string value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (string.IsNullOrEmpty(value))
+                return;
+            if ((uint)byteOffset > (uint)ByteLength)
+                ThrowIndexOutOfRange();
+
+            var utf8Bytes = Encoding.UTF8.GetBytes(value);
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->InsertIntoArray(union, utf8Bytes.AsSpan(), _arrayIndex, byteOffset);
+        }
+
+        /// <summary>
+        /// Inserts UTF-8 bytes at the specified byte offset.
+        /// </summary>
+        public unsafe void InsertBytesAt(int byteOffset, ReadOnlySpan<byte> value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (value.IsEmpty)
+                return;
+            if ((uint)byteOffset > (uint)ByteLength)
+                ThrowIndexOutOfRange();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->InsertIntoArray(union, value, _arrayIndex, byteOffset);
+        }
+
+        /// <summary>
+        /// Inserts another GhostStringUtf8 at the specified byte offset.
+        /// </summary>
+        public void InsertBytesAt(int byteOffset, GhostStringUtf8 value)
+        {
+            InsertBytesAt(byteOffset, value.AsBytes());
+        }
+
+        /// <summary>
+        /// Removes bytes starting at the specified byte offset.
+        /// </summary>
+        public unsafe void RemoveBytesAt(int byteOffset, int byteCount)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (byteCount <= 0)
+                return;
+            if (byteOffset < 0 || (uint)(byteOffset + byteCount) > (uint)ByteLength)
+                ThrowIndexOutOfRange();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->RemoveFromArray(union, _arrayIndex, byteOffset, byteCount);
+        }
+
+        /// <summary>
+        /// Removes all bytes from the specified offset to the end.
+        /// </summary>
+        public void RemoveBytesFrom(int byteOffset)
+        {
+            RemoveBytesAt(byteOffset, ByteLength - byteOffset);
+        }
+
+        /// <summary>
+        /// Removes the first occurrence of the specified byte sequence.
+        /// </summary>
+        /// <returns>True if the sequence was found and removed; otherwise, false.</returns>
+        public bool RemoveFirstBytes(ReadOnlySpan<byte> value)
+        {
+            int index = IndexOfBytes(value);
+            if (index < 0)
+                return false;
+            RemoveBytesAt(index, value.Length);
+            return true;
+        }
+
+        /// <summary>
+        /// Removes all occurrences of the specified byte sequence.
+        /// </summary>
+        /// <returns>The number of occurrences removed.</returns>
+        public int RemoveAllBytes(ReadOnlySpan<byte> value)
+        {
+            if (value.IsEmpty)
+                return 0;
+            int count = 0;
+            int index;
+            while ((index = IndexOfBytes(value)) >= 0)
+            {
+                RemoveBytesAt(index, value.Length);
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Replaces a range of bytes with new bytes.
+        /// </summary>
+        public unsafe void ReplaceBytesRange(int byteOffset, int byteCount, ReadOnlySpan<byte> replacement)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (byteOffset < 0 || byteCount < 0 || (uint)(byteOffset + byteCount) > (uint)ByteLength)
+                ThrowIndexOutOfRange();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->ReplaceInArray(union, replacement, _arrayIndex, byteOffset, byteCount);
+        }
+
+        /// <summary>
+        /// Replaces a range of bytes with a UTF-8 encoded string.
+        /// </summary>
+        public void ReplaceBytesRange(int byteOffset, int byteCount, string replacement)
+        {
+            var utf8Bytes = string.IsNullOrEmpty(replacement) 
+                ? ReadOnlySpan<byte>.Empty 
+                : Encoding.UTF8.GetBytes(replacement).AsSpan();
+            ReplaceBytesRange(byteOffset, byteCount, utf8Bytes);
+        }
+
+        /// <summary>
+        /// Replaces the first occurrence of a byte sequence with another.
+        /// </summary>
+        /// <returns>True if a replacement was made; otherwise, false.</returns>
+        public bool ReplaceFirstBytes(ReadOnlySpan<byte> oldValue, ReadOnlySpan<byte> newValue)
+        {
+            if (oldValue.IsEmpty)
+                return false;
+            int index = IndexOfBytes(oldValue);
+            if (index < 0)
+                return false;
+            ReplaceBytesRange(index, oldValue.Length, newValue);
+            return true;
+        }
+
+        /// <summary>
+        /// Replaces all occurrences of a byte sequence in place.
+        /// </summary>
+        /// <returns>The number of replacements made.</returns>
+        public int ReplaceAllBytesInPlace(ReadOnlySpan<byte> oldValue, ReadOnlySpan<byte> newValue)
+        {
+            if (oldValue.IsEmpty)
+                return 0;
+            int count = 0;
+            int index = 0;
+            while ((index = AsBytes(index).IndexOf(oldValue)) >= 0)
+            {
+                ReplaceBytesRange(index, oldValue.Length, newValue);
+                index += newValue.Length;
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Clears the string (sets length to 0).
+        /// </summary>
+        public unsafe void Clear()
+        {
+            if (_body == null)
+                ThrowReadOnly();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, ReadOnlySpan<byte>.Empty, _arrayIndex);
+        }
+
+        /// <summary>
+        /// Trims ASCII whitespace bytes from both ends in place.
+        /// </summary>
+        public void TrimAsciiInPlace()
+        {
+            var bytes = AsBytes();
+            int start = 0;
+            int end = bytes.Length;
+            
+            while (start < end && IsAsciiWhitespace(bytes[start]))
+                start++;
+            while (end > start && IsAsciiWhitespace(bytes[end - 1]))
+                end--;
+
+            if (start == 0 && end == bytes.Length)
+                return; // Nothing to trim
+
+            if (start > 0 || end < bytes.Length)
+            {
+                var trimmed = bytes.Slice(start, end - start);
+                SetBytes(trimmed);
+            }
+        }
+
+        /// <summary>
+        /// Trims ASCII whitespace from the start in place.
+        /// </summary>
+        public void TrimAsciiStartInPlace()
+        {
+            var bytes = AsBytes();
+            int start = 0;
+            
+            while (start < bytes.Length && IsAsciiWhitespace(bytes[start]))
+                start++;
+
+            if (start > 0)
+                RemoveBytesAt(0, start);
+        }
+
+        /// <summary>
+        /// Trims ASCII whitespace from the end in place.
+        /// </summary>
+        public void TrimAsciiEndInPlace()
+        {
+            var bytes = AsBytes();
+            int end = bytes.Length;
+            
+            while (end > 0 && IsAsciiWhitespace(bytes[end - 1]))
+                end--;
+
+            if (end < bytes.Length)
+                RemoveBytesFrom(end);
+        }
+
+        /// <summary>
+        /// Converts ASCII characters to uppercase in place.
+        /// </summary>
+        public void ToUpperAsciiInPlace()
+        {
+            if (_sourceBytes != null)
+                ThrowReadOnly();
+
+            var bytes = AsWritableBytes();
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                if (bytes[i] >= (byte)'a' && bytes[i] <= (byte)'z')
+                    bytes[i] = (byte)(bytes[i] - 32);
+            }
+        }
+
+        /// <summary>
+        /// Converts ASCII characters to lowercase in place.
+        /// </summary>
+        public void ToLowerAsciiInPlace()
+        {
+            if (_sourceBytes != null)
+                ThrowReadOnly();
+
+            var bytes = AsWritableBytes();
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                if (bytes[i] >= (byte)'A' && bytes[i] <= (byte)'Z')
+                    bytes[i] = (byte)(bytes[i] + 32);
+            }
+        }
+
+        /// <summary>
+        /// Reverses the UTF-8 bytes in place.
+        /// Warning: This may produce invalid UTF-8 if the string contains multi-byte characters.
+        /// Use only for ASCII strings or when you need raw byte reversal.
+        /// </summary>
+        public void ReverseBytesInPlace()
+        {
+            if (_sourceBytes != null)
+                ThrowReadOnly();
+
+            AsWritableBytes().Reverse();
+        }
+
+        private static bool IsAsciiWhitespace(byte b)
+        {
+            return b == (byte)' ' || b == (byte)'\t' || b == (byte)'\n' || 
+                   b == (byte)'\r' || b == (byte)'\v' || b == (byte)'\f';
+        }
+
+        // -------------------------------------------------------------------------
         // CONVERSION
         // -------------------------------------------------------------------------
 

@@ -1,0 +1,812 @@
+﻿using GhostBodyObject.Common.Memory;
+using GhostBodyObject.Repository.Body.Vectors;
+using GhostBodyObject.Repository.Ghost.Structs;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+namespace GhostBodyObject.Repository.Body.Contracts
+{
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
+    public unsafe abstract class BodyBase : IEntityBody
+    {
+        [FieldOffset(0)]
+        protected object _owner;
+
+        [FieldOffset(8)]
+        protected IntPtr _vTablePtr;
+
+        [FieldOffset(16)]
+        protected PinnedMemory<byte> _data;
+
+        [FieldOffset(40)]
+        protected bool _mapped;
+
+        [FieldOffset(41)]
+        protected bool _immutable;
+
+        protected unsafe int TotalSize
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            get
+            {
+                var _vt = (VectorTableHeader*)_vTablePtr;
+                if (_vt->LargeArrays)
+                {
+                    ArrayMapLargeEntry* last = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset + ((_vt->ArrayMapLength - 1) * sizeof(ArrayMapLargeEntry)));
+                    return last->ArrayEndOffset;
+                }
+                else
+                {
+                    ArrayMapSmallEntry* last = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset + ((_vt->ArrayMapLength - 1) * sizeof(ArrayMapSmallEntry)));
+                    return last->ArrayEndOffset;
+                }
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // Generic Array Swap Helpers
+        // -----------------------------------------------------------------
+        /// <summary>
+        /// Replaces the contents of the array at the specified index with the data from the provided memory buffer.
+        /// </summary>
+        /// <remarks>This method updates the data of an existing array in place. If the size of the new
+        /// data differs from the current array size, the underlying storage may be resized and other arrays may be
+        /// shifted to accommodate the change. This shift respect the needed alignement. Arrays are sorted by value size.
+        /// Callers should ensure that the source buffer is valid and that the index
+        /// refers to an existing array in the Array Map.</remarks>
+        /// <param name="src">A span containing the new data to copy into the target array. The length of this buffer must match
+        /// the expected size for the array at the specified index.</param>
+        /// <param name="arrayIndex">The zero-based index of the array to be updated.</param>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void SwapAnyArray(ReadOnlySpan<byte> src, int arrayIndex)
+        {
+            // This method must move arrays taking care of alignements and offsets.
+            // Arrays are sorted from largest to smallest value size: [8, 4, 4, 2, 2, 1, 1]
+            // Key insight: Once aligned to the next array's value size, all subsequent arrays
+            // are naturally aligned (since value sizes are decreasing).
+            // This allows a single block copy for all subsequent arrays.
+            if (arrayIndex < 0)
+                return;
+            var _vt = (VectorTableHeader*)_vTablePtr;
+            if (_vt->LargeArrays)
+            {
+                SwapAnyArrayLarge(src, arrayIndex, _vt);
+            }
+            else
+            {
+                SwapAnyArraySmall(src, arrayIndex, _vt);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int AlignTo(int offset, int alignment)
+        {
+            if (alignment <= 1) return offset;
+            int mask = alignment - 1;
+            return (offset + mask) & ~mask;
+        }
+
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void SwapAnyArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        {
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = mapEntry->ValueSize;
+
+            // Check that src length is a multiple of value size
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = (int)mapEntry->ArrayOffset;
+            int arrayCount = _vt->ArrayMapLength;
+
+            if (currentPhysicalSize == src.Length)
+            {
+                // -------- Exact fit: just copy data --------
+                if (src.Length == 0)
+                    return;
+                fixed (byte* srcPtr = src)
+                {
+                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                }
+                return;
+            }
+
+            // -------- Size changed: need to shift subsequent arrays --------
+            int oldTotalSize = TotalSize;
+            int newArrayEnd = currentOffset + src.Length;
+            bool hasSubsequentArrays = arrayIndex + 1 < arrayCount;
+
+            if (!hasSubsequentArrays)
+            {
+                // Last array: just resize and copy
+                if (src.Length > currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
+                {
+                    mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
+
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
+                    {
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    }
+                }
+
+                if (src.Length < currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
+                {
+                    mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
+
+                mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+                return;
+            }
+
+            // Get next array info for alignment
+            ArrayMapLargeEntry* nextEntry = mapBase + arrayIndex + 1;
+            int nextValueSize = nextEntry->ValueSize;
+            int oldNextOffset = (int)nextEntry->ArrayOffset;
+            int tailLength = oldTotalSize - oldNextOffset;
+
+            // Align new position for subsequent arrays (all naturally aligned after this)
+            // delta == 0 is possible when sizes differ but alignment padding absorbs the difference
+            int newNextOffset = AlignTo(newArrayEnd, nextValueSize);
+            int delta = newNextOffset - oldNextOffset;
+
+            if (delta == 0)
+            {
+                // No shift needed, just copy new data
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
+                    {
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    }
+                    mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+                    return;
+                }
+
+                int newTotalSize = oldTotalSize + delta;
+
+                if (delta > 0)
+                {
+                    // -------- Growing: resize first, then move tail backward (from end) --------
+                    if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                    {
+                        mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapEntry = mapBase + arrayIndex;
+                    }
+                    // Move all subsequent arrays in one block (use memmove semantics for overlapping)
+                    if (tailLength > 0)
+                    {
+                        Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                    }
+                }
+                else
+                {
+                    // -------- Shrinking: move tail forward first, then resize --------
+                    if (tailLength > 0)
+                        Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                    if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                    {
+                        mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapEntry = mapBase + arrayIndex;
+                    }
+                }
+
+                // Update all subsequent array offsets with uniform delta
+                for (int i = arrayIndex + 1; i < arrayCount; i++)
+                {
+                    ArrayMapLargeEntry* entry = mapBase + i;
+                    entry->ArrayOffset = (uint)((int)entry->ArrayOffset + delta);
+                }
+
+                // Copy new data
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
+                    {
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    }
+                }
+
+                mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+            }
+        }
+
+        //[MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void SwapAnyArraySmall(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        {
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = (int)mapEntry->ValueSize;
+
+            // Check that src length is a multiple of value size
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = mapEntry->ArrayOffset;
+            int arrayCount = _vt->ArrayMapLength;
+
+            if (currentPhysicalSize == src.Length)
+            {
+                // -------- Exact fit: just copy data --------
+                if (src.Length == 0)
+                    return;
+                fixed (byte* srcPtr = src)
+                {
+                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                }
+                return;
+            }
+
+            // -------- Size changed: need to shift subsequent arrays --------
+            int oldTotalSize = TotalSize;
+            int newArrayEnd = currentOffset + src.Length;
+            bool hasSubsequentArrays = arrayIndex + 1 < arrayCount;
+
+            if (!hasSubsequentArrays)
+            {
+                // Last array: just resize and copy
+                if (src.Length > currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
+                {
+                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
+
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
+                    {
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    }
+                }
+
+                if (src.Length < currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
+                {
+                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
+
+                mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+                return;
+            }
+
+            // Get next array info for alignment
+            ArrayMapSmallEntry* nextEntry = mapBase + arrayIndex + 1;
+            int nextValueSize = (int)nextEntry->ValueSize;
+            int oldNextOffset = nextEntry->ArrayOffset;
+            int tailLength = oldTotalSize - oldNextOffset;
+
+            // Align new position for subsequent arrays (all naturally aligned after this)
+            // delta == 0 is possible when sizes differ but alignment padding absorbs the difference
+            int newNextOffset = AlignTo(newArrayEnd, nextValueSize);
+            int delta = newNextOffset - oldNextOffset;
+
+            if (delta == 0)
+            {
+                // No shift needed, just copy new data
+                if (src.Length > 0)
+                {
+                    fixed (byte* srcPtr = src)
+                    {
+                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    }
+                }
+                mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+                return;
+            }
+
+            int newTotalSize = oldTotalSize + delta;
+
+            if (delta > 0)
+            {
+                // -------- Growing: resize first, then move tail backward (from end) --------
+                if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                {
+                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
+
+                // Move all subsequent arrays in one block (use memmove semantics for overlapping)
+                if (tailLength > 0)
+                {
+                    Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                }
+            }
+            else
+            {
+                // -------- Shrinking: move tail forward first, then resize --------
+                if (tailLength > 0)
+                {
+                    Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                }
+                if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                {
+                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapEntry = mapBase + arrayIndex;
+                }
+            }
+
+            // Update all subsequent array offsets with uniform delta
+            for (int i = arrayIndex + 1; i < arrayCount; i++)
+            {
+                ArrayMapSmallEntry* entry = mapBase + i;
+                entry->ArrayOffset = (ushort)(entry->ArrayOffset + delta);
+            }
+
+            // Copy new data
+            if (src.Length > 0)
+            {
+                fixed (byte* srcPtr = src)
+                {
+                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                }
+            }
+            mapEntry->ArrayLength = (uint)(src.Length / valueSize);
+        }
+
+        // -----------------------------------------------------------------
+        // High-Performance Array Modification Helpers
+        // -----------------------------------------------------------------
+
+        /// <summary>
+        /// Appends data to the end of the array at the specified index.
+        /// </summary>
+        /// <param name="src">The data to append.</param>
+        /// <param name="arrayIndex">The zero-based index of the array.</param>
+        public unsafe void AppendToArray(ReadOnlySpan<byte> src, int arrayIndex)
+        {
+            if (arrayIndex < 0 || src.Length == 0)
+                return;
+
+            var _vt = (VectorTableHeader*)_vTablePtr;
+            if (_vt->LargeArrays)
+                AppendToArrayLarge(src, arrayIndex, _vt);
+            else
+                AppendToArraySmall(src, arrayIndex, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void AppendToArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        {
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = mapEntry->ValueSize;
+
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = (int)mapEntry->ArrayOffset;
+            int newPhysicalSize = currentPhysicalSize + src.Length;
+
+            // Build combined data: existing + new
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            if (currentPhysicalSize > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined);
+            }
+            src.CopyTo(combined.Slice(currentPhysicalSize));
+
+            // Use SwapAnyArray to handle all the resizing/shifting logic
+            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void AppendToArraySmall(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        {
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = (int)mapEntry->ValueSize;
+
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = mapEntry->ArrayOffset;
+            int newPhysicalSize = currentPhysicalSize + src.Length;
+
+            // Build combined data: existing + new
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            if (currentPhysicalSize > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined);
+            }
+            src.CopyTo(combined.Slice(currentPhysicalSize));
+
+            // Use SwapAnyArray to handle all the resizing/shifting logic
+            SwapAnyArraySmall(combined, arrayIndex, _vt);
+        }
+
+        /// <summary>
+        /// Prepends data to the beginning of the array at the specified index.
+        /// </summary>
+        /// <param name="src">The data to prepend.</param>
+        /// <param name="arrayIndex">The zero-based index of the array.</param>
+        public unsafe void PrependToArray(ReadOnlySpan<byte> src, int arrayIndex)
+        {
+            if (arrayIndex < 0 || src.Length == 0)
+                return;
+
+            var _vt = (VectorTableHeader*)_vTablePtr;
+            if (_vt->LargeArrays)
+                PrependToArrayLarge(src, arrayIndex, _vt);
+            else
+                PrependToArraySmall(src, arrayIndex, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void PrependToArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        {
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = mapEntry->ValueSize;
+
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = (int)mapEntry->ArrayOffset;
+            int newPhysicalSize = currentPhysicalSize + src.Length;
+
+            // Build combined data: new + existing
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            src.CopyTo(combined);
+            if (currentPhysicalSize > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined.Slice(src.Length));
+            }
+
+            // Use SwapAnyArray to handle all the resizing/shifting logic
+            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void PrependToArraySmall(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        {
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = (int)mapEntry->ValueSize;
+
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = mapEntry->ArrayOffset;
+            int newPhysicalSize = currentPhysicalSize + src.Length;
+
+            // Build combined data: new + existing
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            src.CopyTo(combined);
+            if (currentPhysicalSize > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined.Slice(src.Length));
+            }
+
+            // Use SwapAnyArray to handle all the resizing/shifting logic
+            SwapAnyArraySmall(combined, arrayIndex, _vt);
+        }
+
+        /// <summary>
+        /// Inserts data at the specified byte offset within the array at the specified index.
+        /// </summary>
+        /// <param name="src">The data to insert.</param>
+        /// <param name="arrayIndex">The zero-based index of the array.</param>
+        /// <param name="byteOffset">The byte offset within the array where data should be inserted.</param>
+        public unsafe void InsertIntoArray(ReadOnlySpan<byte> src, int arrayIndex, int byteOffset)
+        {
+            if (arrayIndex < 0 || src.Length == 0)
+                return;
+
+            var _vt = (VectorTableHeader*)_vTablePtr;
+            if (_vt->LargeArrays)
+                InsertIntoArrayLarge(src, arrayIndex, byteOffset, _vt);
+            else
+                InsertIntoArraySmall(src, arrayIndex, byteOffset, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void InsertIntoArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, int byteOffset, VectorTableHeader* _vt)
+        {
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = mapEntry->ValueSize;
+
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+            if (byteOffset % valueSize != 0)
+                throw new ArgumentException($"Byte offset ({byteOffset}) must be aligned to value size ({valueSize}).");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = (int)mapEntry->ArrayOffset;
+
+            if (byteOffset > currentPhysicalSize)
+                byteOffset = currentPhysicalSize;
+
+            int newPhysicalSize = currentPhysicalSize + src.Length;
+
+            // Build combined data: before + new + after
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            if (byteOffset > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+            }
+            src.CopyTo(combined.Slice(byteOffset));
+            if (byteOffset < currentPhysicalSize)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + byteOffset, currentPhysicalSize - byteOffset)
+                    .CopyTo(combined.Slice(byteOffset + src.Length));
+            }
+
+            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void InsertIntoArraySmall(ReadOnlySpan<byte> src, int arrayIndex, int byteOffset, VectorTableHeader* _vt)
+        {
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = (int)mapEntry->ValueSize;
+
+            if (src.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and source array size ({src.Length}) mismatch.");
+            if (byteOffset % valueSize != 0)
+                throw new ArgumentException($"Byte offset ({byteOffset}) must be aligned to value size ({valueSize}).");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = mapEntry->ArrayOffset;
+
+            if (byteOffset > currentPhysicalSize)
+                byteOffset = currentPhysicalSize;
+
+            int newPhysicalSize = currentPhysicalSize + src.Length;
+
+            // Build combined data: before + new + after
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            if (byteOffset > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+            }
+            src.CopyTo(combined.Slice(byteOffset));
+            if (byteOffset < currentPhysicalSize)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + byteOffset, currentPhysicalSize - byteOffset)
+                    .CopyTo(combined.Slice(byteOffset + src.Length));
+            }
+
+            SwapAnyArraySmall(combined, arrayIndex, _vt);
+        }
+
+        /// <summary>
+        /// Removes data from the array at the specified index.
+        /// </summary>
+        /// <param name="arrayIndex">The zero-based index of the array.</param>
+        /// <param name="byteOffset">The byte offset where removal starts.</param>
+        /// <param name="byteLength">The number of bytes to remove.</param>
+        public unsafe void RemoveFromArray(int arrayIndex, int byteOffset, int byteLength)
+        {
+            if (arrayIndex < 0 || byteLength <= 0)
+                return;
+
+            var _vt = (VectorTableHeader*)_vTablePtr;
+            if (_vt->LargeArrays)
+                RemoveFromArrayLarge(arrayIndex, byteOffset, byteLength, _vt);
+            else
+                RemoveFromArraySmall(arrayIndex, byteOffset, byteLength, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void RemoveFromArrayLarge(int arrayIndex, int byteOffset, int byteLength, VectorTableHeader* _vt)
+        {
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = mapEntry->ValueSize;
+
+            if (byteLength % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and remove length ({byteLength}) mismatch.");
+            if (byteOffset % valueSize != 0)
+                throw new ArgumentException($"Byte offset ({byteOffset}) must be aligned to value size ({valueSize}).");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = (int)mapEntry->ArrayOffset;
+
+            if (byteOffset >= currentPhysicalSize)
+                return;
+
+            // Clamp byteLength if it would go past the end
+            if (byteOffset + byteLength > currentPhysicalSize)
+                byteLength = currentPhysicalSize - byteOffset;
+
+            int newPhysicalSize = currentPhysicalSize - byteLength;
+
+            if (newPhysicalSize == 0)
+            {
+                SwapAnyArrayLarge(ReadOnlySpan<byte>.Empty, arrayIndex, _vt);
+                return;
+            }
+
+            // Build combined data: before + after (skipping the removed section)
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            if (byteOffset > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+            }
+            int afterOffset = byteOffset + byteLength;
+            if (afterOffset < currentPhysicalSize)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
+                    .CopyTo(combined.Slice(byteOffset));
+            }
+
+            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void RemoveFromArraySmall(int arrayIndex, int byteOffset, int byteLength, VectorTableHeader* _vt)
+        {
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = (int)mapEntry->ValueSize;
+
+            if (byteLength % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and remove length ({byteLength}) mismatch.");
+            if (byteOffset % valueSize != 0)
+                throw new ArgumentException($"Byte offset ({byteOffset}) must be aligned to value size ({valueSize}).");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = mapEntry->ArrayOffset;
+
+            if (byteOffset >= currentPhysicalSize)
+                return;
+
+            // Clamp byteLength if it would go past the end
+            if (byteOffset + byteLength > currentPhysicalSize)
+                byteLength = currentPhysicalSize - byteOffset;
+
+            int newPhysicalSize = currentPhysicalSize - byteLength;
+
+            if (newPhysicalSize == 0)
+            {
+                SwapAnyArraySmall(ReadOnlySpan<byte>.Empty, arrayIndex, _vt);
+                return;
+            }
+
+            // Build combined data: before + after (skipping the removed section)
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            if (byteOffset > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+            }
+            int afterOffset = byteOffset + byteLength;
+            if (afterOffset < currentPhysicalSize)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
+                    .CopyTo(combined.Slice(byteOffset));
+            }
+
+            SwapAnyArraySmall(combined, arrayIndex, _vt);
+        }
+
+        /// <summary>
+        /// Replaces a range within the array with new data.
+        /// </summary>
+        /// <param name="replacement">The replacement data.</param>
+        /// <param name="arrayIndex">The zero-based index of the array.</param>
+        /// <param name="byteOffset">The byte offset where replacement starts.</param>
+        /// <param name="byteLengthToRemove">The number of bytes to remove before inserting replacement.</param>
+        public unsafe void ReplaceInArray(ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove)
+        {
+            if (arrayIndex < 0)
+                return;
+
+            var _vt = (VectorTableHeader*)_vTablePtr;
+            if (_vt->LargeArrays)
+                ReplaceInArrayLarge(replacement, arrayIndex, byteOffset, byteLengthToRemove, _vt);
+            else
+                ReplaceInArraySmall(replacement, arrayIndex, byteOffset, byteLengthToRemove, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void ReplaceInArrayLarge(ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove, VectorTableHeader* _vt)
+        {
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = mapEntry->ValueSize;
+
+            if (replacement.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and replacement size ({replacement.Length}) mismatch.");
+            if (byteLengthToRemove % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and remove length ({byteLengthToRemove}) mismatch.");
+            if (byteOffset % valueSize != 0)
+                throw new ArgumentException($"Byte offset ({byteOffset}) must be aligned to value size ({valueSize}).");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = (int)mapEntry->ArrayOffset;
+
+            // Clamp byteOffset and byteLengthToRemove
+            if (byteOffset > currentPhysicalSize)
+                byteOffset = currentPhysicalSize;
+            if (byteOffset + byteLengthToRemove > currentPhysicalSize)
+                byteLengthToRemove = currentPhysicalSize - byteOffset;
+
+            int newPhysicalSize = currentPhysicalSize - byteLengthToRemove + replacement.Length;
+
+            // Build combined data: before + replacement + after
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            int pos = 0;
+            if (byteOffset > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+                pos = byteOffset;
+            }
+            if (replacement.Length > 0)
+            {
+                replacement.CopyTo(combined.Slice(pos));
+                pos += replacement.Length;
+            }
+            int afterOffset = byteOffset + byteLengthToRemove;
+            if (afterOffset < currentPhysicalSize)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
+                    .CopyTo(combined.Slice(pos));
+            }
+
+            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void ReplaceInArraySmall(ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove, VectorTableHeader* _vt)
+        {
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
+            int valueSize = (int)mapEntry->ValueSize;
+
+            if (replacement.Length % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and replacement size ({replacement.Length}) mismatch.");
+            if (byteLengthToRemove % valueSize != 0)
+                throw new ArrayTypeMismatchException($"Array value size ({valueSize}) and remove length ({byteLengthToRemove}) mismatch.");
+            if (byteOffset % valueSize != 0)
+                throw new ArgumentException($"Byte offset ({byteOffset}) must be aligned to value size ({valueSize}).");
+
+            int currentPhysicalSize = mapEntry->PhysicalSize;
+            int currentOffset = mapEntry->ArrayOffset;
+
+            // Clamp byteOffset and byteLengthToRemove
+            if (byteOffset > currentPhysicalSize)
+                byteOffset = currentPhysicalSize;
+            if (byteOffset + byteLengthToRemove > currentPhysicalSize)
+                byteLengthToRemove = currentPhysicalSize - byteOffset;
+
+            int newPhysicalSize = currentPhysicalSize - byteLengthToRemove + replacement.Length;
+
+            // Build combined data: before + replacement + after
+            Span<byte> combined = stackalloc byte[newPhysicalSize];
+            int pos = 0;
+            if (byteOffset > 0)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+                pos = byteOffset;
+            }
+            if (replacement.Length > 0)
+            {
+                replacement.CopyTo(combined.Slice(pos));
+                pos += replacement.Length;
+            }
+            int afterOffset = byteOffset + byteLengthToRemove;
+            if (afterOffset < currentPhysicalSize)
+            {
+                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
+                    .CopyTo(combined.Slice(pos));
+            }
+
+            SwapAnyArraySmall(combined, arrayIndex, _vt);
+        }
+    }
+}

@@ -179,6 +179,452 @@ namespace GhostBodyObject.Repository
         }
 
         // -------------------------------------------------------------------------
+        // HIGH-PERFORMANCE STRING MODIFICATION - IN-PLACE OPERATIONS
+        // -------------------------------------------------------------------------
+
+        /// <summary>
+        /// Appends a character to the end of the string.
+        /// </summary>
+        public unsafe void Append(char value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<char>(in value));
+            vt->AppendToArray(union, valueBytes, _arrayIndex);
+        }
+
+        /// <summary>
+        /// Appends a string to the end.
+        /// </summary>
+        public unsafe void Append(string value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (string.IsNullOrEmpty(value))
+                return;
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->AppendToArray(union, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
+        }
+
+        /// <summary>
+        /// Appends characters to the end.
+        /// </summary>
+        public unsafe void Append(ReadOnlySpan<char> value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (value.IsEmpty)
+                return;
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->AppendToArray(union, MemoryMarshal.AsBytes(value), _arrayIndex);
+        }
+
+        /// <summary>
+        /// Appends another GhostStringUtf16 to the end.
+        /// </summary>
+        public void Append(GhostStringUtf16 value)
+        {
+            Append(value.AsSpan());
+        }
+
+        /// <summary>
+        /// Prepends a character to the beginning of the string.
+        /// </summary>
+        public unsafe void Prepend(char value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<char>(in value));
+            vt->PrependToArray(union, valueBytes, _arrayIndex);
+        }
+
+        /// <summary>
+        /// Prepends a string to the beginning.
+        /// </summary>
+        public unsafe void Prepend(string value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (string.IsNullOrEmpty(value))
+                return;
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->PrependToArray(union, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
+        }
+
+        /// <summary>
+        /// Prepends characters to the beginning.
+        /// </summary>
+        public unsafe void Prepend(ReadOnlySpan<char> value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (value.IsEmpty)
+                return;
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->PrependToArray(union, MemoryMarshal.AsBytes(value), _arrayIndex);
+        }
+
+        /// <summary>
+        /// Prepends another GhostStringUtf16 to the beginning.
+        /// </summary>
+        public void Prepend(GhostStringUtf16 value)
+        {
+            Prepend(value.AsSpan());
+        }
+
+        /// <summary>
+        /// Inserts a string at the specified character index.
+        /// </summary>
+        public unsafe void InsertAt(int charIndex, string value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (string.IsNullOrEmpty(value))
+                return;
+            if ((uint)charIndex > (uint)Length)
+                ThrowIndexOutOfRange();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->InsertIntoArray(union, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex, charIndex * sizeof(char));
+        }
+
+        /// <summary>
+        /// Inserts characters at the specified character index.
+        /// </summary>
+        public unsafe void InsertAt(int charIndex, ReadOnlySpan<char> value)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (value.IsEmpty)
+                return;
+            if ((uint)charIndex > (uint)Length)
+                ThrowIndexOutOfRange();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->InsertIntoArray(union, MemoryMarshal.AsBytes(value), _arrayIndex, charIndex * sizeof(char));
+        }
+
+        /// <summary>
+        /// Inserts another GhostStringUtf16 at the specified character index.
+        /// </summary>
+        public void InsertAt(int charIndex, GhostStringUtf16 value)
+        {
+            InsertAt(charIndex, value.AsSpan());
+        }
+
+        /// <summary>
+        /// Removes characters starting at the specified index.
+        /// </summary>
+        public unsafe void RemoveAt(int startIndex, int count)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (count <= 0)
+                return;
+            if (startIndex < 0 || (uint)(startIndex + count) > (uint)Length)
+                ThrowIndexOutOfRange();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->RemoveFromArray(union, _arrayIndex, startIndex * sizeof(char), count * sizeof(char));
+        }
+
+        /// <summary>
+        /// Removes all characters from the specified index to the end.
+        /// </summary>
+        public void RemoveFrom(int startIndex)
+        {
+            RemoveAt(startIndex, Length - startIndex);
+        }
+
+        /// <summary>
+        /// Removes the first occurrence of the specified character.
+        /// </summary>
+        /// <returns>True if the character was found and removed; otherwise, false.</returns>
+        public bool RemoveFirst(char value)
+        {
+            int index = IndexOf(value);
+            if (index < 0)
+                return false;
+            RemoveAt(index, 1);
+            return true;
+        }
+
+        /// <summary>
+        /// Removes the first occurrence of the specified string.
+        /// </summary>
+        /// <returns>True if the string was found and removed; otherwise, false.</returns>
+        public bool RemoveFirst(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return false;
+            int index = IndexOf(value);
+            if (index < 0)
+                return false;
+            RemoveAt(index, value.Length);
+            return true;
+        }
+
+        /// <summary>
+        /// Removes all occurrences of the specified character.
+        /// </summary>
+        /// <returns>The number of characters removed.</returns>
+        public int RemoveAll(char value)
+        {
+            int count = 0;
+            int index;
+            while ((index = IndexOf(value)) >= 0)
+            {
+                RemoveAt(index, 1);
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Removes all occurrences of the specified string.
+        /// </summary>
+        /// <returns>The number of occurrences removed.</returns>
+        public int RemoveAll(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return 0;
+            int count = 0;
+            int index;
+            while ((index = IndexOf(value)) >= 0)
+            {
+                RemoveAt(index, value.Length);
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Replaces a range of characters with a new string.
+        /// </summary>
+        public unsafe void ReplaceRange(int startIndex, int count, string replacement)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (startIndex < 0 || count < 0 || (uint)(startIndex + count) > (uint)Length)
+                ThrowIndexOutOfRange();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            var replacementBytes = string.IsNullOrEmpty(replacement) 
+                ? ReadOnlySpan<byte>.Empty 
+                : MemoryMarshal.AsBytes(replacement.AsSpan());
+            vt->ReplaceInArray(union, replacementBytes, _arrayIndex, startIndex * sizeof(char), count * sizeof(char));
+        }
+
+        /// <summary>
+        /// Replaces a range of characters with new characters.
+        /// </summary>
+        public unsafe void ReplaceRange(int startIndex, int count, ReadOnlySpan<char> replacement)
+        {
+            if (_body == null)
+                ThrowReadOnly();
+            if (startIndex < 0 || count < 0 || (uint)(startIndex + count) > (uint)Length)
+                ThrowIndexOutOfRange();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            var vt = (VectorTableHeader*)union._vTablePtr;
+            vt->ReplaceInArray(union, MemoryMarshal.AsBytes(replacement), _arrayIndex, startIndex * sizeof(char), count * sizeof(char));
+        }
+
+        /// <summary>
+        /// Replaces the first occurrence of a string with another string.
+        /// </summary>
+        /// <returns>True if a replacement was made; otherwise, false.</returns>
+        public bool ReplaceFirst(string oldValue, string newValue)
+        {
+            if (string.IsNullOrEmpty(oldValue))
+                return false;
+            int index = IndexOf(oldValue);
+            if (index < 0)
+                return false;
+            ReplaceRange(index, oldValue.Length, newValue ?? string.Empty);
+            return true;
+        }
+
+        /// <summary>
+        /// Replaces all occurrences of a string with another string in place.
+        /// </summary>
+        /// <returns>The number of replacements made.</returns>
+        public int ReplaceAllInPlace(string oldValue, string newValue)
+        {
+            if (string.IsNullOrEmpty(oldValue))
+                return 0;
+            newValue ??= string.Empty;
+            int count = 0;
+            int index = 0;
+            while ((index = IndexOf(oldValue, index)) >= 0)
+            {
+                ReplaceRange(index, oldValue.Length, newValue);
+                index += newValue.Length;
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Clears the string (sets length to 0).
+        /// </summary>
+        public unsafe void Clear()
+        {
+            if (_body == null)
+                ThrowReadOnly();
+
+            var union = Unsafe.As<BodyUnion>(_body);
+            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, ReadOnlySpan<byte>.Empty, _arrayIndex);
+        }
+
+        /// <summary>
+        /// Trims whitespace from both ends in place.
+        /// </summary>
+        public void TrimInPlace()
+        {
+            var span = AsSpan();
+            int start = 0;
+            int end = span.Length;
+            
+            while (start < end && char.IsWhiteSpace(span[start]))
+                start++;
+            while (end > start && char.IsWhiteSpace(span[end - 1]))
+                end--;
+
+            if (start == 0 && end == span.Length)
+                return; // Nothing to trim
+
+            if (start > 0 || end < span.Length)
+            {
+                var trimmed = span.Slice(start, end - start);
+                SetString(trimmed);
+            }
+        }
+
+        /// <summary>
+        /// Trims whitespace from the start in place.
+        /// </summary>
+        public void TrimStartInPlace()
+        {
+            var span = AsSpan();
+            int start = 0;
+            
+            while (start < span.Length && char.IsWhiteSpace(span[start]))
+                start++;
+
+            if (start > 0)
+                RemoveAt(0, start);
+        }
+
+        /// <summary>
+        /// Trims whitespace from the end in place.
+        /// </summary>
+        public void TrimEndInPlace()
+        {
+            var span = AsSpan();
+            int end = span.Length;
+            
+            while (end > 0 && char.IsWhiteSpace(span[end - 1]))
+                end--;
+
+            if (end < span.Length)
+                RemoveFrom(end);
+        }
+
+        /// <summary>
+        /// Converts to uppercase in place (ASCII only for performance).
+        /// </summary>
+        public void ToUpperInPlace()
+        {
+            if (_sourceString != null)
+                ThrowReadOnly();
+
+            var span = AsWritableSpan();
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (span[i] >= 'a' && span[i] <= 'z')
+                    span[i] = (char)(span[i] - 32);
+            }
+        }
+
+        /// <summary>
+        /// Converts to lowercase in place (ASCII only for performance).
+        /// </summary>
+        public void ToLowerInPlace()
+        {
+            if (_sourceString != null)
+                ThrowReadOnly();
+
+            var span = AsWritableSpan();
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (span[i] >= 'A' && span[i] <= 'Z')
+                    span[i] = (char)(span[i] + 32);
+            }
+        }
+
+        /// <summary>
+        /// Reverses the string in place.
+        /// </summary>
+        public void ReverseInPlace()
+        {
+            if (_sourceString != null)
+                ThrowReadOnly();
+
+            AsWritableSpan().Reverse();
+        }
+
+        /// <summary>
+        /// Pads the string on the left to reach the specified total width.
+        /// </summary>
+        public void PadLeftInPlace(int totalWidth, char paddingChar = ' ')
+        {
+            int len = Length;
+            if (totalWidth <= len)
+                return;
+
+            int padCount = totalWidth - len;
+            // Use heap-allocated array to avoid stackalloc scope issues
+            char[] padding = new char[padCount];
+            Array.Fill(padding, paddingChar);
+            Prepend(padding.AsSpan());
+        }
+
+        /// <summary>
+        /// Pads the string on the right to reach the specified total width.
+        /// </summary>
+        public void PadRightInPlace(int totalWidth, char paddingChar = ' ')
+        {
+            int len = Length;
+            if (totalWidth <= len)
+                return;
+
+            int padCount = totalWidth - len;
+            // Use heap-allocated array to avoid stackalloc scope issues
+            char[] padding = new char[padCount];
+            Array.Fill(padding, paddingChar);
+            Append(padding.AsSpan());
+        }
+
+        // -------------------------------------------------------------------------
         // CONVERSION
         // -------------------------------------------------------------------------
 

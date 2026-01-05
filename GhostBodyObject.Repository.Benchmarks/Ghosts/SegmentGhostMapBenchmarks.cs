@@ -4,15 +4,11 @@ using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Structs;
-using GhostBodyObject.Repository.Repository.Index;
 using Spectre.Console;
-using System;
-using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 using LocalMapType = ShardedSegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.PinnedSegmentStore>;
-using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 {
