@@ -1,8 +1,7 @@
-﻿using GhostBodyObject.Repository.Body.Vectors;
-using GhostBodyObject.Repository.Ghost.Structs;
+﻿using GhostBodyObject.Repository.Ghost.Structs;
 using System.Runtime.InteropServices;
 
-namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
+namespace GhostBodyObject.Repository.Body.Vectors
 {
     // ---------------------------------------------------------
     // GENERIC

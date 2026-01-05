@@ -1,10 +1,12 @@
-﻿using GhostBodyObject.Repository.Body.Contracts;
+﻿using GhostBodyObject.Common.Memory;
+using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository;
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
+namespace GhostBodyObject.Repository.Body.Vectors
 {
     public unsafe static class VectorTableRegistry<TRepository, TBody>
         where TRepository : GhostRepository
@@ -109,6 +111,14 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             var union = Unsafe.As<BodyUnion>(body);
             union._vTablePtr = (nint)_versionToTable[ghost.Get<GhostHeader>().ModelVersion - 1].Standalone;
             union._data = ghost;
+        }
+
+        static public void BuildFlatStandaloneVersion(int version, TBody body)
+        {
+            var union = Unsafe.As<BodyUnion>(body);
+            union._vTablePtr = (nint)_versionToTable[version - 1].Standalone;
+            union._data = TransientGhostMemoryAllocator.Allocate(union._vTableHeader->MinimalGhostSize);
+            _versionToTable[version - 1].InitialGhost.CopyTo(union._data);
         }
 
         static public void BuildMappedVersion(PinnedMemory<byte> ghost, TBody body, bool readOnly)

@@ -1,8 +1,10 @@
-﻿using System.Runtime.InteropServices;
+﻿using GhostBodyObject.Repository.Body.Vectors;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Repository.Body.Contracts
 {
-    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
     public class BodyUnion : IEntityBody
     {
         [FieldOffset(0)]
@@ -13,5 +15,17 @@ namespace GhostBodyObject.Repository.Body.Contracts
 
         [FieldOffset(16)]
         public PinnedMemory<byte> _data;
+
+        [FieldOffset(40)]
+        protected bool _mapped;
+
+        [FieldOffset(41)]
+        protected bool _immutable;
+
+        internal unsafe VectorTableHeader* _vTableHeader
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (VectorTableHeader*)_vTablePtr;
+        }
     }
 }

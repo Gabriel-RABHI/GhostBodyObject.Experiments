@@ -15,7 +15,7 @@ namespace GhostBodyObject.Common.Memory
     /// cleared or released until the buffer is replaced.</remarks>
     public static class ManagedArenaAllocator
     {
-        public const int DefaultPageSize = 64 * 1024;
+        public const int DefaultPageSize = 128 * 1024;
 
         [ThreadStatic]
         private static byte[]? _buffer;

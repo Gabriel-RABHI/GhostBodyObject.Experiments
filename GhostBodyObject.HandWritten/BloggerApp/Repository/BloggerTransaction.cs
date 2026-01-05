@@ -8,8 +8,6 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
     {
         public BloggerRepository Repository { get; }
 
-        public BloggerTransaction ParentTransaction { get; }
-
         public void Commit()
         {
 
@@ -26,10 +24,9 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         }
 
 
-        public BloggerTransaction(BloggerRepository repository, BloggerTransaction parent, bool readOnly = false) : base(repository, readOnly)
+        public BloggerTransaction(BloggerRepository repository, bool readOnly = false) : base(repository, readOnly)
         {
             Repository = repository;
-            ParentTransaction = parent;
         }
 
         // --------------------------------------------------------- //

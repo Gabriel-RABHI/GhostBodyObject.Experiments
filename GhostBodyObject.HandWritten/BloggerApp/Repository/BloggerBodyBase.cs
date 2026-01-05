@@ -12,7 +12,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
     // ---------------------------------------------------------
     // 3. The Base Entity
     // ---------------------------------------------------------
-    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
     public abstract class BloggerBodyBase : IEntityBody
     {
         [FieldOffset(0)]
@@ -23,6 +23,12 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
 
         [FieldOffset(16)]
         protected PinnedMemory<byte> _data;
+
+        [FieldOffset(40)]
+        protected bool _mapped;
+
+        [FieldOffset(41)]
+        protected bool _immutable;
 
         public BloggerTransaction Transaction => _ownerTransaction;
 
@@ -88,6 +94,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         /// <param name="src">A span containing the new data to copy into the target array. The length of this buffer must match
         /// the expected size for the array at the specified index.</param>
         /// <param name="arrayIndex">The zero-based index of the array to be updated.</param>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void SwapAnyArray(ReadOnlySpan<byte> src, int arrayIndex)
         {
             // This method must move arrays taking care of alignements and offsets.
@@ -95,6 +102,8 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             // Key insight: Once aligned to the next array's value size, all subsequent arrays
             // are naturally aligned (since value sizes are decreasing).
             // This allows a single block copy for all subsequent arrays.
+            if (arrayIndex < 0)
+                return;
             var _vt = (VectorTableHeader*)_vTablePtr;
             if (_vt->LargeArrays)
             {

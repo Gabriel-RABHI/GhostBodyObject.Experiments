@@ -2,6 +2,7 @@
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Body.Vectors;
 using GhostBodyObject.Repository.Ghost.Structs;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -13,7 +14,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
     // 4. The Customer Entity (User Code)
     // ---------------------------------------------------------
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
-    public class BloggerUser : BloggerBodyBase
+    public sealed class BloggerUser : BloggerBodyBase
     {
         public int ModelVersion => 1;
 
@@ -22,6 +23,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (BloggerUser_VectorTable*)_vTablePtr;
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => _vTablePtr = (IntPtr)value;
         }
 
@@ -50,13 +52,16 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                GuardLocalScope();
+                if (!_immutable)
+                    GuardLocalScope();
                 return _data.Get<DateTime>(_vTable->BirthDate_FieldOffset);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
+                if (_immutable)
+                    throw new InvalidOperationException("Cannot modify an immutable Body object.");
                 using (GuardWriteScope())
                 {
                     _vTable->BirthDate_Setter(this, value);
@@ -421,18 +426,18 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                //GuardLocalScope();
+                GuardLocalScope();
                 unsafe
                 {
                     var stringOffset = _data.Get<ArrayMapSmallEntry>(_vTable->FirstName_MapEntryOffset);
-                    return new string((char*)this._data.Ptr, stringOffset.ArrayOffset, (int)stringOffset.ArrayLength / 2);
+                    return new string((char*)(this._data.Ptr + stringOffset.ArrayOffset), 0, (int)stringOffset.ArrayLength);
                 }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                //using (GuardWriteScope())
+                using (GuardWriteScope())
                 {
                     unsafe
                     {

@@ -69,8 +69,38 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                     //var user = users[0];
                     for (int j = 0; j < 10; j++)
                         for (int i = 0; i < COUNT; i++)
+                        {
+                            var user = users[i];
+                            var istring = i.ToString();
+                            user.FirstName = "John" + istring;
+                            user.Pseudonyme = "JT" + istring;
+                            user.City = "New York" + istring;
+                            user.Country = "USA" + istring;
+                            user.CompanyName = "Independant Actor" + istring;
+                            user.Address1 = "Somewhere" + istring;
+                            user.Address2 = "A street" + istring;
+                            user.Address3 = "Well..." + istring;
+                            user.ZipCode = "4538-45" + istring;
+                            user.Hobbies = "American Cinema" + istring;
+                            user.LastName = "Travolta" + istring;
+                            user.Presentation = "One of the most iconic actor." + istring;
+                        }
+                })
+                .PrintToConsole($"Set strings for {COUNT * 10:N0} BloggerUser")
+                .PrintDelayPerOp(COUNT * 10)
+                .PrintSpace();
+            }
+
+            var pocousers = new List<UserPOCO>();
+            for (int i = 0; i < COUNT; i++)
+                pocousers.Add(new UserPOCO());
+            RunMonitoredAction(() =>
+            {
+                //var user = pocousers[0];
+                for (int j = 0; j < 10; j++)
+                    for (int i = 0; i < COUNT; i++)
                     {
-                        var user = users[i];
+                        var user = pocousers[i];
                         var istring = i.ToString();
                         user.FirstName = "John" + istring;
                         user.Pseudonyme = "JT" + istring;
@@ -85,39 +115,9 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                         user.LastName = "Travolta" + istring;
                         user.Presentation = "One of the most iconic actor." + istring;
                     }
-                })
-                .PrintToConsole($"Set strings for {COUNT*10:N0} BloggerUser")
-                .PrintDelayPerOp(COUNT*10)
-                .PrintSpace();
-            }
-
-            var pocousers = new List<UserPOCO>();
-            for (int i = 0; i < COUNT; i++)
-                pocousers.Add(new UserPOCO());
-            RunMonitoredAction(() =>
-            {
-                //var user = pocousers[0];
-                for (int j = 0; j < 10; j++)
-                    for (int i = 0; i < COUNT; i++)
-                {
-                    var user = pocousers[i];
-                    var istring = i.ToString();
-                    user.FirstName = "John" + istring;
-                    user.Pseudonyme = "JT" + istring;
-                    user.City = "New York" + istring;
-                    user.Country = "USA" + istring;
-                    user.CompanyName = "Independant Actor" + istring;
-                    user.Address1 = "Somewhere" + istring;
-                    user.Address2 = "A street" + istring;
-                    user.Address3 = "Well..." + istring;
-                    user.ZipCode = "4538-45" + istring;
-                    user.Hobbies = "American Cinema" + istring;
-                    user.LastName = "Travolta" + istring;
-                    user.Presentation = "One of the most iconic actor." + istring;
-                }
             })
-            .PrintToConsole($"Set strings for {COUNT*10:N0} UserPOCO")
-            .PrintDelayPerOp(COUNT*10)
+            .PrintToConsole($"Set strings for {COUNT * 10:N0} UserPOCO")
+            .PrintDelayPerOp(COUNT * 10)
             .PrintSpace();
         }
 
@@ -128,7 +128,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
-                
+
                 RunMonitoredAction(() =>
                 {
                     for (int j = 0; j < 100; j++)
@@ -138,7 +138,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                             user.FirstName = "Ted is in the wild.";
                         }
                 })
-                .PrintToConsole($"Set strings for {COUNT*100:N0} BloggerUser")
+                .PrintToConsole($"Set strings for {COUNT * 100:N0} BloggerUser")
                 .PrintDelayPerOp(COUNT * 100)
                 .PrintSpace();
             }
@@ -232,16 +232,16 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             {
                 // Request compaction of Large Object Heap
                 //GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-                
+
                 // First pass: collect all generations
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
-                
+
                 // Wait for all finalizers to complete
                 GC.WaitForPendingFinalizers();
-                
+
                 // Second pass: collect objects that were moved from finalization queue
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
-                
+
                 // Final wait to ensure everything is complete
                 GC.WaitForPendingFinalizers();
             })

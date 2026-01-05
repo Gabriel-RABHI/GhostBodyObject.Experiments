@@ -17,16 +17,18 @@ namespace GhostBodyObject.HandWritten.Blogger
 
         public static IBloggerScope OpenReadContext(BloggerRepository repository, bool readOnly = false)
         {
-            var parent = FastCache;
-            var newToken = new BloggerTransaction(repository, parent);
+            if (FastCache != null)
+            {
+                throw new InvalidOperationException("Cannot nest contexts.");
+            }
+            var newToken = new BloggerTransaction(repository);
             _currentToken.Value = newToken;
-            return new BloggerContextScope(newToken, parent);
+            return new BloggerContextScope(newToken);
         }
 
         private class BloggerContextScope : IBloggerScope
         {
             private readonly BloggerTransaction _transaction;
-            private readonly BloggerTransaction? _parentTransaction;
             private readonly BloggerRepository _repository;
             private bool _disposed;
 
@@ -34,12 +36,9 @@ namespace GhostBodyObject.HandWritten.Blogger
 
             public BloggerRepository Repository => _repository;
 
-            public BloggerContextScope(BloggerTransaction transaction, BloggerTransaction? parentTransaction)
+            public BloggerContextScope(BloggerTransaction transaction)
             {
                 _transaction = transaction;
-                _parentTransaction = parentTransaction;
-                if (_parentTransaction != null && _parentTransaction.Repository != _transaction.Repository)
-                    throw new InvalidOperationException("Nested transactions must belong to the same repository.");
                 _repository = transaction.Repository;
             }
 
@@ -50,8 +49,7 @@ namespace GhostBodyObject.HandWritten.Blogger
                 _disposed = true;
                 if (_currentToken.Value == _transaction)
                 {
-                    _currentToken.Value = _parentTransaction;
-                    FastCache = _parentTransaction;
+                    _currentToken.Value = null;
                     _transaction.Close();
                 }
             }
