@@ -162,6 +162,7 @@ This test show that real release is as fast for GBO objects than for POCOs.
 |-------|----------|--------|---------|------------|--------|
 | Release retainned BloggerUser. | 1/1/1 | 4,2 KB | 0,06 ns | 16 329,2M | 0,99 |
 | **Release retainned UserPOCO.** | 1/1/1 | 2,0 KB | 0,06 ns | 16 496,2M | **1,00** |
+
 This tests show the efficiency of the GBO Objects. There is few more "magic" they are able to perform in field of string aggregation, insertions, append and prepend. The GhostString and GhostSpan are inner Ghost accessor and modifier, that present high performance profil. The zero copy string (UTF8 / UTF16) and span large operations set is a "next generation" data processing paradigm.
 
 ## Main Index
