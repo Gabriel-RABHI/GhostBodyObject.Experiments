@@ -62,7 +62,6 @@ Low-level, high-performance building blocks shared across the solution:
   - `ShortCountSpinLock` - Spinlock allowing a configurable number of concurrent threads
   - `ShortRecursiveSpinLock` - Spinlock supporting recursive entry by the same thread
   - `ShortReadWriteSpinLock` - Reader-writer spinlock allowing multiple readers or a single writer
-  - `ShortTicketSpinLock` - Ticket-based fair spinlock
 
 - **Utilities**
   - `XorShift64` - Fast pseudo-random number generator for high-throughput ID generation
