@@ -57,6 +57,7 @@ namespace GhostBodyObject.Common.Memory
         /// <param name="block">The current memory block reference (will be updated).</param>
         /// <param name="newSize">The new required size.</param>
         /// <returns>True if the memory block base address changed (reallocation occurred), false otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool Resize(ref PinnedMemory<byte> block, int newSize)
         {
             if (newSize < 0)
@@ -81,14 +82,14 @@ namespace GhostBodyObject.Common.Memory
             {
                 // Identify if this is a Dedicated Large Block or a Managed Arena Block.
                 // Dedicated blocks are allocated via GC.AllocateUninitializedArray with the specific chunk size.
-                // Arena blocks are slices of a fixed DefaultPageSize (64KB) array.
+                // Arena blocks are slices of a fixed DefaultPageSize (128KB) array.
                 //
                 // Heuristic:
-                // 1. If segment length != 64KB, it MUST be Dedicated (since Arena pages are always 64KB).
-                // 2. If segment length == 64KB, it could be ambiguous.
+                // 1. If segment length != 128KB, it MUST be Dedicated (since Arena pages are always 128KB).
+                // 2. If segment length == 128KB, it could be ambiguous.
                 //    - If block.Length > 32KB (LargeBlockThreshold), it MUST be Dedicated (Arena only handles <= 32KB).
                 //    - If block.Length <= 32KB, we treat it as Arena. 
-                //      (Even if it was a Dedicated 64KB block shrunk to < 32KB, treating it as Arena is safe 
+                //      (Even if it was a Dedicated 128KB block shrunk to < 32KB, treating it as Arena is safe 
                 //       because we will calculate a smaller capacity and potentially reallocate, which is valid).
                 
                 bool isDedicated = (segment.Length != ManagedArenaAllocator.DefaultPageSize) || (block.Length > LargeBlockThreshold);
@@ -117,9 +118,8 @@ namespace GhostBodyObject.Common.Memory
                 {
                     // -------- Managed Arena Block
                     // Capacity is determined by the chunk size of the current length.
-                    // We assume the block was allocated with the standard chunking logic.
-                    ushort index = ChunkSizeComputation.SizeToIndex((uint)block.Length);
-                    uint capacity = ChunkSizeComputation.IndexToSize(index);
+                    // Single lookup: combines SizeToIndex + IndexToSize
+                    uint capacity = ChunkSizeComputation.SizeToPhysicalSize((uint)block.Length);
 
                     if (newSize <= capacity)
                     {

@@ -11,7 +11,7 @@ namespace GhostBodyObject.Common.Benchmarks.Objects
         [BruteForceBenchmark("OBJ-01", "GhostId vs GUID", "Objects")]
         public void SequentialTest()
         {
-            RunMonitoredAction(() =>
+            var r1 = RunMonitoredAction(() =>
             {
                 for (int i = 0; i < COUNT; i++)
                 {
@@ -22,7 +22,7 @@ namespace GhostBodyObject.Common.Benchmarks.Objects
             .PrintDelayPerOp(COUNT)
             .PrintSpace();
 
-            RunMonitoredAction(() =>
+            var r2 = RunMonitoredAction(() =>
             {
                 for (int i = 0; i < COUNT; i++)
                 {
@@ -32,6 +32,8 @@ namespace GhostBodyObject.Common.Benchmarks.Objects
             .PrintToConsole($"Create {COUNT:N0} GUID")
             .PrintDelayPerOp(COUNT)
             .PrintSpace();
+
+            PrintComparison("GhostId vs GUID", "", new BenchmarkResult[] { r1, r2 });
         }
     }
 }

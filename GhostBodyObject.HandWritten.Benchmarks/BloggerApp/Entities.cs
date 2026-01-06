@@ -54,6 +54,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
         [BruteForceBenchmark("OBJ-01", "BloggerUser performance comparison with POCO", "Objects")]
         public void SequentialTest()
         {
+            BenchmarkResult r1 = null;
             var users = new List<BloggerUser>();
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
@@ -64,7 +65,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                     user.Active = true;
                     users.Add(new BloggerUser());
                 }
-                RunMonitoredAction(() =>
+                r1 = RunMonitoredAction(() =>
                 {
                     //var user = users[0];
                     for (int j = 0; j < 10; j++)
@@ -94,7 +95,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             var pocousers = new List<UserPOCO>();
             for (int i = 0; i < COUNT; i++)
                 pocousers.Add(new UserPOCO());
-            RunMonitoredAction(() =>
+            var r2 = RunMonitoredAction(() =>
             {
                 //var user = pocousers[0];
                 for (int j = 0; j < 10; j++)
@@ -119,48 +120,82 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             .PrintToConsole($"Set strings for {COUNT * 10:N0} UserPOCO")
             .PrintDelayPerOp(COUNT * 10)
             .PrintSpace();
+
+            PrintComparison("Body / POCO", "BloggerUser performance comparison with POCO", new BenchmarkResult[] { r1, r2 });
         }
 
 
         [BruteForceBenchmark("OBJ-02", "Create BloggerUser in mass", "Objects")]
         public void SequentialMemoryReclaim()
         {
+            BenchmarkResult r1 = null;
+            BenchmarkResult r2 = null;
             var repository = new BloggerRepository();
+
+            WriteComment("The array retain 32 objects at any time, prevent the stack alloc.");
+            WriteComment("The single assignation create a standalone Ghost memory block.");
+
             using (BloggerContext.OpenReadContext(repository))
             {
+                var array = new BloggerUser[32];
+                r1 = RunMonitoredAction(() =>
+                {
+                    for (int j = 0; j < 100; j++)
+                        for (int i = 0; i < COUNT; i++)
+                        {
+                            var user = new BloggerUser();
+                            array[i% 32] = user;
+                        }
+                })
+                .PrintToConsole($"Create {COUNT * 100:N0} initial BloggerUser")
+                .PrintDelayPerOp(COUNT * 100)
+                .PrintSpace();
+                WriteComment($"{(array.Count(o => o.FirstName.Length > 0))}");
+            }
 
-                RunMonitoredAction(() =>
+            using (BloggerContext.OpenReadContext(repository))
+            {
+                var array = new BloggerUser[32];
+                r2 = RunMonitoredAction(() =>
                 {
                     for (int j = 0; j < 100; j++)
                         for (int i = 0; i < COUNT; i++)
                         {
                             var user = new BloggerUser();
                             user.FirstName = "Ted is in the wild.";
+                            array[i % 32] = user;
                         }
                 })
                 .PrintToConsole($"Set strings for {COUNT * 100:N0} BloggerUser")
                 .PrintDelayPerOp(COUNT * 100)
                 .PrintSpace();
+                WriteComment($"{(array.Count(o => o.FirstName.Length > 0))}");
             }
 
-            RunMonitoredAction(() =>
+            var arrayPoco = new UserPOCO[32];
+            var r3 = RunMonitoredAction(() =>
             {
-                //var user = pocousers[0];
                 for (int j = 0; j < 100; j++)
                     for (int i = 0; i < COUNT; i++)
                     {
                         var user = new UserPOCO();
                         user.FirstName = "Ted is in the wild.";
+                        arrayPoco[i % 32] = user;
                     }
             })
             .PrintToConsole($"Set strings for {COUNT * 100:N0} UserPOCO")
             .PrintDelayPerOp(COUNT * 100)
             .PrintSpace();
+
+            WriteComment($"{(arrayPoco.Count(o => o.FirstName != null))}");
+
+            PrintComparison("Body / POCO", "Create BloggerUser in mass", new BenchmarkResult[] { r1, r2, r3 });
         }
 
         [BruteForceBenchmark("OBJ-03", "Garbage Collection time", "Objects")]
         public void GarbageCollection()
         {
+            BenchmarkResult r1 = null;
             var users = new List<BloggerUser>();
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
@@ -183,15 +218,12 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                     user.Presentation = "One of the most iconic actor." + istring;
                     users.Add(user);
                 }
-                RunGCCollect("Collect #1 retainned BloggerUser.");
-                RunGCCollect("Collect #2 retainned BloggerUser.");
+                r1 = RunGCCollect("Collect retainned BloggerUser.");
                 Thread.Sleep(1000);
             }
-            Console.WriteLine("Done." + users.Count);
             users.Clear();
 
-            RunGCCollect("Release #1 retainned BloggerUser.");
-            RunGCCollect("Release #2 retainned BloggerUser.");
+            var r2 = RunGCCollect("Release retainned BloggerUser.");
 
             Thread.Sleep(1000);
 
@@ -214,35 +246,26 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                 user.Presentation = "One of the most iconic actor." + istring;
                 pocousers.Add(user);
             }
-            RunGCCollect("Collect #1 retainned UserPOCO.");
-            RunGCCollect("Collect #2 retainned UserPOCO.");
-            Console.WriteLine("Done." + pocousers.Count);
+            var r3 = RunGCCollect("Collect retainned UserPOCO.");
 
             Thread.Sleep(10000);
 
             pocousers.Clear();
 
-            RunGCCollect("Release #1 retainned UserPOCO.");
-            RunGCCollect("Release #2 retainned UserPOCO.");
+            var r4 =RunGCCollect("Release retainned UserPOCO.");
+
+            PrintComparison("Body / POCO", "Retainned Garbage collection delay", new BenchmarkResult[] { r1, r3 });
+            PrintComparison("Body / POCO", "Garbage collection delay", new BenchmarkResult[] { r2, r4 });
         }
 
-        public void RunGCCollect(string prompt)
+        public BenchmarkResult RunGCCollect(string prompt)
         {
-            RunMonitoredAction(() =>
+            return RunMonitoredAction(() =>
             {
-                // Request compaction of Large Object Heap
-                //GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-
                 // First pass: collect all generations
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
 
                 // Wait for all finalizers to complete
-                GC.WaitForPendingFinalizers();
-
-                // Second pass: collect objects that were moved from finalization queue
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
-
-                // Final wait to ensure everything is complete
                 GC.WaitForPendingFinalizers();
             })
             .PrintToConsole(prompt)
