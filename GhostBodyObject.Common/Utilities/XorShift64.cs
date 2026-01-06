@@ -6,7 +6,7 @@ namespace GhostBodyObject.Common.Utilities
     /// High-performance, unmanaged Pseudo-Random Number Generator.
     /// Using ThreadStatic to avoid lock contention.
     /// </summary>
-    internal static class XorShift64
+    public static class XorShift64
     {
         [ThreadStatic]
         private static ulong _state;

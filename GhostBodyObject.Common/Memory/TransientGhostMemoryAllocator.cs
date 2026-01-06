@@ -1,5 +1,6 @@
 ﻿#define PER_THREAD
 
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Common.Memory
@@ -22,25 +23,30 @@ namespace GhostBodyObject.Common.Memory
         /// </summary>
         /// <param name="size">The logical size required by the user.</param>
         /// <returns>A Memory&lt;byte&gt; slice of the requested size.</returns>
-        public static Memory<byte> Allocate(int size)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe PinnedMemory<byte> Allocate(int size)
         {
+            // Use unsigned comparison: negative values become large positive, failing the check
             if (size < 0)
                 throw new ArgumentOutOfRangeException(nameof(size));
-            if (size == 0)
-                return Memory<byte>.Empty;
 
-            ushort index = ChunkSizeComputation.SizeToIndex((uint)size);
-            uint physicalSize = ChunkSizeComputation.IndexToSize(index);
+            if ((uint)size == 0)
+                return PinnedMemory<byte>.Empty;
+
+            // Single lookup: size -> physical size (combines SizeToIndex + IndexToSize)
+            uint physicalSize = ChunkSizeComputation.SizeToPhysicalSize((uint)size);
 
             if (physicalSize > LargeBlockThreshold)
             {
-                var array = GC.AllocateUninitializedArray<byte>((int)physicalSize);
-                return new Memory<byte>(array, 0, size);
+                var array = GC.AllocateUninitializedArray<byte>((int)physicalSize, pinned: true);
+                return new PinnedMemory<byte>(array, 0, size);
             }
             else
             {
+                // Allocate physical size from arena, but return logical size directly
+                // Avoids the Slice call overhead by constructing with correct length
                 var memory = ManagedArenaAllocator.Allocate((int)physicalSize);
-                return memory.Slice(0, size);
+                return new PinnedMemory<byte>(memory.MemoryOwner, memory.Ptr, size);
             }
         }
 
@@ -50,79 +56,94 @@ namespace GhostBodyObject.Common.Memory
         /// </summary>
         /// <param name="block">The current memory block reference (will be updated).</param>
         /// <param name="newSize">The new required size.</param>
-        public static void Resize(ref Memory<byte> block, int newSize)
+        /// <returns>True if the memory block base address changed (reallocation occurred), false otherwise.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool Resize(ref PinnedMemory<byte> block, int newSize)
         {
             if (newSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(newSize));
             if (block.IsEmpty)
             {
                 block = Allocate(newSize);
-                return;
+                return true; // Address changed (was empty, now allocated)
             }
             if (newSize == 0)
             {
-                block = Memory<byte>.Empty;
-                return;
+                block = PinnedMemory<byte>.Empty;
+                return true; // Address changed (was allocated, now empty)
             }
 
             // -------- Get Underlying Array info
             // We declare segment here so it stays in scope for the rest of the method
-            ArraySegment<byte> segment = default;
-            bool hasUnderlyingArray = MemoryMarshal.TryGetArray(block, out segment) && segment.Array != null;
+            var segment = block.MemoryOwner as byte[];
 
             // -------- Determine TRUE Physical Capacity
-            uint currentPhysicalCapacity;
-            bool isLargeDedicatedArray = false;
-
-            if (hasUnderlyingArray)
+            if (segment != null)
             {
-                uint actualArrayLength = (uint)segment.Array!.Length;
+                // Identify if this is a Dedicated Large Block or a Managed Arena Block.
+                // Dedicated blocks are allocated via GC.AllocateUninitializedArray with the specific chunk size.
+                // Arena blocks are slices of a fixed DefaultPageSize (128KB) array.
+                //
+                // Heuristic:
+                // 1. If segment length != 128KB, it MUST be Dedicated (since Arena pages are always 128KB).
+                // 2. If segment length == 128KB, it could be ambiguous.
+                //    - If block.Length > 32KB (LargeBlockThreshold), it MUST be Dedicated (Arena only handles <= 32KB).
+                //    - If block.Length <= 32KB, we treat it as Arena. 
+                //      (Even if it was a Dedicated 128KB block shrunk to < 32KB, treating it as Arena is safe 
+                //       because we will calculate a smaller capacity and potentially reallocate, which is valid).
+                
+                bool isDedicated = (segment.Length != ManagedArenaAllocator.DefaultPageSize) || (block.Length > LargeBlockThreshold);
 
-                // Check if this is a large dedicated block or an Arena page
-                if (actualArrayLength > ManagedArenaAllocator.DefaultPageSize)
+                if (isDedicated)
                 {
-                    currentPhysicalCapacity = actualArrayLength;
-                    isLargeDedicatedArray = true;
+                    // -------- Dedicated Large Block
+                    int capacity = segment.Length;
+
+                    if (newSize <= capacity)
+                    {
+                        // Check for major shrink (< 50% of capacity)
+                        // This prevents holding onto large arrays for small data (Salami Slicing Drift)
+                        if (newSize < capacity / 2)
+                        {
+                            goto Reallocate;
+                        }
+
+                        // Reuse existing array
+                        // Dedicated blocks always start at offset 0
+                        block = new PinnedMemory<byte>(segment, 0, newSize);
+                        return false; // Same base address
+                    }
                 }
                 else
                 {
-                    // It is a slice inside an Arena Page. 
-                    // We use the inferred capacity logic.
-                    ushort assumedIndex = ChunkSizeComputation.SizeToIndex((uint)block.Length);
-                    currentPhysicalCapacity = ChunkSizeComputation.IndexToSize(assumedIndex);
-                }
-            }
-            else
-            {
-                // Fallback for unknown memory sources
-                ushort assumedIndex = ChunkSizeComputation.SizeToIndex((uint)block.Length);
-                currentPhysicalCapacity = ChunkSizeComputation.IndexToSize(assumedIndex);
-            }
+                    // -------- Managed Arena Block
+                    // Capacity is determined by the chunk size of the current length.
+                    // Single lookup: combines SizeToIndex + IndexToSize
+                    uint capacity = ChunkSizeComputation.SizeToPhysicalSize((uint)block.Length);
 
-            // -------- Decide to Reallocate
-            bool fitsInCapacity = newSize <= currentPhysicalCapacity;
-            ushort capacityIndex = ChunkSizeComputation.SizeToIndex(currentPhysicalCapacity);
-            bool shouldShrink = fitsInCapacity && ChunkSizeComputation.ShouldShrink(capacityIndex, (uint)newSize);
+                    if (newSize <= capacity)
+                    {
+                        // Check for drastic shrink (< 50% of bucket capacity)
+                        if (newSize < capacity / 2)
+                        {
+                            goto Reallocate;
+                        }
 
-            if (fitsInCapacity && !shouldShrink && hasUnderlyingArray)
-            {
-                // Optimization: Expand or Shrink In-Place
-                // We use the segment.Array and segment.Offset to create a NEW view 
-                // that spans the new size.
-
-                // Safety Check: Ensure we don't go out of the physical array bounds
-                if (segment.Offset + newSize <= segment.Array!.Length)
-                {
-                    block = new Memory<byte>(segment.Array, segment.Offset, newSize);
-                    return;
+                        // Reuse existing block (slice)
+                        // We must preserve the pointer (offset)
+                        block = new PinnedMemory<byte>(block.MemoryOwner, block.Ptr, newSize);
+                        return false; // Same base address
+                    }
                 }
             }
 
+            Reallocate:
             // -------- Fallback: Reallocate and Copy
             var newBlock = Allocate(newSize);
             var bytesToCopy = Math.Min(block.Length, newSize);
             block.Slice(0, bytesToCopy).CopyTo(newBlock);
             block = newBlock;
+            return true; // Address changed
         }
     }
 }

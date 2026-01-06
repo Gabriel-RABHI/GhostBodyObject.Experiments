@@ -5,10 +5,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GhostBodyObject.BenchmarkRunner\GhostBodyObject.BenchmarkRunner.csproj" />
+    <ProjectReference Include="..\GhostBodyObject.Common\GhostBodyObject.Common.csproj" />
+    <ProjectReference Include="..\GhostBodyObject.Repository\GhostBodyObject.Repository.csproj" />
   </ItemGroup>
 
 </Project>

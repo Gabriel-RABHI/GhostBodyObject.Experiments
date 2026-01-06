@@ -1,12 +1,12 @@
-﻿using GhostBodyObject.Common.Constants;
-using GhostBodyObject.Common.Utilities;
+﻿using GhostBodyObject.Common.Utilities;
+using GhostBodyObject.Repository.Ghost.Constants;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace GhostBodyObject.Common.Objects
+namespace GhostBodyObject.Repository.Ghost.Structs
 {
     /// <summary>
     /// A 16-byte unmanaged Ghost Identifier.
@@ -15,6 +15,10 @@ namespace GhostBodyObject.Common.Objects
     [StructLayout(LayoutKind.Explicit, Size = 16)]
     public unsafe struct GhostId : IEquatable<GhostId>, IComparable<GhostId>
     {
+        public const ushort MAX_TYPE_ID = 0x1FFF; // 13 bits
+        public const ushort MAX_KIND = 0x007; // 3 bits
+        public const ushort MAX_TYPE_COMBO = ushort.MaxValue; // 16 bits
+
         // ---------------------------------------------------------
         // Field Layout
         // ---------------------------------------------------------
@@ -22,6 +26,7 @@ namespace GhostBodyObject.Common.Objects
         // Bits 61-63 (3 bits)  : Kind
         // Bits 48-60 (13 bits) : Type Identifier
         // Bits 00-47 (48 bits) : Timestamp (Microseconds)
+
         [FieldOffset(0)]
         private readonly ulong _header;
 
@@ -29,6 +34,16 @@ namespace GhostBodyObject.Common.Objects
         // Bits 00-63 (64 bits) : High-entropy random
         [FieldOffset(8)]
         private readonly ulong _random;
+
+        [FieldOffset(8)]
+        private readonly int _upperRandom;
+
+
+        [FieldOffset(12)]
+        private readonly int _lowerRandom;
+
+        [FieldOffset(0)]
+        private readonly ushort _typeCombo;
 
         // ---------------------------------------------------------
         // Constants & Masks
@@ -41,6 +56,24 @@ namespace GhostBodyObject.Common.Objects
 
         // Epoch: 2024-01-01 (Adjust as needed to reset the 9-year loop)
         private static readonly long EpochTicks = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+
+        public ulong RandomPart
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _random;
+        }
+
+        public int UpperRandomPart
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _upperRandom;
+        }
+
+        public int LowerRandomPart
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _lowerRandom;
+        }
 
         // ---------------------------------------------------------
         // Construction
@@ -96,6 +129,12 @@ namespace GhostBodyObject.Common.Objects
                 long ticks = (long)(_header & TimestampMask) * 10;
                 return new DateTime(EpochTicks + ticks, DateTimeKind.Utc);
             }
+        }
+
+        public ushort TypeCombo
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _typeCombo;
         }
 
         // ---------------------------------------------------------
