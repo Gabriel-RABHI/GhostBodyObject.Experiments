@@ -22,7 +22,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                         sum += FastBuffer.Get<int>(ptr, 8);
                     }
                 })
-                .PrintToConsole($"Get value {COUNT:N0} - direct byte*")
+                .PrintToConsole($"Get value {COUNT:N0} - FastBuffer.Get<int>(ptr, 8)")
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 
@@ -35,7 +35,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                         sum += FastBuffer.Get<int>(pinnedMemory, 8);
                     }
                 })
-                .PrintToConsole($"Get value {COUNT:N0} - using PinnedMemory<T>")
+                .PrintToConsole($"Get value {COUNT:N0} - FastBuffer.Get<int>(pinnedMemory, 8)")
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 
@@ -48,7 +48,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                         sum += pinnedMemory.Get<int>(8);
                     }
                 })
-                .PrintToConsole($"Get value {COUNT:N0} - using PinnedMemory<T>.Get()")
+                .PrintToConsole($"Get value {COUNT:N0} - pinnedMemory.Get<int>(8)")
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 
@@ -71,7 +71,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                         FastBuffer.Set(ptr, 8, i);
                     }
                 })
-                .PrintToConsole($"Set value {COUNT:N0} - direct byte*")
+                .PrintToConsole($"Set value {COUNT:N0} - FastBuffer.Set(ptr, 8, i)")
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 
@@ -83,7 +83,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                         FastBuffer.Set(pinnedMemory, 8, i);
                     }
                 })
-                .PrintToConsole($"Set value {COUNT:N0} - using PinnedMemory<T>")
+                .PrintToConsole($"Set value {COUNT:N0} - FastBuffer.Set(pinnedMemory, 8, i)")
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 
@@ -95,7 +95,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                         pinnedMemory.Set(8, i);
                     }
                 })
-                .PrintToConsole($"Set value {COUNT:N0} - using PinnedMemory<T>.Set()")
+                .PrintToConsole($"Set value {COUNT:N0} - innedMemory.Set(8, i)")
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 

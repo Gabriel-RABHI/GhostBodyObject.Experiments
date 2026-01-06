@@ -8,6 +8,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
     public class SpinLocksBenchmarks : BenchmarkBase
     {
         private const int OperationsPerThread = 10_000_000;
+        private const int OperationsPerThread_Low = 500_000;
         private const int ContentionOperationsPerThread = 1_000_000;
 
         #region Basic Lock Comparison
@@ -75,77 +76,6 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
 
                 PrintComparison(
                     $"Basic Exclusive Locks - {threadCount} thread(s)",
-                    $"{OperationsPerThread:N0} lock/unlock cycles per thread, {totalOps:N0} total ops",
-                    results);
-            }
-        }
-
-        #endregion
-
-        #region Ticket Lock Comparison
-
-        /// <summary>
-        /// Compares ShortTicketSpinLock with other locks for fairness scenarios.
-        /// </summary>
-        [BruteForceBenchmark("SL-02", "Ticket Lock vs Standard Locks (FIFO Fairness)", "SpinLocks")]
-        public void CompareTicketLocks()
-        {
-            var threadCounts = GetThreadCounts();
-
-            foreach (var threadCount in threadCounts)
-            {
-                var results = new List<BenchmarkResult>();
-                long totalOps = (long)OperationsPerThread * threadCount;
-                int sharedCounter = 0;
-
-                // ShortTicketSpinLock
-                var ticketLock = new ShortTicketSpinLock();
-                sharedCounter = 0;
-                var ticketResult = RunParallelAction(threadCount, _ =>
-                {
-                    for (int i = 0; i < OperationsPerThread; i++)
-                    {
-                        ticketLock.Enter();
-                        sharedCounter++;
-                        ticketLock.Exit();
-                    }
-                });
-                ticketResult.WithLabel("ShortTicketSpinLock").WithOperations(totalOps);
-                results.Add(ticketResult);
-
-                // ShortSpinLock for comparison
-                var shortSpinLock = new ShortSpinLock();
-                sharedCounter = 0;
-                var shortSpinResult = RunParallelAction(threadCount, _ =>
-                {
-                    for (int i = 0; i < OperationsPerThread; i++)
-                    {
-                        shortSpinLock.Enter();
-                        sharedCounter++;
-                        shortSpinLock.Exit();
-                    }
-                });
-                shortSpinResult.WithLabel("ShortSpinLock").WithOperations(totalOps);
-                results.Add(shortSpinResult);
-
-                // .NET SpinLock
-                var dotnetSpinLock = new SpinLock(enableThreadOwnerTracking: false);
-                sharedCounter = 0;
-                var dotnetSpinResult = RunParallelAction(threadCount, _ =>
-                {
-                    for (int i = 0; i < OperationsPerThread; i++)
-                    {
-                        bool lockTaken = false;
-                        dotnetSpinLock.Enter(ref lockTaken);
-                        sharedCounter++;
-                        if (lockTaken) dotnetSpinLock.Exit();
-                    }
-                });
-                dotnetSpinResult.WithLabel(".NET SpinLock").WithOperations(totalOps);
-                results.Add(dotnetSpinResult);
-
-                PrintComparison(
-                    $"Ticket Lock Comparison - {threadCount} thread(s)",
                     $"{OperationsPerThread:N0} lock/unlock cycles per thread, {totalOps:N0} total ops",
                     results);
             }
@@ -472,20 +402,6 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
             shortSpinResult.WithLabel("ShortSpinLock").WithOperations(iterations);
             results.Add(shortSpinResult);
 
-            // ShortTicketSpinLock
-            var ticketLock = new ShortTicketSpinLock();
-            var ticketResult = RunMonitoredAction(() =>
-            {
-                for (int i = 0; i < iterations; i++)
-                {
-                    ticketLock.Enter();
-                    dummy++;
-                    ticketLock.Exit();
-                }
-            });
-            ticketResult.WithLabel("ShortTicketSpinLock").WithOperations(iterations);
-            results.Add(ticketResult);
-
             // ShortRecursiveSpinLock
             var recursiveLock = new ShortRecursiveSpinLock();
             var recursiveResult = RunMonitoredAction(() =>
@@ -582,21 +498,6 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
             });
             shortSpinResult.WithLabel("ShortSpinLock").WithOperations(totalOps);
             results.Add(shortSpinResult);
-
-            // ShortTicketSpinLock
-            var ticketLock = new ShortTicketSpinLock();
-            sharedCounter = 0;
-            var ticketResult = RunParallelAction(maxThreads, _ =>
-            {
-                for (int i = 0; i < ContentionOperationsPerThread; i++)
-                {
-                    ticketLock.Enter();
-                    sharedCounter++;
-                    ticketLock.Exit();
-                }
-            });
-            ticketResult.WithLabel("ShortTicketSpinLock").WithOperations(totalOps);
-            results.Add(ticketResult);
 
             // .NET SpinLock
             var dotnetSpinLock = new SpinLock(enableThreadOwnerTracking: false);
