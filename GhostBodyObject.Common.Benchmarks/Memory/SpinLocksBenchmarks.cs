@@ -41,21 +41,6 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 shortSpinResult.WithLabel("ShortSpinLock").WithOperations(totalOps);
                 results.Add(shortSpinResult);
 
-                // ShortNonSpinnedLock
-                var shortNonSpinned = new ShortNonSpinnedLock();
-                sharedCounter = 0;
-                var nonSpinnedResult = RunParallelAction(threadCount, _ =>
-                {
-                    for (int i = 0; i < OperationsPerThread; i++)
-                    {
-                        shortNonSpinned.Enter();
-                        sharedCounter++;
-                        shortNonSpinned.Exit();
-                    }
-                });
-                nonSpinnedResult.WithLabel("ShortNonSpinnedLock").WithOperations(totalOps);
-                results.Add(nonSpinnedResult);
-
                 // .NET SpinLock
                 var dotnetSpinLock = new SpinLock(enableThreadOwnerTracking: false);
                 sharedCounter = 0;
@@ -487,20 +472,6 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
             shortSpinResult.WithLabel("ShortSpinLock").WithOperations(iterations);
             results.Add(shortSpinResult);
 
-            // ShortNonSpinnedLock
-            var shortNonSpinned = new ShortNonSpinnedLock();
-            var nonSpinnedResult = RunMonitoredAction(() =>
-            {
-                for (int i = 0; i < iterations; i++)
-                {
-                    shortNonSpinned.Enter();
-                    dummy++;
-                    shortNonSpinned.Exit();
-                }
-            });
-            nonSpinnedResult.WithLabel("ShortNonSpinnedLock").WithOperations(iterations);
-            results.Add(nonSpinnedResult);
-
             // ShortTicketSpinLock
             var ticketLock = new ShortTicketSpinLock();
             var ticketResult = RunMonitoredAction(() =>
@@ -612,21 +583,6 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
             shortSpinResult.WithLabel("ShortSpinLock").WithOperations(totalOps);
             results.Add(shortSpinResult);
 
-            // ShortNonSpinnedLock
-            var shortNonSpinned = new ShortNonSpinnedLock();
-            sharedCounter = 0;
-            var nonSpinnedResult = RunParallelAction(maxThreads, _ =>
-            {
-                for (int i = 0; i < ContentionOperationsPerThread; i++)
-                {
-                    shortNonSpinned.Enter();
-                    sharedCounter++;
-                    shortNonSpinned.Exit();
-                }
-            });
-            nonSpinnedResult.WithLabel("ShortNonSpinnedLock").WithOperations(totalOps);
-            results.Add(nonSpinnedResult);
-
             // ShortTicketSpinLock
             var ticketLock = new ShortTicketSpinLock();
             sharedCounter = 0;
@@ -716,25 +672,6 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 });
                 shortSpinResult.WithLabel("ShortSpinLock.TryEnter").WithOperations(totalOps);
                 results.Add(shortSpinResult);
-
-                // ShortNonSpinnedLock TryEnter
-                var shortNonSpinned = new ShortNonSpinnedLock();
-                successCount = 0;
-                var nonSpinnedResult = RunParallelAction(threadCount, _ =>
-                {
-                    int localSuccess = 0;
-                    for (int i = 0; i < OperationsPerThread; i++)
-                    {
-                        if (shortNonSpinned.TryEnter())
-                        {
-                            localSuccess++;
-                            shortNonSpinned.Exit();
-                        }
-                    }
-                    Interlocked.Add(ref successCount, localSuccess);
-                });
-                nonSpinnedResult.WithLabel("ShortNonSpinnedLock.TryEnter").WithOperations(totalOps);
-                results.Add(nonSpinnedResult);
 
                 // .NET SpinLock TryEnter
                 var dotnetSpinLock = new SpinLock(enableThreadOwnerTracking: false);
