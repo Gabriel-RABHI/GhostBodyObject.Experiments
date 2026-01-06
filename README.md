@@ -38,7 +38,7 @@ public void OpenAndAssignTransactions()
 }
 ```
 
-This "ambient" transactional object system is compliant with `async` flow. Objects are linked to the execution context : if you try to access or modify an object from an another, concurrent thread, it may throw an exception. It is a strong, new concurrency model at object level. **Like in Rust**, GBO concurrency is constrained : it impose sharing object using local first, immutable, MVCC of detached objects instances.
+This "ambient" transactional object system is compliant with `async` flow. Objects are linked to the execution context : if you try to access or modify an object from an another, concurrent thread, it may throw an exception. It is a strong, new concurrency model at object level. **Like in Rust**, GBO concurrency is constrained : you only using local first, immutable, MVCC or detached objects instances.
 
 # The project status
 ## What is in the code ?
