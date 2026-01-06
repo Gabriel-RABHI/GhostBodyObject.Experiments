@@ -12,8 +12,8 @@ The GBO technology bridges the gap between application logic and data storage, r
 
 **More in the Ghost Body Object white paper.**
 
-## Sample
-The API is "ambient" - you simply modify objects, and commit the changes.
+## Quick Sample
+The API is "ambient" - you simply modify objects, and commit the changes. Unilimited nested calls and Linq queries - full object.
 
 ```c#
 [Fact]
@@ -38,7 +38,7 @@ public void OpenAndAssignTransactions()
 }
 ```
 
-This "ambient" transactional object system is compliant with `async` flow. Objects are linked to the execution context : if you try to access or modify an object from an another, concurrent thread, it may throw an exception. It is a strong, new concurrency model at object level. **Like in Rust**, GBO concurrency is constrained : it impose sharing object using local first, immutable, MVCC of detached objects instances.
+This "ambient" transactional object system is compliant with `async` flow. Objects are linked to the execution context : if you try to access or modify an object from an another, concurrent thread, it may throw an exception. It is a strong, new concurrency model at object level. **Like in Rust**, GBO concurrency is constrained : it impose sharing object using local first, immutable, MVCC or detached objects instances.
 
 # The project status
 ## What is in the code ?
