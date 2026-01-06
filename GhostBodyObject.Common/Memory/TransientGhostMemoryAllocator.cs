@@ -35,7 +35,7 @@ namespace GhostBodyObject.Common.Memory
 
             if (physicalSize > LargeBlockThreshold)
             {
-                var array = GC.AllocateUninitializedArray<byte>((int)physicalSize);
+                var array = GC.AllocateUninitializedArray<byte>((int)physicalSize, pinned:true);
                 return new PinnedMemory<byte>(array, 0, size);
             }
             else

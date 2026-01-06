@@ -5,6 +5,12 @@
     // -------------------------------------------------------------
     public class DefaultBenchmarks : BenchmarkBase
     {
+        [BruteForceBenchmark("RunAll", "Run All Benchmarks", "Z-SYS")]
+        public async Task RunAllBenchmarks()
+        {
+            await BenchmarkEngine.RunAllBenchmarksAsync();
+        }
+
         [BruteForceBenchmark("GC", "Run GC Collect", "Z-SYS")]
         public void SequentialTest()
         {
@@ -22,6 +28,13 @@
         public void Quit()
         {
             Environment.Exit(0);
+        }
+
+        [BruteForceBenchmark("", "Switch Outputs Generation", "Z-SYS")]
+        public void ToogleGenerateOutput()
+        {
+            BenchmarkEngine.GenerateOutputFiles = !BenchmarkEngine.GenerateOutputFiles;
+            WriteComment($"{(BenchmarkEngine.GenerateOutputFiles ? "File output activated" : "File output disabled")}");
         }
     }
 }

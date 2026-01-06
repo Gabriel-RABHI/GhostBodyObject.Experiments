@@ -13,7 +13,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
             fixed (byte* target = rawBuffer)
             {
                 var pinned = target;
-                RunMonitoredAction(() =>
+                var r1 = RunMonitoredAction(() =>
                 {
                     var ptr = pinned;
                     long sum = 0;
@@ -26,7 +26,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 
-                RunMonitoredAction(() =>
+                var r2 = RunMonitoredAction(() =>
                 {
                     PinnedMemory<byte> pinnedMemory = new PinnedMemory<byte>(rawBuffer, pinned, rawBuffer.Length);
                     long sum = 0;
@@ -39,7 +39,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 
-                RunMonitoredAction(() =>
+                var r3 = RunMonitoredAction(() =>
                 {
                     PinnedMemory<byte> pinnedMemory = new PinnedMemory<byte>(rawBuffer, pinned, rawBuffer.Length);
                     long sum = 0;
@@ -51,6 +51,8 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 .PrintToConsole($"Get value {COUNT:N0} - using PinnedMemory<T>.Get()")
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
+
+                PrintComparison("Get unmanaged memory", "Compare the various code to read a value at a arbitrary memory location", new BenchmarkResult[] { r1, r2, r3 });
             }
         }
 
@@ -61,7 +63,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
             fixed (byte* target = rawBuffer)
             {
                 var pinned = target;
-                RunMonitoredAction(() =>
+                var r1 = RunMonitoredAction(() =>
                 {
                     var ptr = pinned;
                     for (int i = 0; i < COUNT; i++)
@@ -73,7 +75,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 
-                RunMonitoredAction(() =>
+                var r2 = RunMonitoredAction(() =>
                 {
                     PinnedMemory<byte> pinnedMemory = new PinnedMemory<byte>(rawBuffer, pinned, rawBuffer.Length);
                     for (int i = 0; i < COUNT; i++)
@@ -85,7 +87,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
 
-                RunMonitoredAction(() =>
+                var r3 = RunMonitoredAction(() =>
                 {
                     PinnedMemory<byte> pinnedMemory = new PinnedMemory<byte>(rawBuffer, pinned, rawBuffer.Length);
                     for (int i = 0; i < COUNT; i++)
@@ -96,6 +98,8 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 .PrintToConsole($"Set value {COUNT:N0} - using PinnedMemory<T>.Set()")
                 .PrintDelayPerOp(COUNT)
                 .PrintSpace();
+
+                PrintComparison("Set unmanaged memory", "Compare the various code to write a value at a arbitrary memory location", new BenchmarkResult[] { r1, r2, r3 });
             }
         }
     }
