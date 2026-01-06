@@ -87,7 +87,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                             user.Presentation = "One of the most iconic actor." + istring;
                         }
                 })
-                .PrintToConsole($"Set strings for {COUNT * 10:N0} BloggerUser")
+                .PrintToConsole($"Assign 12 strings properties for {COUNT * 10:N0} BloggerUser")
                 .PrintDelayPerOp(COUNT * 10)
                 .PrintSpace();
             }
@@ -117,7 +117,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                         user.Presentation = "One of the most iconic actor." + istring;
                     }
             })
-            .PrintToConsole($"Set strings for {COUNT * 10:N0} UserPOCO")
+            .PrintToConsole($"Assign 12 strings properties for {COUNT * 10:N0} UserPOCO")
             .PrintDelayPerOp(COUNT * 10)
             .PrintSpace();
 
@@ -166,7 +166,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                             array[i % 32] = user;
                         }
                 })
-                .PrintToConsole($"Set strings for {COUNT * 100:N0} BloggerUser")
+                .PrintToConsole($"Create {COUNT * 100:N0} BloggerUser with 1 string assigned")
                 .PrintDelayPerOp(COUNT * 100)
                 .PrintSpace();
                 WriteComment($"{(array.Count(o => o.FirstName.Length > 0))}");
@@ -183,7 +183,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                         arrayPoco[i % 32] = user;
                     }
             })
-            .PrintToConsole($"Set strings for {COUNT * 100:N0} UserPOCO")
+            .PrintToConsole($"Create {COUNT * 100:N0} UserPOCO with 1 string")
             .PrintDelayPerOp(COUNT * 100)
             .PrintSpace();
 
