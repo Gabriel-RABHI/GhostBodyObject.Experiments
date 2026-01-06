@@ -2,7 +2,7 @@
 
 namespace GhostBodyObject.Common.Benchmarks.Memory
 {
-    internal class FastBufferBenchmarks : BenchmarkBase
+    public class FastBufferBenchmarks : BenchmarkBase
     {
         private const int COUNT = 1000_000_000;
 

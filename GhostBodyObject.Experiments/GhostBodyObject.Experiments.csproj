@@ -10,7 +10,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GhostBodyObject.BenchmarkRunner\GhostBodyObject.BenchmarkRunner.csproj" />
+    <ProjectReference Include="..\GhostBodyObject.Common.Benchmarks\GhostBodyObject.Common.Benchmarks.csproj" />
     <ProjectReference Include="..\GhostBodyObject.Common\GhostBodyObject.Common.csproj" />
+    <ProjectReference Include="..\GhostBodyObject.HandWritten.Benchmarks\GhostBodyObject.HandWritten.Benchmarks.csproj" />
+    <ProjectReference Include="..\GhostBodyObject.Repository.Benchmarks\GhostBodyObject.Repository.Benchmarks.csproj" />
     <ProjectReference Include="..\GhostBodyObject.Repository\GhostBodyObject.Repository.csproj" />
   </ItemGroup>
 

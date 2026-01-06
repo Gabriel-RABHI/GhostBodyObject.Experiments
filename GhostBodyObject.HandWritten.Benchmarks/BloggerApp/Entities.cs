@@ -47,7 +47,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
     }
 
 
-    public class GhostIdBenchmarks : BenchmarkBase
+    public class EntitiesBenchmarks : BenchmarkBase
     {
         private const int COUNT = 1_000_000;
 
