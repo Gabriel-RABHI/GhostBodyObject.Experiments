@@ -2,15 +2,43 @@
 ## Introduction
 This code repository is a first step, exploratory purpose - implementations, tests, benchmarks - for the GBO (Ghost Body Object) technology. This project is the basis for the production ready version.
 
-The GBO  technology introduces a new CPU cache and I/O friendly C# data structure and an accompanying repository system designed to change how applications manage memory, data and concurrency. This data structure is complementary to the existing class, struct, and record type declarations. By rethinking the memory layout of native objects, in many common use cases it is faster than POCO (Plain Old CLR Object). It reduce garbage collector overhead and removes the need for serialization.
+The GBO technology introduces a new CPU cache and I/O friendly C# data structure and an accompanying repository system designed to change how applications manage memory, data and concurrency. This data structure is complementary to the existing class, struct, and record type declarations. By rethinking the memory layout of native objects, in many common use cases it is faster than POCO (Plain Old CLR Object). It reduce garbage collector overhead and removes the need for serialization.
 
-This new data structure enables the creation of ultra-high-performance, latency-free, persistent, transactional, and distributed object repositories that reside in virtual memory. It allows .NET applications to manage hundreds of gigabytes of data as native C# objects collections with the robust ACID/MVCC transactional guarantees demanded by mission-critical business software. These objects are not transient representations of data pulled from and pushed to a storage system - they are physically the data itself. This object store eliminates garbage collector overhead.
+This new data structure enables the creation of ultra-high-performance, latency-free, persistent, transactional, and distributed object repositories that reside in virtual memory. It allows .NET applications to manage hundreds of gigabytes of data as native C# objects collections with the robust ACID/MVCC transactional guarantees demanded by mission-critical business software. These objects are not transient representations of data pulled from and pushed to a storage system - **they are physically the data itself**. This object store eliminates garbage collector overhead.
 
 The GBO technology bridges the gap between application logic and data storage, removing the complexities and performance bottlenecks of traditional Database Management Systems (DBMS). It eliminate both the overhead of ORMs, and flaws and mental burden of the Unit-Of-Work pattern. The data model - defined in pure C# - is a mix of Object Oriented, Edge-based Graph, Entity Component Systems and Key-Value pairs. An application become a dedicated business domain database engine entirely written in C#. It bring together job and message queues, caches, event logs, time-serie and a constrained, indexed data model in an unified, distributed, transactional, shared virtual-memory system.
 
 (...)
 
 **More in the Ghost Body Object white paper.**
+
+## Sample
+The API is "ambient" - you simply modify objects, and commit the changes.
+
+```c#
+[Fact]
+public void OpenAndAssignTransactions()
+{
+    using var repository = new BloggerRepository("C:/db/my_repo");
+    using (BloggerContext.OpenWriteContext(repository))
+    {
+        var user = new BloggerUser();
+
+        user.FirstName = "John";
+        user.LasName = "Travolta";
+        
+        Assert.True(BloggerContext.Transaction.Users.Any(u => u.FirstName == "John"));
+
+        BloggerContext.Transaction.Commit();
+    }
+    using (BloggerContext.OpenReadContext(repository))
+    {
+        Assert.True(BloggerContext.Transaction.Users.Any(u => u.LasName == "Travolta"));
+    }
+}
+```
+
+This "ambient" transactional object system is compliant with `async` flow. Objects are linked to the execution context : if you try to access or modify an object from an another, concurrent thread, it may throw an exception. It is a strong, new concurrency model at object level. **Like in Rust**, GBO concurrency is constrained : it impose sharing object using local first, immutable, MVCC of detached objects instances.
 
 # The project status
 ## What is in the code ?
@@ -166,7 +194,7 @@ This test show that real release is as fast for GBO objects than for POCOs.
 This tests show the efficiency of the GBO Objects. There is few more "magic" they are able to perform in field of string aggregation, insertions, append and prepend. The GhostString and GhostSpan are inner Ghost accessor and modifier, that present high performance profil. The zero copy string (UTF8 / UTF16) and span large operations set is a "next generation" data processing paradigm.
 
 ## Main Index
-At the core of the GBO Repository is a Entity index. This index record all the existing Entities. It is a Hash based sharded Map, storing 8 bytes per entity (around 1.2 GB per 100M Ghosts registered). It is lock-free, transactional, support MVCC (multiple version per ID, for transactional views). The GBO use the garbage collector as a powerful lifetime Entity (the Body) manager to release the unseen memory space. This Map is a core piece of the GBO technology.
+At the core of the GBO Repository is a Entity index. This index record all the existing Entities. It is a Hash based sharded Map, storing 8 bytes per entity. It is lock-free, transactional, support MVCC (multiple version per ID, for transactional views). All the GBO use the garbage collector as a powerful lifetime Entity (the Body) manager to release the unused memory space. This Map is a core piece of the GBO technology.
 
 One of the most important feature is Enumeration and per ID resolution. For Enumeration, it scale linearly with threads.
 
@@ -260,7 +288,8 @@ Tiny to small critical section are sometime as fast, or faster than lock-free da
 # Next Steps
 Validate the choices :
 - Abandon of B+Tree to use pure Map (Hash) Memory Mapped File storage.
-- Implement the Memory Mapped File, transactional store with ACID (Hash Txn Validation), MVCC support and COW (Copy On Write).
+- Implement the Memory Mapped File, transactional store with ACID (Hash Validation), MVCC support and COW (Copy On Write).
 - Implement continuous, background store compaction and lineare Ghost - in table - continuous locality for fast enumerations.
 - Implement concurrent Read / Write transactions with Write concurrency (Optimistic, Pessimistic conflict checks).
 - Validate performances : expected amazingly fast write and read throughput.
+
