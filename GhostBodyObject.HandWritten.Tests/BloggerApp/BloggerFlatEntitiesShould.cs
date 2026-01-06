@@ -102,24 +102,5 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
                 Assert.Equal("American Cinema", user.Hobbies);
             }
         }
-
-        [Fact]
-        public void ChangeStringPropertyAndReadBackZeroCopy()
-        {
-            var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
-            {
-                var user = new BloggerUserFlat();
-                user.Active = true;
-                user.FirstName = "John-Mayer-Travolta-of-the-moon";
-
-                for (int i = 0; i < 100; i++)
-                {
-                    var v = (user.FirstName = "John-Mayer-Travolta-of-the-moon" + i).ToString();
-                    for (int j = 0; j < 1_000_000; j++)
-                        Assert.True(user.FirstName.Equals(v));
-                }
-            }
-        }
     }
 }

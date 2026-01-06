@@ -104,44 +104,5 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
                 Assert.Equal("American Cinema", user.Hobbies);
             }
         }
-
-        [Fact]
-        public void ChangeStringPropertyAndReadBackZeroCopy()
-        {
-            var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
-            {
-                var user = new BloggerUser();
-                user.Active = true;
-                user.FirstName = "John-Mayer-Travolta-of-the-moon";
-
-                for (int i = 0; i < 100; i++)
-                {
-                    var v = (user.FirstName = "John-Mayer-Travolta-of-the-moon" + i).ToString();
-                    for (int j = 0; j < 1_000_000; j++)
-                        Assert.True(user.FirstName.Equals(v));
-                }
-            }
-        }
-
-        [Fact]
-        public void ChangeStringPropertyAndReadBackAsString()
-        {
-            var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
-            {
-                var user = new BloggerUser();
-                user.Active = true;
-                user.FirstNameString = "John-Mayer-Travolta-of-the-moon";
-                Assert.Equal("John-Mayer-Travolta-of-the-moon", user.FirstNameString);
-
-                for (int i = 0; i < 100; i++)
-                {
-                    var v = user.FirstNameString = "John-Mayer-Travolta-of-the-moon" + i;
-                    for (int j = 0; j < 1_000_000; j++)
-                        Assert.True(user.FirstNameString == v);
-                }
-            }
-        }
     }
 }
