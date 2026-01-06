@@ -2,7 +2,7 @@ Ghost Body Object (GBO) Community License v1.0
 Copyright (c) 2026 Gabriel RABHI. All rights reserved.
 
 1. Preamble
-The Ghost Body Object (GBO) technology is designed to revolutionize memory management, reduce infrastructure costs, and enable high-performance distributed systems. This license aims to foster broad adoption, innovation, and educational use by individuals and small businesses, while ensuring that large commercial entities deriving significant financial value from the Software contribute to its long-term sustainability.
+The Ghost Body Object (GBO) technology is designed to enhance memory management, reduce infrastructure costs, and enable high-performance distributed systems. This license aims to foster broad adoption, innovation, and educational use by individuals and small businesses, while ensuring that large commercial entities deriving significant financial value from the Software contribute to its long-term sustainability.
 
 2. Definitions
 "The Software" refers to the Ghost Body Object code, libraries, and associated documentation.
