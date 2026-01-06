@@ -23,25 +23,30 @@ namespace GhostBodyObject.Common.Memory
         /// </summary>
         /// <param name="size">The logical size required by the user.</param>
         /// <returns>A Memory&lt;byte&gt; slice of the requested size.</returns>
-        public static PinnedMemory<byte> Allocate(int size)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe PinnedMemory<byte> Allocate(int size)
         {
+            // Use unsigned comparison: negative values become large positive, failing the check
             if (size < 0)
                 throw new ArgumentOutOfRangeException(nameof(size));
-            if (size == 0)
+
+            if ((uint)size == 0)
                 return PinnedMemory<byte>.Empty;
 
-            ushort index = ChunkSizeComputation.SizeToIndex((uint)size);
-            uint physicalSize = ChunkSizeComputation.IndexToSize(index);
+            // Single lookup: size -> physical size (combines SizeToIndex + IndexToSize)
+            uint physicalSize = ChunkSizeComputation.SizeToPhysicalSize((uint)size);
 
             if (physicalSize > LargeBlockThreshold)
             {
-                var array = GC.AllocateUninitializedArray<byte>((int)physicalSize, pinned:true);
+                var array = GC.AllocateUninitializedArray<byte>((int)physicalSize, pinned: true);
                 return new PinnedMemory<byte>(array, 0, size);
             }
             else
             {
+                // Allocate physical size from arena, but return logical size directly
+                // Avoids the Slice call overhead by constructing with correct length
                 var memory = ManagedArenaAllocator.Allocate((int)physicalSize);
-                return memory.Slice(0, size);
+                return new PinnedMemory<byte>(memory.MemoryOwner, memory.Ptr, size);
             }
         }
 

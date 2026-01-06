@@ -34,6 +34,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                         for (int i = 0; i < AllocationsPerThread; i++)
                         {
                             var mem = TransientGhostMemoryAllocator.Allocate(blockSize);
+                            //var mem = ManagedArenaAllocator.Allocate((int)blockSize);
                             // Touch memory to ensure allocation is real
                             if (!mem.IsEmpty)
                                 mem[0] = (byte)(i & 0xFF);

@@ -1,10 +1,8 @@
 ﻿#define LOW_MEM_OVERHEAD
 
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace GhostBodyObject.Common.Memory
 {
@@ -13,6 +11,7 @@ namespace GhostBodyObject.Common.Memory
     /// Computes memory block sizes using a "Small Float" representation.
     /// Divides memory space into power-of-two ranges, slicing each range into 8 linear steps.
     /// This guarantees a worst-case fragmentation of 12.5%.
+    /// Uses direct lookup tables for sizes up to 32KB for maximum performance.
     /// </summary>
     public static class ChunkSizeComputation
     {
@@ -33,35 +32,53 @@ namespace GhostBodyObject.Common.Memory
         private const int IndexBias = (MinAlignShift << MantissaBits) - BucketSize;
         public const uint MaximumBlockSize = 0x7FFFFFFF; // ~2GB (Safe int limit)
 
-        /// <summary>
-        /// Converts a byte size into a step index.
-        /// Complexity: O(1) - roughly 5-10 CPU cycles.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ushort SizeToIndex(uint size)
+        // Lookup table for IndexToSize - covers all indices
+        private static readonly uint[] IndexToSizeTable;
+
+        // Direct lookup table for SizeToIndex - covers sizes 0 to LookupTableSize-1
+        // Each entry at position [size >> 6] gives the index for that 64-byte aligned size
+        private const int SizeToIndexLookupLimit = 32 * 1024; // 32KB
+        private const int SizeToIndexTableEntries = SizeToIndexLookupLimit >> MinAlignShift; // 512 entries
+        private static readonly byte[] SizeToIndexTable; // byte is enough since indices are small for this range
+
+        // Direct lookup table for SizeToPhysicalSize - maps size directly to physical size
+        // Eliminates the need for SizeToIndex + IndexToSize for the common case
+        private static readonly uint[] SizeToPhysicalSizeTable;
+
+        static ChunkSizeComputation()
         {
-            if (size <= 64)
-                return 0;
-            uint s = size - 1;
-            int lzc = BitOperations.LeadingZeroCount(s);
-            int log2 = 32 - lzc;
-            int shift = log2 - MantissaBits - 1;
-            if (shift < MinAlignShift)
+            // Build IndexToSize lookup table
+            IndexToSizeTable = new uint[MaxIndex + 1];
+            for (int i = 0; i <= MaxIndex; i++)
             {
-                shift = MinAlignShift;
-                return (ushort)(s >> shift);
+                IndexToSizeTable[i] = ComputeIndexToSize((ushort)i);
             }
-            int index = (int)(s >> shift);
-            int exponentOffset = (shift - MinAlignShift) << MantissaBits;
-            return (ushort)(index + exponentOffset + 1);
+
+            // Build SizeToIndex lookup table for sizes 1 to 32KB
+            // Table is indexed by (size - 1) >> 6, giving the index for sizes in each 64-byte block
+            SizeToIndexTable = new byte[SizeToIndexTableEntries];
+            for (int i = 0; i < SizeToIndexTableEntries; i++)
+            {
+                // Size represented by this table entry: sizes from (i << 6) + 1 to ((i + 1) << 6)
+                // We need the index that fits the maximum size in this block: (i + 1) << 6
+                uint maxSizeInBlock = (uint)((i + 1) << MinAlignShift);
+                SizeToIndexTable[i] = (byte)ComputeSizeToIndex(maxSizeInBlock);
+            }
+
+            // Build SizeToPhysicalSize lookup table - direct size to physical size mapping
+            // Same indexing as SizeToIndexTable: indexed by (size - 1) >> 6
+            SizeToPhysicalSizeTable = new uint[SizeToIndexTableEntries];
+            for (int i = 0; i < SizeToIndexTableEntries; i++)
+            {
+                byte index = SizeToIndexTable[i];
+                SizeToPhysicalSizeTable[i] = IndexToSizeTable[index];
+            }
         }
 
         /// <summary>
-        /// Converts a step index back to physical byte size.
-        /// Complexity: O(1).
+        /// Internal computation for building the IndexToSize lookup table.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint IndexToSize(ushort index)
+        private static uint ComputeIndexToSize(ushort index)
         {
             if (index < BucketSize)
                 return (uint)(index + 1) << MinAlignShift;
@@ -73,12 +90,87 @@ namespace GhostBodyObject.Common.Memory
         }
 
         /// <summary>
+        /// Internal computation for building the SizeToIndex lookup table and fallback.
+        /// </summary>
+        private static ushort ComputeSizeToIndex(uint size)
+        {
+            if (size <= 64)
+                return 0;
+
+            uint s = size - 1;
+            int log2 = 31 - BitOperations.LeadingZeroCount(s);
+            int shift = log2 - MantissaBits;
+
+            int clampedShift = shift < MinAlignShift ? MinAlignShift : shift;
+            int index = (int)(s >> clampedShift);
+
+            int exponentOffset = (clampedShift - MinAlignShift) << MantissaBits;
+            int adjustment = shift < MinAlignShift ? 0 : 1;
+
+            return (ushort)(index + exponentOffset + adjustment);
+        }
+
+        /// <summary>
+        /// Converts a byte size into a step index.
+        /// Complexity: O(1) - direct lookup for sizes ≤ 32KB, computed for larger.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort SizeToIndex(uint size)
+        {
+            // Fast path: direct table lookup for small sizes (covers ~99% of allocations)
+            if (size <= SizeToIndexLookupLimit)
+            {
+                // Handle size == 0 edge case
+                if (size == 0)
+                    return 0;
+                // Index by (size - 1) >> 6 to get the right bucket
+                return SizeToIndexTable[(size - 1) >> MinAlignShift];
+            }
+
+            // Slow path: compute for large sizes
+            return ComputeSizeToIndex(size);
+        }
+
+        /// <summary>
+        /// Converts a byte size directly to its physical (over-allocated) size.
+        /// Combines SizeToIndex and IndexToSize into a single lookup for sizes ≤ 32KB.
+        /// Complexity: O(1) - single array lookup for small sizes.
+        /// </summary>
+        /// <param name="size">The logical size requested.</param>
+        /// <returns>The physical size that should be allocated.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint SizeToPhysicalSize(uint size)
+        {
+            // Fast path: single lookup for small sizes
+            if (size <= SizeToIndexLookupLimit)
+            {
+                if (size == 0)
+                    return 0;
+                return SizeToPhysicalSizeTable[(size - 1) >> MinAlignShift];
+            }
+
+            // Slow path: compute for large sizes
+            return IndexToSizeTable[ComputeSizeToIndex(size)];
+        }
+
+        /// <summary>
+        /// Converts a step index back to physical byte size.
+        /// Complexity: O(1) - single array lookup.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint IndexToSize(ushort index)
+        {
+            return IndexToSizeTable[index];
+        }
+
+        /// <summary>
         /// Computes the loss (overhead) bytes.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Loss(ushort index, uint size)
         {
-            uint physical = IndexToSize(index);
-            return physical > size ? physical - size : 0;
+            uint physical = IndexToSizeTable[index];
+            return physical - size;
         }
 
         /// <summary>
@@ -87,22 +179,24 @@ namespace GhostBodyObject.Common.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Fit(ushort index, uint size)
         {
-            return IndexToSize(index) >= size;
+            return IndexToSizeTable[index] >= size;
         }
 
         /// <summary>
-        /// Compute the expanssion of a memory block.
+        /// Compute the expansion of a memory block.
         /// </summary>
         /// <param name="s">The physical size</param>
         /// <returns>A physical size larger than the given size</returns>
-        public static uint Expand(uint s) => IndexToSize((ushort)(SizeToIndex(s) + 1));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Expand(uint s) => IndexToSizeTable[SizeToIndex(s) + 1];
 
         /// <summary>
         /// Compute the shrink of a memory block.
         /// </summary>
-        /// <param name="s">The physical size for wich compute a shrink new size</param>
+        /// <param name="s">The physical size for which compute a shrink new size</param>
         /// <returns>The size, shrinked</returns>
-        public static uint Shrink(uint s) => IndexToSize((ushort)(SizeToIndex(s) - 1));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Shrink(uint s) => IndexToSizeTable[SizeToIndex(s) - 1];
 
         /// <summary>
         /// Determines whether the underlying storage should be reduced in size based on the specified new size and the
@@ -112,10 +206,10 @@ namespace GhostBodyObject.Common.Memory
         /// <param name="newSize">The proposed new size of the storage. If this value is less than half of the current capacity, shrinking is
         /// recommended.</param>
         /// <returns>true if the storage should be shrunk; otherwise, false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ShouldShrink(ushort currentIndex, uint newSize)
         {
-            uint currentCapacity = IndexToSize(currentIndex);
-            return newSize < (currentCapacity / 2);
+            return newSize < (IndexToSizeTable[currentIndex] >> 1);
         }
     }
 }
