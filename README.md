@@ -12,7 +12,7 @@ The GBO technology bridges the gap between application logic and data storage, r
 
 **More in the Ghost Body Object white paper.**
 
-## Sample
+## Quick Sample
 The API is "ambient" - you simply modify objects, and commit the changes.
 
 ```c#
