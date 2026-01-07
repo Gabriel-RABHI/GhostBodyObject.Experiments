@@ -167,8 +167,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.SwapAnyArray(MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
         }
 
         /// <summary>
@@ -179,8 +179,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, value.AsBytes(), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.SwapAnyArray(value.AsBytes(), _arrayIndex);
         }
 
         /// <summary>
@@ -191,8 +191,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, MemoryMarshal.AsBytes(value), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.SwapAnyArray(MemoryMarshal.AsBytes(value), _arrayIndex);
         }
 
         /// <summary>
@@ -203,8 +203,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, ReadOnlySpan<byte>.Empty, _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.SwapAnyArray(ReadOnlySpan<byte>.Empty, _arrayIndex);
         }
 
         // -------------------------------------------------------------------------
@@ -220,10 +220,9 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
+            var bodyBase = (BodyBase)_body;
             var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in value));
-            vt->AppendToArray(union, valueBytes, _arrayIndex);
+            bodyBase.AppendToArray(valueBytes, _arrayIndex);
         }
 
         /// <summary>
@@ -234,9 +233,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->AppendToArray(union, MemoryMarshal.AsBytes(values), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.AppendToArray(MemoryMarshal.AsBytes(values), _arrayIndex);
         }
 
         /// <summary>
@@ -255,10 +253,9 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
+            var bodyBase = (BodyBase)_body;
             var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in value));
-            vt->PrependToArray(union, valueBytes, _arrayIndex);
+            bodyBase.PrependToArray(valueBytes, _arrayIndex);
         }
 
         /// <summary>
@@ -269,9 +266,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->PrependToArray(union, MemoryMarshal.AsBytes(values), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.PrependToArray(MemoryMarshal.AsBytes(values), _arrayIndex);
         }
 
         /// <summary>
@@ -292,10 +288,9 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if ((uint)index > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
+            var bodyBase = (BodyBase)_body;
             var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in value));
-            vt->InsertIntoArray(union, valueBytes, _arrayIndex, index * Unsafe.SizeOf<T>());
+            bodyBase.InsertIntoArray(valueBytes, _arrayIndex, index * Unsafe.SizeOf<T>());
         }
 
         /// <summary>
@@ -308,9 +303,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if ((uint)index > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->InsertIntoArray(union, MemoryMarshal.AsBytes(values), _arrayIndex, index * Unsafe.SizeOf<T>());
+            var bodyBase = (BodyBase)_body;
+            bodyBase.InsertIntoArray(MemoryMarshal.AsBytes(values), _arrayIndex, index * Unsafe.SizeOf<T>());
         }
 
         /// <summary>
@@ -331,10 +325,9 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if ((uint)index >= (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
+            var bodyBase = (BodyBase)_body;
             int elementSize = Unsafe.SizeOf<T>();
-            vt->RemoveFromArray(union, _arrayIndex, index * elementSize, elementSize);
+            bodyBase.RemoveFromArray(_arrayIndex, index * elementSize, elementSize);
         }
 
         /// <summary>
@@ -349,10 +342,9 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (count == 0)
                 return;
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
+            var bodyBase = (BodyBase)_body;
             int elementSize = Unsafe.SizeOf<T>();
-            vt->RemoveFromArray(union, _arrayIndex, startIndex * elementSize, count * elementSize);
+            bodyBase.RemoveFromArray(_arrayIndex, startIndex * elementSize, count * elementSize);
         }
 
         /// <summary>
@@ -409,10 +401,9 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (startIndex < 0 || count < 0 || (uint)(startIndex + count) > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
+            var bodyBase = (BodyBase)_body;
             int elementSize = Unsafe.SizeOf<T>();
-            vt->ReplaceInArray(union, MemoryMarshal.AsBytes(replacement), _arrayIndex, startIndex * elementSize, count * elementSize);
+            bodyBase.ReplaceInArray(MemoryMarshal.AsBytes(replacement), _arrayIndex, startIndex * elementSize, count * elementSize);
         }
 
         /// <summary>

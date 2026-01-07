@@ -31,7 +31,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         {
             unsafe
             {
-                VectorTableRegistry<BloggerRepository, BloggerUser>.BuildInitialVersion(ModelVersion, this);
+                VectorTableRegistry<BloggerRepository, BloggerUser>.BuildStandaloneVersion(ModelVersion, this);
             }
         }
 
@@ -128,7 +128,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->FirstName_MapEntryIndex);
+                        _vTable->FirstName_Setter(this, value);
                     }
                 }
             }
@@ -154,7 +154,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->LastName_MapEntryIndex);
+                        _vTable->LastName_Setter(this, value);
                     }
                 }
             }
@@ -180,7 +180,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Pseudonyme_MapEntryIndex);
+                        _vTable->Pseudonyme_Setter(this, value);
                     }
                 }
             }
@@ -206,7 +206,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Presentation_MapEntryIndex);
+                        _vTable->Presentation_Setter(this, value);
                     }
                 }
             }
@@ -232,7 +232,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->City_MapEntryIndex);
+                        _vTable->City_Setter(this, value);
                     }
                 }
             }
@@ -258,7 +258,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Country_MapEntryIndex);
+                        _vTable->Country_Setter(this, value);
                     }
                 }
             }
@@ -284,7 +284,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->CompanyName_MapEntryIndex);
+                        _vTable->CompanyName_Setter(this, value);
                     }
                 }
             }
@@ -310,7 +310,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Address1_MapEntryIndex);
+                        _vTable->Address1_Setter(this, value);
                     }
                 }
             }
@@ -336,7 +336,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Address2_MapEntryIndex);
+                        _vTable->Address2_Setter(this, value);
                     }
                 }
             }
@@ -362,7 +362,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Address3_MapEntryIndex);
+                        _vTable->Address3_Setter(this, value);
                     }
                 }
             }
@@ -388,7 +388,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->ZipCode_MapEntryIndex);
+                        _vTable->ZipCode_Setter(this, value);
                     }
                 }
             }
@@ -414,7 +414,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Hobbies_MapEntryIndex);
+                        _vTable->Hobbies_Setter(this, value);
                     }
                 }
             }
@@ -441,8 +441,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 {
                     unsafe
                     {
-                        var union = Unsafe.As<BodyUnion>(this);
-                        _vTable->Std.SwapAnyArray(union, MemoryMarshal.AsBytes(value.AsSpan()), _vTable->FirstName_MapEntryIndex);
+                        _vTable->FirstName_Setter(this, value);
                     }
                 }
             }

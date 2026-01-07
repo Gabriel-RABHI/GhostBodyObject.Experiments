@@ -225,7 +225,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
             var buff = GC.AllocateArray<byte>(_record.GhostSize, true);
             _record.InitialGhost = new PinnedMemory<byte>(buff, 0, buff.Length);
 
-            InitializeGhost(_record.InitialGhost, (ArraysAsStringsAndSpansSmall_VectorTable*)_record.Initial);
+            InitializeGhost(_record.InitialGhost, (ArraysAsStringsAndSpansSmall_VectorTable*)_record.Standalone);
 
             GhostHeader* header = (GhostHeader*)Unsafe.AsPointer(ref buff[0]);
             header->Id = new GhostId(GhostIdKind.Entity, 100, 0, 0);
@@ -353,7 +353,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
             => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->StringU16_MapEntryIndex);
 
         public static unsafe void StringU8_Setter(ArraysAsStringsAndSpansSmall body, GhostStringUtf8 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->StringU8_MapEntryIndex);
+            => body.SwapAnyArray(src.AsBytes(), body._vTable->StringU8_MapEntryIndex);
         #endregion
     }
 

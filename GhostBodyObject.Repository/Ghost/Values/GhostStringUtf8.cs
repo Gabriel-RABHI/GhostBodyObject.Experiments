@@ -190,8 +190,8 @@ namespace GhostBodyObject.Repository
                 ThrowReadOnly();
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value);
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, utf8Bytes.AsSpan(), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.SwapAnyArray(utf8Bytes.AsSpan(), _arrayIndex);
         }
 
         /// <summary>
@@ -202,8 +202,8 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, value.AsBytes(), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.SwapAnyArray(value.AsBytes(), _arrayIndex);
         }
 
         /// <summary>
@@ -215,8 +215,8 @@ namespace GhostBodyObject.Repository
                 ThrowReadOnly();
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value.AsSpan().ToArray());
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, utf8Bytes.AsSpan(), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.SwapAnyArray(utf8Bytes.AsSpan(), _arrayIndex);
         }
 
         /// <summary>
@@ -227,8 +227,8 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, value, _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.SwapAnyArray(value, _arrayIndex);
         }
 
         // -------------------------------------------------------------------------
@@ -246,9 +246,8 @@ namespace GhostBodyObject.Repository
                 return;
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value);
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->AppendToArray(union, utf8Bytes.AsSpan(), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.AppendToArray(utf8Bytes.AsSpan(), _arrayIndex);
         }
 
         /// <summary>
@@ -261,9 +260,8 @@ namespace GhostBodyObject.Repository
             if (value.IsEmpty)
                 return;
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->AppendToArray(union, value, _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.AppendToArray(value, _arrayIndex);
         }
 
         /// <summary>
@@ -293,9 +291,8 @@ namespace GhostBodyObject.Repository
                 return;
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value);
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->PrependToArray(union, utf8Bytes.AsSpan(), _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.PrependToArray(utf8Bytes.AsSpan(), _arrayIndex);
         }
 
         /// <summary>
@@ -308,9 +305,8 @@ namespace GhostBodyObject.Repository
             if (value.IsEmpty)
                 return;
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->PrependToArray(union, value, _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.PrependToArray(value, _arrayIndex);
         }
 
         /// <summary>
@@ -342,9 +338,8 @@ namespace GhostBodyObject.Repository
                 ThrowIndexOutOfRange();
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value);
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->InsertIntoArray(union, utf8Bytes.AsSpan(), _arrayIndex, byteOffset);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.InsertIntoArray(utf8Bytes.AsSpan(), _arrayIndex, byteOffset);
         }
 
         /// <summary>
@@ -359,9 +354,8 @@ namespace GhostBodyObject.Repository
             if ((uint)byteOffset > (uint)ByteLength)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->InsertIntoArray(union, value, _arrayIndex, byteOffset);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.InsertIntoArray(value, _arrayIndex, byteOffset);
         }
 
         /// <summary>
@@ -384,9 +378,8 @@ namespace GhostBodyObject.Repository
             if (byteOffset < 0 || (uint)(byteOffset + byteCount) > (uint)ByteLength)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->RemoveFromArray(union, _arrayIndex, byteOffset, byteCount);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.RemoveFromArray(_arrayIndex, byteOffset, byteCount);
         }
 
         /// <summary>
@@ -440,9 +433,8 @@ namespace GhostBodyObject.Repository
             if (byteOffset < 0 || byteCount < 0 || (uint)(byteOffset + byteCount) > (uint)ByteLength)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->ReplaceInArray(union, replacement, _arrayIndex, byteOffset, byteCount);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.ReplaceInArray(replacement, _arrayIndex, byteOffset, byteCount);
         }
 
         /// <summary>
@@ -500,8 +492,8 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, ReadOnlySpan<byte>.Empty, _arrayIndex);
+            var bodyBase = (BodyBase)_body;
+            bodyBase.SwapAnyArray(ReadOnlySpan<byte>.Empty, _arrayIndex);
         }
 
         /// <summary>

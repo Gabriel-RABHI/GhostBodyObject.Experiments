@@ -1,19 +1,21 @@
 ﻿using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Experiments.BabyBody;
 using GhostBodyObject.HandWritten.Blogger.Repository;
+using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Body.Vectors;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Ghost.Values;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 {
     // ---------------------------------------------------------
-    // SPECIFIC TO Each ENTITY
+    // VECTOR TABLE BUILDER (V1 to V1 Mapping)
     // ---------------------------------------------------------
-    public unsafe static class BloggerUser_V1_V1_MappingVectorTableBuilder
+    public unsafe static class BloggerUser_V1_MappingVectorTableBuilder
     {
         private static bool _initialized = false;
         private static VectorTableRecord _record;
@@ -33,7 +35,6 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             if (_initialized)
                 return _record;
             _record = new VectorTableRecord();
-            _record.Initial = (VectorTableHeader*)GetInitial();
             _record.Standalone = (VectorTableHeader*)GetStandalone();
 
             _record.GhostSize = _record.Standalone->MinimalGhostSize;
@@ -41,11 +42,12 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             var buff = GC.AllocateArray<byte>(_record.GhostSize, true);
             _record.InitialGhost = new PinnedMemory<byte>(buff, 0, buff.Length);
 
-            InitializeGhost(_record.InitialGhost, (BloggerUser_VectorTable*)_record.Initial);
+            InitializeGhost(_record.InitialGhost, (BloggerUser_VectorTable*)_record.Standalone);
 
             GhostHeader* header = (GhostHeader*)Unsafe.AsPointer(ref buff[0]);
             header->Id = new GhostId(GhostIdKind.Entity, 100, 0, 0);
             header->ModelVersion = 1;
+            _initialized = true;
             return _record;
         }
 
@@ -106,6 +108,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         public static void InitializeGhost(PinnedMemory<byte> ghost, BloggerUser_VectorTable* _vTable)
         {
             var h = (GhostHeader*)ghost.Ptr;
+            h->Initialize((ushort)TargetVersion);
             h->Id = GhostId.NewId(GhostIdKind.Entity, (ushort)TypeIdentifier);
 
             var emptyString = new ArrayMapSmallEntry()
@@ -131,58 +134,37 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         }
         #endregion
 
-        #region INITIAL
-        public static BloggerUser_VectorTable* GetInitial()
-        {
-            var vt = GetCommon();
-
-            // -------- Function Pointers -------- //
-            vt->Std.SwapAnyArray = &Initial_SwapAnyArray;
-            vt->Active_Setter = &Initial_Active_Setter;
-            vt->CustomerCode_Setter = &Initial_CustomerCode_Setter;
-            vt->BirthDate_Setter = &Initial_BirthDate_Setter;
-            return vt;
-        }
-
-        public static BloggerUser InitialToStandalone(BloggerUser body)
-        {
-            var union = Unsafe.As<BodyUnion>(body);
-            union._data = TransientGhostMemoryAllocator.Allocate(union._data.Length);
-            union._vTablePtr = (nint)_record.Standalone;
-            _record.InitialGhost.CopyTo(union._data);
-            union._data.Set<GhostId>(0, GhostId.NewId(GhostIdKind.Entity, (ushort)TypeIdentifier));
-            return body;
-        }
-
-        public static unsafe void Initial_SwapAnyArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
-            => InitialToStandalone(Unsafe.As<BloggerUser>(body)).SwapAnyArray(src, arrayIndex);
-
-        public static unsafe void Initial_Active_Setter(BloggerUser body, bool value)
-            => Standalone_Active_Setter(InitialToStandalone(body), value);
-
-        public static unsafe void Initial_CustomerCode_Setter(BloggerUser body, int value)
-            => Standalone_CustomerCode_Setter(InitialToStandalone(body), value);
-
-        public static unsafe void Initial_BirthDate_Setter(BloggerUser body, DateTime value)
-            => Standalone_BirthDate_Setter(InitialToStandalone(body), value);
-        #endregion
-
         #region STANDALONE
         public static BloggerUser_VectorTable* GetStandalone()
         {
             var vt = GetCommon();
 
             // -------- Function Pointers -------- //
-            vt->Std.SwapAnyArray = &Standalone_SwapAnyArray;
+            // Values Setters
             vt->Active_Setter = &Standalone_Active_Setter;
             vt->CustomerCode_Setter = &Standalone_CustomerCode_Setter;
             vt->BirthDate_Setter = &Standalone_BirthDate_Setter;
+
+            // Arrays Setters
+            vt->FirstName_Setter = &FirstName_Setter;
+            vt->LastName_Setter = &LastName_Setter;
+            vt->Pseudonyme_Setter = &Pseudonyme_Setter;
+            vt->Presentation_Setter = &Presentation_Setter;
+            vt->City_Setter = &City_Setter;
+            vt->Country_Setter = &Country_Setter;
+            vt->CompanyName_Setter = &CompanyName_Setter;
+            vt->Address1_Setter = &Address1_Setter;
+            vt->Address2_Setter = &Address2_Setter;
+            vt->Address3_Setter = &Address3_Setter;
+            vt->ZipCode_Setter = &ZipCode_Setter;
+            vt->Hobbies_Setter = &Hobbies_Setter;
+
             return vt;
         }
 
-        public static unsafe void Standalone_SwapAnyArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
-            => Unsafe.As<BloggerUser>(body).SwapAnyArray(src, arrayIndex);
-
+        // ---------------------------------------------------------
+        // Value Setters
+        // ---------------------------------------------------------
         public static unsafe void Standalone_Active_Setter(BloggerUser body, bool value)
             => Unsafe.As<BodyUnion>(body)._data.Set<bool>(body._vTable->Active_FieldOffset, value);
 
@@ -191,6 +173,45 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public static unsafe void Standalone_BirthDate_Setter(BloggerUser body, DateTime value)
             => Unsafe.As<BodyUnion>(body)._data.Set<DateTime>(body._vTable->BirthDate_FieldOffset, value);
+
+        // ---------------------------------------------------------
+        // Arrays Setters
+        // ---------------------------------------------------------
+        public static unsafe void FirstName_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->FirstName_MapEntryIndex);
+
+        public static unsafe void LastName_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->LastName_MapEntryIndex);
+
+        public static unsafe void Pseudonyme_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Pseudonyme_MapEntryIndex);
+
+        public static unsafe void Presentation_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Presentation_MapEntryIndex);
+
+        public static unsafe void City_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->City_MapEntryIndex);
+
+        public static unsafe void Country_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Country_MapEntryIndex);
+
+        public static unsafe void CompanyName_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->CompanyName_MapEntryIndex);
+
+        public static unsafe void Address1_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address1_MapEntryIndex);
+
+        public static unsafe void Address2_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address2_MapEntryIndex);
+
+        public static unsafe void Address3_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address3_MapEntryIndex);
+
+        public static unsafe void ZipCode_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->ZipCode_MapEntryIndex);
+
+        public static unsafe void Hobbies_Setter(BloggerUser body, GhostStringUtf16 src)
+            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Hobbies_MapEntryIndex);
         #endregion
     }
 }

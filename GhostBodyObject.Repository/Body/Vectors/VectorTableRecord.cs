@@ -14,8 +14,6 @@ namespace GhostBodyObject.Repository.Body.Vectors
 
         public PinnedMemory<byte> InitialGhost;
 
-        public VectorTableHeader* Initial;
-
         public VectorTableHeader* Standalone;
 
         public VectorTableHeader* MappedReadOnly;
