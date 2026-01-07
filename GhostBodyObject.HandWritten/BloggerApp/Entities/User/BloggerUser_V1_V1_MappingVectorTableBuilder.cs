@@ -1,7 +1,6 @@
 ﻿using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Experiments.BabyBody;
 using GhostBodyObject.HandWritten.Blogger.Repository;
-using GhostBodyObject.HandWritten.BloggerApp.Entities.UserFlat;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Body.Vectors;
 using GhostBodyObject.Repository.Ghost.Constants;

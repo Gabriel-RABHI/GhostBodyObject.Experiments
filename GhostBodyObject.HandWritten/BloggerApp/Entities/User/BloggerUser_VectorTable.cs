@@ -71,9 +71,8 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public int Hobbies_MapEntryIndex;
 
-
         // ---------------------------------------------------------
-        // Setters
+        // Value Setters
         // ---------------------------------------------------------
 
         public delegate*<BloggerUser, bool, void> Active_Setter;
@@ -82,7 +81,9 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public delegate*<BloggerUser, DateTime, void> BirthDate_Setter;
 
-        // -------- It is needed to have all properties with a setter : for indexing purposes + triggers !
+        // ---------------------------------------------------------
+        // Arrays Setters
+        // ---------------------------------------------------------
         public delegate*<BloggerUser, GhostStringUtf16, void> FirstName_Setter;
     }
 }

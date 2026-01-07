@@ -1,5 +1,6 @@
 ﻿using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository;
 using System;
@@ -99,13 +100,6 @@ namespace GhostBodyObject.Repository.Body.Vectors
             }
         }
 
-        static public void BuildInitialVersion(int version, TBody body)
-        {
-            var union = Unsafe.As<BodyUnion>(body);
-            union._vTablePtr = (nint)_versionToTable[version - 1].Initial;
-            union._data = _versionToTable[version - 1].InitialGhost;
-        }
-
         static public void BuildStandaloneVersion(PinnedMemory<byte> ghost, TBody body)
         {
             var union = Unsafe.As<BodyUnion>(body);
@@ -113,12 +107,13 @@ namespace GhostBodyObject.Repository.Body.Vectors
             union._data = ghost;
         }
 
-        static public void BuildFlatStandaloneVersion(int version, TBody body)
+        static public void BuildStandaloneVersion(int version, TBody body)
         {
             var union = Unsafe.As<BodyUnion>(body);
             union._vTablePtr = (nint)_versionToTable[version - 1].Standalone;
             union._data = TransientGhostMemoryAllocator.Allocate(union._vTableHeader->MinimalGhostSize);
             _versionToTable[version - 1].InitialGhost.CopyTo(union._data);
+            union._data.Set<GhostId>(0, GhostId.NewId(GhostIdKind.Entity, _versionToTable[version - 1].InitialGhost.Get<GhostId>().TypeIdentifier));
         }
 
         static public void BuildMappedVersion(PinnedMemory<byte> ghost, TBody body, bool readOnly)

@@ -2,7 +2,6 @@
 using GhostBodyObject.HandWritten.Blogger;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
-using GhostBodyObject.HandWritten.BloggerApp.Entities.UserFlat;
 
 /*
 
@@ -54,19 +53,6 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
 
                 RunMonitoredAction(() =>
                 {
-                    var user = new BloggerUserFlat();
-                    user.Active = true;
-                    for (int i = 0; i < COUNT; i++)
-                    {
-                        user.Active = bools[i & 0x02];
-                    }
-                })
-                .PrintToConsole($"Set value for {COUNT:N0} BloggerUserFlat")
-                .PrintDelayPerOp(COUNT)
-                .PrintSpace();
-
-                RunMonitoredAction(() =>
-                {
                     var user = new BloggerUser();
                     user.Active = true;
                     for (int i = 0; i < COUNT_STR; i++)
@@ -75,20 +61,6 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                     }
                 })
                 .PrintToConsole($"Set strings for {COUNT_STR:N0} BloggerUser")
-                .PrintDelayPerOp(COUNT_STR)
-                .PrintSpace();
-
-
-                RunMonitoredAction(() =>
-                {
-                    var user = new BloggerUserFlat();
-                    user.Active = true;
-                    for (int i = 0; i < COUNT_STR; i++)
-                    {
-                        user.FirstName = strings[i & 0x02];
-                    }
-                })
-                .PrintToConsole($"Set strings for {COUNT_STR:N0} BloggerUserFlat")
                 .PrintDelayPerOp(COUNT_STR)
                 .PrintSpace();
             }
