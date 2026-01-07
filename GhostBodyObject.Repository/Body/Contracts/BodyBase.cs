@@ -57,6 +57,15 @@ namespace GhostBodyObject.Repository.Body.Contracts
             }
         }
 
+        public GhostHeader* Header
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return (GhostHeader*)_data.Ptr;
+            }
+        }
+
         // -----------------------------------------------------------------
         // Generic Array Swap Helpers
         // -----------------------------------------------------------------
