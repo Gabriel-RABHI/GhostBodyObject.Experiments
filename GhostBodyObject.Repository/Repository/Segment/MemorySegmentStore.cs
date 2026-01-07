@@ -45,7 +45,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
         }
 
         /// <summary>
-        /// Gets an array containing all current memory segment holders. Is used by Transactions to keeo segments alive.
+        /// Gets an array containing all current memory segment holders. Is used by Transactions to keep segments alive.
         /// </summary>
         /// <returns>An array of <see cref="MemorySegmentHolder"/> objects representing the current memory segment holders. The
         /// array may be empty if no holders are present.</returns>

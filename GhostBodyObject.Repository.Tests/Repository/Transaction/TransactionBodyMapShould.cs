@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace GhostBodyObject.Repository.Tests.Repository.Transaction
 {
-    public unsafe class TransactionBodyIndexShould
+    public unsafe class TransactionBodyMapShould
     {
         private BloggerRepository CreateRepository() => new BloggerRepository();
 
@@ -24,7 +24,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void InsertBody()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -39,7 +39,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void InsertAndRetrieveBody()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -57,7 +57,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void ReturnNotExistsForMissingId()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -76,7 +76,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void UpdateExistingEntry()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -104,7 +104,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void InsertMultipleBodies()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -134,7 +134,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void RemoveExistingEntry()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -156,7 +156,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void RemoveNonExistingEntryReturnsFalse()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -174,7 +174,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void RemoveMultipleEntries()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -221,7 +221,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         public void ResizeOnHighLoad()
         {
             // Start with small capacity to trigger resize
-            var index = new TransactionBodyIndex<BloggerUser>(16);
+            var index = new TransactionBodyMap<BloggerUser>(16);
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -255,7 +255,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void ShrinkOnLowLoad()
         {
-            var index = new TransactionBodyIndex<BloggerUser>(16);
+            var index = new TransactionBodyMap<BloggerUser>(16);
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -296,7 +296,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void EnumerateAllEntries()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -325,7 +325,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void EnumerateEmptyIndex()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
 
             int count = 0;
             var enumerator = index.GetEnumerator();
@@ -340,7 +340,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void GetEntriesArrayReturnsInternalArray()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -365,7 +365,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void ClearRemovesAllEntries()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -398,7 +398,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         public void HandleCollisions()
         {
             // Insert many entries to ensure collisions occur
-            var index = new TransactionBodyIndex<BloggerUser>(16);
+            var index = new TransactionBodyMap<BloggerUser>(16);
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -429,7 +429,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         public void RemoveWithCollisions()
         {
             // Insert entries and remove some to test ShiftBack with collisions
-            var index = new TransactionBodyIndex<BloggerUser>(16);
+            var index = new TransactionBodyMap<BloggerUser>(16);
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
@@ -474,9 +474,9 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void InitialCapacityIsRespected()
         {
-            var index16 = new TransactionBodyIndex<BloggerUser>(16);
-            var index32 = new TransactionBodyIndex<BloggerUser>(32);
-            var index100 = new TransactionBodyIndex<BloggerUser>(100);
+            var index16 = new TransactionBodyMap<BloggerUser>(16);
+            var index32 = new TransactionBodyMap<BloggerUser>(32);
+            var index100 = new TransactionBodyMap<BloggerUser>(100);
 
             Assert.Equal(16, index16.Capacity);
             Assert.Equal(32, index32.Capacity);
@@ -486,14 +486,14 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         [Fact]
         public void MinimumCapacityIsEnforced()
         {
-            var index = new TransactionBodyIndex<BloggerUser>(1);
+            var index = new TransactionBodyMap<BloggerUser>(1);
             Assert.Equal(16, index.Capacity); // Minimum is 16
         }
 
         [Fact]
         public void EnumeratorForeachPattern()
         {
-            var index = new TransactionBodyIndex<BloggerUser>();
+            var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
             using (BloggerContext.OpenReadContext(repository))
             {

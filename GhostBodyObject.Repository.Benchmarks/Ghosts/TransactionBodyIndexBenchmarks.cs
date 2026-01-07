@@ -21,7 +21,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
-                var index = new TransactionBodyIndex<BloggerUser>();
+                var index = new TransactionBodyMap<BloggerUser>();
 
                 // Prepare all users outside the measured loop
                 var users = new BloggerUser[COUNT];
@@ -53,7 +53,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
-                var index = new TransactionBodyIndex<BloggerUser>();
+                var index = new TransactionBodyMap<BloggerUser>();
 
                 // Prepare and insert all users
                 var users = new BloggerUser[COUNT];
@@ -88,7 +88,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
-                var index = new TransactionBodyIndex<BloggerUser>();
+                var index = new TransactionBodyMap<BloggerUser>();
 
                 // Prepare and insert all users
                 var users = new BloggerUser[COUNT];
@@ -125,7 +125,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
-                var index = new TransactionBodyIndex<BloggerUser>();
+                var index = new TransactionBodyMap<BloggerUser>();
 
                 // Insert all users
                 for (int i = 0; i < COUNT; i++)
@@ -160,7 +160,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
-                var index = new TransactionBodyIndex<BloggerUser>();
+                var index = new TransactionBodyMap<BloggerUser>();
 
                 // Insert all users
                 for (int i = 0; i < COUNT; i++)
@@ -198,7 +198,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
-                var index = new TransactionBodyIndex<BloggerUser>();
+                var index = new TransactionBodyMap<BloggerUser>();
 
                 // Insert initial users
                 var users = new BloggerUser[SMALL_COUNT];
@@ -231,7 +231,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             var repository = new BloggerRepository();
             using (BloggerContext.OpenReadContext(repository))
             {
-                var index = new TransactionBodyIndex<BloggerUser>();
+                var index = new TransactionBodyMap<BloggerUser>();
 
                 // Prepare users
                 var users = new BloggerUser[SMALL_COUNT];
@@ -291,7 +291,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 var results = new List<BenchmarkResult>();
 
                 // Benchmark TransactionBodyIndex
-                var index = new TransactionBodyIndex<BloggerUser>();
+                var index = new TransactionBodyMap<BloggerUser>();
                 var indexResult = RunMonitoredAction(() =>
                 {
                     for (int i = 0; i < SMALL_COUNT; i++)
@@ -332,7 +332,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 const int iterations = 100;
 
                 // Pre-create index filled with entries
-                var index = new TransactionBodyIndex<BloggerUser>();
+                var index = new TransactionBodyMap<BloggerUser>();
                 for (int i = 0; i < COUNT; i++)
                 {
                     var user = new BloggerUser();

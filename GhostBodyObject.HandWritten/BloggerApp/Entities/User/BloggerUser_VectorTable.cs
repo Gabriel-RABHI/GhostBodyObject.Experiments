@@ -1,4 +1,5 @@
-﻿using GhostBodyObject.Repository.Body.Vectors;
+﻿using GhostBodyObject.Repository;
+using GhostBodyObject.Repository.Body.Vectors;
 
 namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 {
@@ -80,5 +81,8 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         public delegate*<BloggerUser, int, void> CustomerCode_Setter;
 
         public delegate*<BloggerUser, DateTime, void> BirthDate_Setter;
+
+        // -------- It is needed to have all properties with a setter : for indexing purposes + triggers !
+        public delegate*<BloggerUser, GhostStringUtf16, void> FirstName_Setter;
     }
 }

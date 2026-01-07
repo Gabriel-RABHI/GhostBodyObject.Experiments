@@ -12,7 +12,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
     /// Uses open addressing with linear probing and stores cached random parts
     /// to minimize cache misses during lookups.
     /// </summary>
-    public unsafe class TransactionBodyIndex<TBody>
+    public unsafe class TransactionBodyMap<TBody>
         where TBody : BodyBase
     {
         // Parallel arrays for better cache locality during probing
@@ -38,7 +38,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
 
         public int Capacity => _capacity;
 
-        public TransactionBodyIndex(int initialCapacity = InitialCapacity)
+        public TransactionBodyMap(int initialCapacity = InitialCapacity)
         {
             if (initialCapacity < InitialCapacity) initialCapacity = InitialCapacity;
             _capacity = PowerOf2(initialCapacity);

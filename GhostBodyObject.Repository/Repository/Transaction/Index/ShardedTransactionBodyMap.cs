@@ -1,0 +1,170 @@
+using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Ghost.Structs;
+using System.Runtime.CompilerServices;
+
+namespace GhostBodyObject.Repository.Repository.Transaction.Index
+{
+    /// <summary>
+    /// High-performance sharded hash index for transaction body objects.
+    /// Distributes entries across multiple <see cref="TransactionBodyMap{TBody}"/> shards
+    /// to reduce contention and improve cache locality in concurrent scenarios.
+    /// </summary>
+    public unsafe sealed class ShardedTransactionBodyMap<TBody>
+        where TBody : BodyBase
+    {
+        // Default shard count of 8 - power of 2 for fast masking
+        private const int DefaultShardCount = 8;
+        private readonly int _shardCount;
+        private readonly int _shardMask;
+
+        private readonly TransactionBodyMap<TBody>[] _shards;
+
+        /// <summary>
+        /// Initializes a new sharded transaction body map with the specified shard count and initial capacity.
+        /// </summary>
+        /// <param name="shardCount">Number of shards (must be power of 2). Default is 8.</param>
+        /// <param name="totalCapacity">Total initial capacity distributed across all shards. Default is 128.</param>
+        public ShardedTransactionBodyMap(int shardCount = DefaultShardCount, int totalCapacity = 128)
+        {
+            // Ensure shard count is power of 2
+            _shardCount = PowerOf2(shardCount < 1 ? DefaultShardCount : shardCount);
+            _shardMask = _shardCount - 1;
+            _shards = new TransactionBodyMap<TBody>[_shardCount];
+
+            int capPerShard = Math.Max(16, totalCapacity / _shardCount);
+
+            for (int i = 0; i < _shardCount; i++)
+            {
+                _shards[i] = new TransactionBodyMap<TBody>(capPerShard);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private TransactionBodyMap<TBody> GetShard(GhostId id) 
+            => _shards[id.LowerRandomPart & _shardMask];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private TransactionBodyMap<TBody> GetShard(int lowerRandomPart) 
+            => _shards[lowerRandomPart & _shardMask];
+
+        // --- CRUD OPERATIONS ---
+
+        /// <summary>
+        /// Adds or updates the entry in the appropriate shard.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Set(TBody entry)
+            => GetShard(entry.Header->Id.LowerRandomPart).Set(entry);
+
+        /// <summary>
+        /// Retrieves the entry with the specified Id from the appropriate shard.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public TBody GetRef(GhostId id, out bool exists)
+            => GetShard(id).GetRef(id, out exists);
+
+        /// <summary>
+        /// Removes the entry with the specified Id from the appropriate shard.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Remove(GhostId id)
+            => GetShard(id).Remove(id);
+
+        /// <summary>
+        /// Gets the total count of entries across all shards.
+        /// </summary>
+        public int Count
+        {
+            get
+            {
+                int count = 0;
+                for (int i = 0; i < _shardCount; i++)
+                    count += _shards[i].Count;
+                return count;
+            }
+        }
+
+        /// <summary>
+        /// Gets the total capacity across all shards.
+        /// </summary>
+        public int Capacity
+        {
+            get
+            {
+                int capacity = 0;
+                for (int i = 0; i < _shardCount; i++)
+                    capacity += _shards[i].Capacity;
+                return capacity;
+            }
+        }
+
+        /// <summary>
+        /// Gets the number of shards.
+        /// </summary>
+        public int ShardCount => _shardCount;
+
+        /// <summary>
+        /// Clears all entries from all shards.
+        /// </summary>
+        public void Clear()
+        {
+            for (int i = 0; i < _shardCount; i++)
+                _shards[i].Clear();
+        }
+
+        // --- ENUMERATOR SUPPORT ---
+
+        /// <summary>
+        /// Returns an allocation-free enumerator over all non-null entries across all shards.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ShardedEnumerator GetEnumerator() => new ShardedEnumerator(_shards);
+
+        /// <summary>
+        /// Allocation-free enumerator struct that iterates across all shards.
+        /// </summary>
+        public struct ShardedEnumerator
+        {
+            private readonly TransactionBodyMap<TBody>[] _shards;
+            private int _shardIndex;
+            private TransactionBodyMap<TBody>.Enumerator _currentEnum;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal ShardedEnumerator(TransactionBodyMap<TBody>[] shards)
+            {
+                _shards = shards;
+                _shardIndex = 0;
+                _currentEnum = shards.Length > 0 ? shards[0].GetEnumerator() : default;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+                if (_currentEnum.MoveNext()) 
+                    return true;
+
+                while (++_shardIndex < _shards.Length)
+                {
+                    _currentEnum = _shards[_shardIndex].GetEnumerator();
+                    if (_currentEnum.MoveNext()) 
+                        return true;
+                }
+                return false;
+            }
+
+            public TBody Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _currentEnum.Current;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int PowerOf2(int n)
+        {
+            if (n < 2) return 2;
+            n--; n |= n >> 1; n |= n >> 2; n |= n >> 4; n |= n >> 8; n |= n >> 16;
+            return n + 1;
+        }
+    }
+}
