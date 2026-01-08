@@ -47,7 +47,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
     }
 
 
-    public class EntitiesBenchmarks : BenchmarkBase
+    public class BodyVsPOCOBenchmarks : BenchmarkBase
     {
         private const int COUNT = 1_000_000;
 

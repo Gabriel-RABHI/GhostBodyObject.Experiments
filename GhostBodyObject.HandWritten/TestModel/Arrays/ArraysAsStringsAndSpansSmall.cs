@@ -18,7 +18,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
     public sealed class ArraysAsStringsAndSpansSmall : TestModelBodyBase
     {
-        public int ModelVersion => 1;
+        public const int ModelVersion = 1;
 
         internal unsafe ArraysAsStringsAndSpansSmall_VectorTable* _vTable
         {
@@ -195,7 +195,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
     // ---------------------------------------------------------
     // VECTOR TABLE BUILDER (V1 to V1 Mapping)
     // ---------------------------------------------------------
-    public unsafe static class ArraysAsStringsAndSpansSmall_V1_MappingVectorTableBuilder
+    public unsafe static class ArraysAsStringsAndSpansSmall_MappingVectorTableBuilder
     {
         private static bool _initialized = false;
         private static VectorTableRecord _record;
@@ -206,9 +206,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
 
         public static int TypeIdentifier => 10;
 
-        public static int SourceVersion => 1;
-
-        public static int TargetVersion => 1;
+        public static int TargetVersion => ArraysAsStringsAndSpansSmall.ModelVersion;
 
         public static VectorTableRecord GetTableRecord()
         {
@@ -256,7 +254,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
 
             // -------- STANDARD FIELDS -------- //
             vt->Std.TypeCombo = new GhostId(GhostIdKind.Entity, (ushort)TypeIdentifier, default, default).TypeCombo;
-            vt->Std.ModelVersion = (short)SourceVersion;
+            vt->Std.ModelVersion = (short)TargetVersion;
             vt->Std.ReadOnly = false;
             vt->Std.LargeArrays = false;
             vt->Std.ArrayMapOffset = vt->Guids_MapEntryOffset;

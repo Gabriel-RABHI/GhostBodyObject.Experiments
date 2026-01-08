@@ -16,7 +16,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
     public sealed class BloggerUser : BloggerBodyBase
     {
-        public int ModelVersion => 1;
+        public const int ModelVersion = 1;
 
         public PinnedMemory<byte> Ghost => _data;
 

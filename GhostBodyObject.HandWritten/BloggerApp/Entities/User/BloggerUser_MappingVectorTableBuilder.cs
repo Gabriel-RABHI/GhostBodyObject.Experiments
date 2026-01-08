@@ -13,9 +13,9 @@ using System.Runtime.InteropServices;
 namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 {
     // ---------------------------------------------------------
-    // VECTOR TABLE BUILDER (V1 to V1 Mapping)
+    // VECTOR TABLE BUILDER
     // ---------------------------------------------------------
-    public unsafe static class BloggerUser_V1_MappingVectorTableBuilder
+    public unsafe static class BloggerUser_MappingVectorTableBuilder
     {
         private static bool _initialized = false;
         private static VectorTableRecord _record;
@@ -26,9 +26,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public static int TypeIdentifier => 11;
 
-        public static int SourceVersion => 1;
-
-        public static int TargetVersion => 1;
+        public static int TargetVersion => BloggerUser.ModelVersion;
 
         public static VectorTableRecord GetTableRecord()
         {
@@ -94,7 +92,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
             // -------- STANDARD FIELDS -------- //
             vt->Std.TypeCombo = new GhostId(GhostIdKind.Entity, (ushort)TypeIdentifier, default, default).TypeCombo;
-            vt->Std.ModelVersion = (short)SourceVersion;
+            vt->Std.ModelVersion = (short)TargetVersion;
             vt->Std.ReadOnly = false;
             vt->Std.LargeArrays = false;
             vt->Std.ArrayMapOffset = vt->FirstName_MapEntryOffset;

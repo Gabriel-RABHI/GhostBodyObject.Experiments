@@ -49,7 +49,7 @@ namespace GhostBodyObject.Repository.Body.Vectors
                     // Look for the required static properties and method
                     RepoProp = t.GetProperty("RepositoryType", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static),
                     BodyProp = t.GetProperty("BodyType", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static),
-                    VersionProp = t.GetProperty("SourceVersion", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static),
+                    VersionProp = t.GetProperty("TargetVersion", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static),
                     Method = t.GetMethod("GetTableRecord", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
                 })
                 // Filter: Must have all members
