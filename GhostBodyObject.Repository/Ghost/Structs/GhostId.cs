@@ -43,7 +43,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         private readonly int _lowerRandom;
 
         [FieldOffset(0)]
-        private readonly ushort _typeCombo;
+        private readonly GhostTypeCombo _typeCombo;
 
         // ---------------------------------------------------------
         // Constants & Masks
@@ -131,7 +131,10 @@ namespace GhostBodyObject.Repository.Ghost.Structs
             }
         }
 
-        public ushort TypeCombo
+        /// <summary>
+        /// Gets the TypeCombo which combines Kind and TypeIdentifier in a single 16-bit value.
+        /// </summary>
+        public GhostTypeCombo TypeCombo
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _typeCombo;

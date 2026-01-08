@@ -1,4 +1,5 @@
 ﻿using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Ghost.Structs;
 using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Repository.Body.Vectors
@@ -7,7 +8,7 @@ namespace GhostBodyObject.Repository.Body.Vectors
     public unsafe struct VectorTableHeader
     {
         [FieldOffset(0)]
-        public ushort TypeCombo;
+        public GhostTypeCombo TypeCombo;
 
         [FieldOffset(2)]
         public short ModelVersion;

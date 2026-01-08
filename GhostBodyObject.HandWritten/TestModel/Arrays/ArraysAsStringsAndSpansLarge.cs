@@ -254,7 +254,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
             vt->StringU8_MapEntryIndex = 3;
 
             // -------- STANDARD FIELDS -------- //
-            vt->Std.TypeCombo = new GhostId(GhostIdKind.Entity, (ushort)TypeIdentifier, default, default).TypeCombo;
+            vt->Std.TypeCombo = new GhostTypeCombo(GhostIdKind.Entity, (ushort)TypeIdentifier);
             vt->Std.ModelVersion = (short)TargetVersion;
             vt->Std.ReadOnly = false;
             vt->Std.LargeArrays = true; // Using ArrayMapLargeEntry

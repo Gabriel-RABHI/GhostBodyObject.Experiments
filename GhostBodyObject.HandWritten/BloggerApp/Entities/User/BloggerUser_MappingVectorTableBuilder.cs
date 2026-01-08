@@ -91,7 +91,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             vt->Hobbies_MapEntryIndex = 11;
 
             // -------- STANDARD FIELDS -------- //
-            vt->Std.TypeCombo = new GhostId(GhostIdKind.Entity, (ushort)TypeIdentifier, default, default).TypeCombo;
+            vt->Std.TypeCombo = new GhostTypeCombo(GhostIdKind.Entity, (ushort)TypeIdentifier);
             vt->Std.ModelVersion = (short)TargetVersion;
             vt->Std.ReadOnly = false;
             vt->Std.LargeArrays = false;
