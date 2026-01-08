@@ -13,7 +13,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
     // 3. The Base Entity
     // ---------------------------------------------------------
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
-    public abstract class BloggerBodyBase : BodyBase, IEntityBody
+    public abstract class BloggerBodyBase : BodyBase
     {
         [FieldOffset(0)]
         protected BloggerTransaction _ownerTransaction;

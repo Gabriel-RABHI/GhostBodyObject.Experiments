@@ -53,16 +53,13 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (!_immutable)
-                    GuardLocalScope();
+                GuardLocalScope();
                 return _data.Get<DateTime>(_vTable->OneDateTime_FieldOffset);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                if (_immutable)
-                    throw new InvalidOperationException("Cannot modify an immutable Body object.");
                 using (GuardWriteScope())
                 {
                     _vTable->OneDateTime_Setter(this, value);
@@ -335,25 +332,25 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
         // Value Setters
         // ---------------------------------------------------------
         public static unsafe void Standalone_OneDateTime_Setter(ArraysAsStringsAndSpansSmall body, DateTime value)
-            => Unsafe.As<BodyUnion>(body)._data.Set<DateTime>(body._vTable->OneDateTime_FieldOffset, value);
+            => body._data.Set<DateTime>(body._vTable->OneDateTime_FieldOffset, value);
 
         public static unsafe void Standalone_OneInt_Setter(ArraysAsStringsAndSpansSmall body, int value)
-            => Unsafe.As<BodyUnion>(body)._data.Set<int>(body._vTable->OneInt_FieldOffset, value);
+            => body._data.Set<int>(body._vTable->OneInt_FieldOffset, value);
 
         // ---------------------------------------------------------
         // Arrays Setters
         // ---------------------------------------------------------
         public static unsafe void Guids_Setter(ArraysAsStringsAndSpansSmall body, GhostSpan<Guid> src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Guids_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Guids_MapEntryIndex);
 
         public static unsafe void DateTimes_Setter(ArraysAsStringsAndSpansSmall body, GhostSpan<DateTime> src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->DateTimes_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->DateTimes_MapEntryIndex);
 
         public static unsafe void StringU16_Setter(ArraysAsStringsAndSpansSmall body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->StringU16_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->StringU16_MapEntryIndex);
 
         public static unsafe void StringU8_Setter(ArraysAsStringsAndSpansSmall body, GhostStringUtf8 src)
-            => body.SwapAnyArray(src.AsBytes(), body._vTable->StringU8_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, src.AsBytes(), body._vTable->StringU8_MapEntryIndex);
         #endregion
     }
 

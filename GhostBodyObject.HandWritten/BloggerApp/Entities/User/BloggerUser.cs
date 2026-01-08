@@ -54,16 +54,13 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (!_immutable)
-                    GuardLocalScope();
+                GuardLocalScope();
                 return _data.Get<DateTime>(_vTable->BirthDate_FieldOffset);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                if (_immutable)
-                    throw new InvalidOperationException("Cannot modify an immutable Body object.");
                 using (GuardWriteScope())
                 {
                     _vTable->BirthDate_Setter(this, value);

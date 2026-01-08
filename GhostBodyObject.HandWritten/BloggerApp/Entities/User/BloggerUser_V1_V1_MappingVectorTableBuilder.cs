@@ -166,52 +166,52 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         // Value Setters
         // ---------------------------------------------------------
         public static unsafe void Standalone_Active_Setter(BloggerUser body, bool value)
-            => Unsafe.As<BodyUnion>(body)._data.Set<bool>(body._vTable->Active_FieldOffset, value);
+            => body._data.Set<bool>(body._vTable->Active_FieldOffset, value);
 
         public static unsafe void Standalone_CustomerCode_Setter(BloggerUser body, int value)
-            => Unsafe.As<BodyUnion>(body)._data.Set<int>(body._vTable->CustomerCode_FieldOffset, value);
+            => body._data.Set<int>(body._vTable->CustomerCode_FieldOffset, value);
 
         public static unsafe void Standalone_BirthDate_Setter(BloggerUser body, DateTime value)
-            => Unsafe.As<BodyUnion>(body)._data.Set<DateTime>(body._vTable->BirthDate_FieldOffset, value);
+            => body._data.Set<DateTime>(body._vTable->BirthDate_FieldOffset, value);
 
         // ---------------------------------------------------------
         // Arrays Setters
         // ---------------------------------------------------------
         public static unsafe void FirstName_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->FirstName_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->FirstName_MapEntryIndex);
 
         public static unsafe void LastName_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->LastName_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->LastName_MapEntryIndex);
 
         public static unsafe void Pseudonyme_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Pseudonyme_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Pseudonyme_MapEntryIndex);
 
         public static unsafe void Presentation_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Presentation_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Presentation_MapEntryIndex);
 
         public static unsafe void City_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->City_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->City_MapEntryIndex);
 
         public static unsafe void Country_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Country_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Country_MapEntryIndex);
 
         public static unsafe void CompanyName_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->CompanyName_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->CompanyName_MapEntryIndex);
 
         public static unsafe void Address1_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address1_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address1_MapEntryIndex);
 
         public static unsafe void Address2_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address2_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address2_MapEntryIndex);
 
         public static unsafe void Address3_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address3_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address3_MapEntryIndex);
 
         public static unsafe void ZipCode_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->ZipCode_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->ZipCode_MapEntryIndex);
 
         public static unsafe void Hobbies_Setter(BloggerUser body, GhostStringUtf16 src)
-            => body.SwapAnyArray(MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Hobbies_MapEntryIndex);
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Hobbies_MapEntryIndex);
         #endregion
     }
 }

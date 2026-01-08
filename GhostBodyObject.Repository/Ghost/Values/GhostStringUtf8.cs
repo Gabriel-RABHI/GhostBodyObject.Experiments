@@ -13,7 +13,7 @@ namespace GhostBodyObject.Repository
     /// </summary>
     public ref struct GhostStringUtf8
     {
-        private readonly IEntityBody _body;
+        private readonly BodyBase _body;
         private readonly PinnedMemory<byte> _data;
         private readonly int _arrayIndex;
 
@@ -27,7 +27,7 @@ namespace GhostBodyObject.Repository
         /// <summary>
         /// Initializes a new instance of GhostStringUtf8 with the specified body, array index, and pinned memory data.
         /// </summary>
-        public GhostStringUtf8(IEntityBody body, int arrayIndex, PinnedMemory<byte> data)
+        public GhostStringUtf8(BodyBase body, int arrayIndex, PinnedMemory<byte> data)
         {
             _body = body;
             _arrayIndex = arrayIndex;
@@ -190,8 +190,7 @@ namespace GhostBodyObject.Repository
                 ThrowReadOnly();
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value);
-            var bodyBase = (BodyBase)_body;
-            bodyBase.SwapAnyArray(utf8Bytes.AsSpan(), _arrayIndex);
+            BodyBase.SwapAnyArray(_body, utf8Bytes.AsSpan(), _arrayIndex);
         }
 
         /// <summary>
@@ -202,8 +201,7 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.SwapAnyArray(value.AsBytes(), _arrayIndex);
+            BodyBase.SwapAnyArray(_body, value.AsBytes(), _arrayIndex);
         }
 
         /// <summary>
@@ -215,8 +213,7 @@ namespace GhostBodyObject.Repository
                 ThrowReadOnly();
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value.AsSpan().ToArray());
-            var bodyBase = (BodyBase)_body;
-            bodyBase.SwapAnyArray(utf8Bytes.AsSpan(), _arrayIndex);
+            BodyBase.SwapAnyArray(_body, utf8Bytes.AsSpan(), _arrayIndex);
         }
 
         /// <summary>
@@ -227,8 +224,7 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.SwapAnyArray(value, _arrayIndex);
+            BodyBase.SwapAnyArray(_body, value, _arrayIndex);
         }
 
         // -------------------------------------------------------------------------
@@ -246,8 +242,7 @@ namespace GhostBodyObject.Repository
                 return;
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value);
-            var bodyBase = (BodyBase)_body;
-            bodyBase.AppendToArray(utf8Bytes.AsSpan(), _arrayIndex);
+            BodyBase.AppendToArray(_body, utf8Bytes.AsSpan(), _arrayIndex);
         }
 
         /// <summary>
@@ -260,8 +255,7 @@ namespace GhostBodyObject.Repository
             if (value.IsEmpty)
                 return;
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.AppendToArray(value, _arrayIndex);
+            BodyBase.AppendToArray(_body, value, _arrayIndex);
         }
 
         /// <summary>
@@ -291,8 +285,7 @@ namespace GhostBodyObject.Repository
                 return;
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value);
-            var bodyBase = (BodyBase)_body;
-            bodyBase.PrependToArray(utf8Bytes.AsSpan(), _arrayIndex);
+            BodyBase.PrependToArray(_body, utf8Bytes.AsSpan(), _arrayIndex);
         }
 
         /// <summary>
@@ -305,8 +298,7 @@ namespace GhostBodyObject.Repository
             if (value.IsEmpty)
                 return;
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.PrependToArray(value, _arrayIndex);
+            BodyBase.PrependToArray(_body, value, _arrayIndex);
         }
 
         /// <summary>
@@ -338,8 +330,7 @@ namespace GhostBodyObject.Repository
                 ThrowIndexOutOfRange();
 
             var utf8Bytes = Encoding.UTF8.GetBytes(value);
-            var bodyBase = (BodyBase)_body;
-            bodyBase.InsertIntoArray(utf8Bytes.AsSpan(), _arrayIndex, byteOffset);
+            BodyBase.InsertIntoArray(_body, utf8Bytes.AsSpan(), _arrayIndex, byteOffset);
         }
 
         /// <summary>
@@ -354,16 +345,7 @@ namespace GhostBodyObject.Repository
             if ((uint)byteOffset > (uint)ByteLength)
                 ThrowIndexOutOfRange();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.InsertIntoArray(value, _arrayIndex, byteOffset);
-        }
-
-        /// <summary>
-        /// Inserts another GhostStringUtf8 at the specified byte offset.
-        /// </summary>
-        public void InsertBytesAt(int byteOffset, GhostStringUtf8 value)
-        {
-            InsertBytesAt(byteOffset, value.AsBytes());
+            BodyBase.InsertIntoArray(_body, value, _arrayIndex, byteOffset);
         }
 
         /// <summary>
@@ -378,8 +360,7 @@ namespace GhostBodyObject.Repository
             if (byteOffset < 0 || (uint)(byteOffset + byteCount) > (uint)ByteLength)
                 ThrowIndexOutOfRange();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.RemoveFromArray(_arrayIndex, byteOffset, byteCount);
+            BodyBase.RemoveFromArray(_body, _arrayIndex, byteOffset, byteCount);
         }
 
         /// <summary>
@@ -433,8 +414,7 @@ namespace GhostBodyObject.Repository
             if (byteOffset < 0 || byteCount < 0 || (uint)(byteOffset + byteCount) > (uint)ByteLength)
                 ThrowIndexOutOfRange();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.ReplaceInArray(replacement, _arrayIndex, byteOffset, byteCount);
+            BodyBase.ReplaceInArray(_body, replacement, _arrayIndex, byteOffset, byteCount);
         }
 
         /// <summary>
@@ -492,8 +472,7 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.SwapAnyArray(ReadOnlySpan<byte>.Empty, _arrayIndex);
+            BodyBase.SwapAnyArray(_body, ReadOnlySpan<byte>.Empty, _arrayIndex);
         }
 
         /// <summary>

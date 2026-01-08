@@ -11,7 +11,7 @@ namespace GhostBodyObject.Repository.Body.Vectors
 {
     public unsafe static class VectorTableRegistry<TRepository, TBody>
         where TRepository : GhostRepository
-        where TBody : IEntityBody
+        where TBody : BodyBase
     {
         private static VectorTableRecord* _versionToTable;
         private static int _topVersion = 1;
@@ -102,29 +102,26 @@ namespace GhostBodyObject.Repository.Body.Vectors
 
         static public void BuildStandaloneVersion(PinnedMemory<byte> ghost, TBody body)
         {
-            var union = Unsafe.As<BodyUnion>(body);
-            union._vTablePtr = (nint)_versionToTable[ghost.Get<GhostHeader>().ModelVersion - 1].Standalone;
-            union._data = ghost;
+            body._vTablePtr = (nint)_versionToTable[ghost.Get<GhostHeader>().ModelVersion - 1].Standalone;
+            body._data = ghost;
         }
 
         static public void BuildStandaloneVersion(int version, TBody body)
         {
-            var union = Unsafe.As<BodyUnion>(body);
-            union._vTablePtr = (nint)_versionToTable[version - 1].Standalone;
-            union._data = TransientGhostMemoryAllocator.Allocate(union._vTableHeader->MinimalGhostSize);
+            body._vTablePtr = (nint)_versionToTable[version - 1].Standalone;
+            body._data = TransientGhostMemoryAllocator.Allocate(body._vTableHeader->MinimalGhostSize);
             var ghost = &_versionToTable[version - 1].InitialGhost;
-            ghost->CopyTo(union._data);
-            union._data.Set<GhostId>(0, GhostId.NewId(GhostIdKind.Entity, ghost->As<GhostId>()->TypeIdentifier));
+            ghost->CopyTo(body._data);
+            body._data.Set<GhostId>(0, GhostId.NewId(GhostIdKind.Entity, ghost->As<GhostId>()->TypeIdentifier));
         }
 
         static public void BuildMappedVersion(PinnedMemory<byte> ghost, TBody body, bool readOnly)
         {
-            var union = Unsafe.As<BodyUnion>(body);
             if (readOnly)
-                union._vTablePtr = (nint)_versionToTable[ghost.Get<GhostHeader>().ModelVersion - 1].MappedReadOnly;
+                body._vTablePtr = (nint)_versionToTable[ghost.Get<GhostHeader>().ModelVersion - 1].MappedReadOnly;
             else
-                union._vTablePtr = (nint)_versionToTable[ghost.Get<GhostHeader>().ModelVersion - 1].MappedMutable;
-            union._data = ghost;
+                body._vTablePtr = (nint)_versionToTable[ghost.Get<GhostHeader>().ModelVersion - 1].MappedMutable;
+            body._data = ghost;
         }
     }
 }

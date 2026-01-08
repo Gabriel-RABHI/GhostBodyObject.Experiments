@@ -12,7 +12,7 @@ namespace GhostBodyObject.Repository
     /// </summary>
     public ref struct GhostStringUtf16
     {
-        private readonly IEntityBody _body;
+        private readonly BodyBase _body;
         private readonly PinnedMemory<byte> _data;
         private readonly int _arrayIndex;
         
@@ -27,7 +27,7 @@ namespace GhostBodyObject.Repository
         /// <summary>
         /// Initializes a new instance of GhostStringUtf16 with the specified body, array index, and pinned memory data.
         /// </summary>
-        public GhostStringUtf16(IEntityBody body, int arrayIndex, PinnedMemory<byte> data)
+        public GhostStringUtf16(BodyBase body, int arrayIndex, PinnedMemory<byte> data)
         {
             _body = body;
             _arrayIndex = arrayIndex;
@@ -150,8 +150,7 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.SwapAnyArray(MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
+            BodyBase.SwapAnyArray(_body, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
         }
 
         /// <summary>
@@ -162,8 +161,7 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.SwapAnyArray(MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
+            BodyBase.SwapAnyArray(_body, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
         }
 
         /// <summary>
@@ -174,8 +172,7 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.SwapAnyArray(MemoryMarshal.AsBytes(value), _arrayIndex);
+            BodyBase.SwapAnyArray(_body, MemoryMarshal.AsBytes(value), _arrayIndex);
         }
 
         // -------------------------------------------------------------------------
@@ -190,9 +187,8 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var bodyBase = (BodyBase)_body;
             var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<char>(in value));
-            bodyBase.AppendToArray(valueBytes, _arrayIndex);
+            BodyBase.AppendToArray(_body, valueBytes, _arrayIndex);
         }
 
         /// <summary>
@@ -205,8 +201,7 @@ namespace GhostBodyObject.Repository
             if (string.IsNullOrEmpty(value))
                 return;
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.AppendToArray(MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
+            BodyBase.AppendToArray(_body, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
         }
 
         /// <summary>
@@ -219,8 +214,7 @@ namespace GhostBodyObject.Repository
             if (value.IsEmpty)
                 return;
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.AppendToArray(MemoryMarshal.AsBytes(value), _arrayIndex);
+            BodyBase.AppendToArray(_body, MemoryMarshal.AsBytes(value), _arrayIndex);
         }
 
         /// <summary>
@@ -239,9 +233,8 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var bodyBase = (BodyBase)_body;
             var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<char>(in value));
-            bodyBase.PrependToArray(valueBytes, _arrayIndex);
+            BodyBase.PrependToArray(_body, valueBytes, _arrayIndex);
         }
 
         /// <summary>
@@ -254,8 +247,7 @@ namespace GhostBodyObject.Repository
             if (string.IsNullOrEmpty(value))
                 return;
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.PrependToArray(MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
+            BodyBase.PrependToArray(_body, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
         }
 
         /// <summary>
@@ -268,8 +260,7 @@ namespace GhostBodyObject.Repository
             if (value.IsEmpty)
                 return;
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.PrependToArray(MemoryMarshal.AsBytes(value), _arrayIndex);
+            BodyBase.PrependToArray(_body, MemoryMarshal.AsBytes(value), _arrayIndex);
         }
 
         /// <summary>
@@ -292,8 +283,7 @@ namespace GhostBodyObject.Repository
             if ((uint)charIndex > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.InsertIntoArray(MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex, charIndex * sizeof(char));
+            BodyBase.InsertIntoArray(_body, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex, charIndex * sizeof(char));
         }
 
         /// <summary>
@@ -308,16 +298,7 @@ namespace GhostBodyObject.Repository
             if ((uint)charIndex > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.InsertIntoArray(MemoryMarshal.AsBytes(value), _arrayIndex, charIndex * sizeof(char));
-        }
-
-        /// <summary>
-        /// Inserts another GhostStringUtf16 at the specified character index.
-        /// </summary>
-        public void InsertAt(int charIndex, GhostStringUtf16 value)
-        {
-            InsertAt(charIndex, value.AsSpan());
+            BodyBase.InsertIntoArray(_body, MemoryMarshal.AsBytes(value), _arrayIndex, charIndex * sizeof(char));
         }
 
         /// <summary>
@@ -332,8 +313,7 @@ namespace GhostBodyObject.Repository
             if (startIndex < 0 || (uint)(startIndex + count) > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.RemoveFromArray(_arrayIndex, startIndex * sizeof(char), count * sizeof(char));
+            BodyBase.RemoveFromArray(_body, _arrayIndex, startIndex * sizeof(char), count * sizeof(char));
         }
 
         /// <summary>
@@ -420,11 +400,10 @@ namespace GhostBodyObject.Repository
             if (startIndex < 0 || count < 0 || (uint)(startIndex + count) > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var bodyBase = (BodyBase)_body;
             var replacementBytes = string.IsNullOrEmpty(replacement) 
                 ? ReadOnlySpan<byte>.Empty 
                 : MemoryMarshal.AsBytes(replacement.AsSpan());
-            bodyBase.ReplaceInArray(replacementBytes, _arrayIndex, startIndex * sizeof(char), count * sizeof(char));
+            BodyBase.ReplaceInArray(_body, replacementBytes, _arrayIndex, startIndex * sizeof(char), count * sizeof(char));
         }
 
         /// <summary>
@@ -437,8 +416,7 @@ namespace GhostBodyObject.Repository
             if (startIndex < 0 || count < 0 || (uint)(startIndex + count) > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.ReplaceInArray(MemoryMarshal.AsBytes(replacement), _arrayIndex, startIndex * sizeof(char), count * sizeof(char));
+            BodyBase.ReplaceInArray(_body, MemoryMarshal.AsBytes(replacement), _arrayIndex, startIndex * sizeof(char), count * sizeof(char));
         }
 
         /// <summary>
@@ -511,8 +489,7 @@ namespace GhostBodyObject.Repository
             if (_body == null)
                 ThrowReadOnly();
 
-            var bodyBase = (BodyBase)_body;
-            bodyBase.SwapAnyArray(ReadOnlySpan<byte>.Empty, _arrayIndex);
+            BodyBase.SwapAnyArray(_body, ReadOnlySpan<byte>.Empty, _arrayIndex);
         }
 
         /// <summary>
