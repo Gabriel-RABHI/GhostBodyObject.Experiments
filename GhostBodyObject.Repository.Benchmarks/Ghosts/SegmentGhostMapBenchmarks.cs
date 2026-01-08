@@ -8,8 +8,8 @@ using Spectre.Console;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using SmallMapType = ShardedSegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.SmallPinnedSegmentStore>;
-using LargeMapType = ShardedSegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.LargePinnedSegmentStore>;
+using SmallMapType = SegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.SmallPinnedSegmentStore>;
+using LargeMapType = SegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.LargePinnedSegmentStore>;
 
 namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 {

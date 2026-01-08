@@ -12,11 +12,20 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
     /// Uses open addressing with linear probing and stores cached random parts
     /// to minimize cache misses during lookups.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Performance Optimization:</b> This implementation uses a parallel <c>_randomParts</c> array 
+    /// that caches the lower 32 bits of each GhostId's RandomPart as a <c>uint</c>. During probing, 
+    /// the cached random part is compared first (fast, L1-cache friendly) before dereferencing the 
+    /// body pointer. The slot calculation uses a hash mix of the full 64-bit RandomPart for optimal
+    /// distribution.
+    /// </para>
+    /// </remarks>
     public unsafe class TransactionBodyMap<TBody>
         where TBody : BodyBase
     {
         // Parallel arrays for better cache locality during probing
-        // Using uint (4 bytes) instead of ulong (8 bytes) for 2x cache density
+        // Using uint (4 bytes) for good balance between cache density and collision avoidance
         // Correctness is guaranteed by full GhostId verification on match
         private uint[] _randomParts;  // Cached lower 32 bits of GhostId.RandomPart
         private TBody[] _entries;
@@ -50,14 +59,27 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         }
 
         /// <summary>
+        /// Computes a well-distributed hash slot from a 64-bit random value.
+        /// Uses xor-shift folding to mix all bits into the lower bits used for masking.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ComputeSlot(ulong random, int mask)
+        {
+            // Fold the 64-bit value to mix entropy into lower bits
+            // This ensures good distribution even when mask is small
+            uint folded = (uint)random ^ (uint)(random >> 32);
+            return (int)(folded & (uint)mask);
+        }
+
+        /// <summary>
         /// Adds or Updates the entry.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(TBody entry)
         {
 #if THREAD_SAFE
-            _lock.Enter();
-            try
+      _lock.Enter();
+      try
             {
 #endif
             if (_count >= _resizeThreshold)
@@ -65,8 +87,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
 
             // Cache the ID once - avoid repeated pointer dereferences
             var entryId = entry.Header->Id;
-            uint entryRandom = (uint)entryId.LowerRandomPart;
-            int index = (int)entryRandom & _mask;
+            ulong entryRandomFull = entryId.RandomPart;
+            uint entryRandom = (uint)entryRandomFull; // Cache lower 32 bits for comparison
+            int index = ComputeSlot(entryRandomFull, _mask);
             var entries = _entries;
             var randomParts = _randomParts;
             int mask = _mask;
@@ -81,8 +104,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                     return;
                 }
 
-                // Fast filter: compare cached random parts first (32-bit, excellent cache density)
-                // Then verify full ID match to handle RandomPart collisions (~1 in 2^32)
+                // Fast filter: compare cached random parts first (32-bit, good cache density)
+                // Then verify full ID match to handle RandomPart collisions
                 if (randomParts[index] == entryRandom && entries[index].Header->Id == entryId)
                 {
                     entries[index] = entry;
@@ -93,9 +116,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             }
 #if THREAD_SAFE
             }
-            finally
+      finally
             {
-                _lock.Exit();
+    _lock.Exit();
             }
 #endif
         }
@@ -107,12 +130,13 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         public TBody GetRef(GhostId id, out bool exists)
         {
 #if THREAD_SAFE
-            _lock.Enter();
+        _lock.Enter();
             try
             {
 #endif
-            uint idRandom = (uint)id.LowerRandomPart;
-            int index = (int)idRandom & _mask;
+            ulong idRandomFull = id.RandomPart;
+            uint idRandom = (uint)idRandomFull; // Cache lower 32 bits for comparison
+            int index = ComputeSlot(idRandomFull, _mask);
             var entries = _entries;
             var randomParts = _randomParts;
             int mask = _mask;
@@ -134,10 +158,10 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 index = (index + 1) & mask;
             }
 #if THREAD_SAFE
-            }
+       }
             finally
             {
-                _lock.Exit();
+  _lock.Exit();
             }
 #endif
         }
@@ -149,12 +173,13 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         public bool Remove(GhostId id)
         {
 #if THREAD_SAFE
-            _lock.Enter();
-            try
-            {
+       _lock.Enter();
+     try
+        {
 #endif
-            uint idRandom = (uint)id.LowerRandomPart;
-            int i = (int)idRandom & _mask;
+            ulong idRandomFull = id.RandomPart;
+            uint idRandom = (uint)idRandomFull; // Cache lower 32 bits for comparison
+            int i = ComputeSlot(idRandomFull, _mask);
             var entries = _entries;
             var randomParts = _randomParts;
             int mask = _mask;
@@ -179,10 +204,10 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             }
 #if THREAD_SAFE
             }
-            finally
+  finally
             {
-                _lock.Exit();
-            }
+           _lock.Exit();
+    }
 #endif
         }
 
@@ -210,9 +235,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                     return;
                 }
 
-                // Use cached random part for ideal slot calculation
-                int idealSlot = (int)randomParts[curr] & mask;
-                
+                // Recompute ideal slot from full random (need to dereference header here)
+                int idealSlot = ComputeSlot(currentEntry.Header->Id.RandomPart, mask);
+
                 int distToGap = (gapIndex - idealSlot + capacity) & mask;
                 int distToCurr = (curr - idealSlot + capacity) & mask;
 
@@ -230,7 +255,6 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         private void Resize(int newCapacity)
         {
             var oldEntries = _entries;
-            var oldRandomParts = _randomParts;
             int oldCapacity = _capacity;
 
             _capacity = newCapacity;
@@ -248,8 +272,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 TBody e = oldEntries[i];
                 if (e != null)
                 {
-                    uint random = oldRandomParts[i];
-                    int index = (int)random & mask;
+                    ulong randomFull = e.Header->Id.RandomPart;
+                    uint random = (uint)randomFull;
+                    int index = ComputeSlot(randomFull, mask);
                     while (entries[index] != null)
                         index = (index + 1) & mask;
                     entries[index] = e;
@@ -308,7 +333,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             {
                 var entries = _entries;
                 int length = entries.Length;
-                
+
                 while (++_index < length)
                 {
                     TBody entry = entries[_index];
@@ -318,7 +343,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                         return true;
                     }
                 }
-                
+
                 _current = null;
                 return false;
             }
@@ -339,17 +364,17 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         {
 #if THREAD_SAFE
             _lock.Enter();
-            try
-            {
+      try
+      {
 #endif
             Array.Clear(_entries, 0, _capacity);
             Array.Clear(_randomParts, 0, _capacity);
             _count = 0;
 #if THREAD_SAFE
             }
-            finally
-            {
-                _lock.Exit();
+  finally
+  {
+   _lock.Exit();
             }
 #endif
         }
