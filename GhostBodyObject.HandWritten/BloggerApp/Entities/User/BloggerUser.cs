@@ -18,6 +18,8 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
     {
         public int ModelVersion => 1;
 
+        public PinnedMemory<byte> Ghost => _data;
+
         internal unsafe BloggerUser_VectorTable* _vTable
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -112,8 +112,9 @@ namespace GhostBodyObject.Repository.Body.Vectors
             var union = Unsafe.As<BodyUnion>(body);
             union._vTablePtr = (nint)_versionToTable[version - 1].Standalone;
             union._data = TransientGhostMemoryAllocator.Allocate(union._vTableHeader->MinimalGhostSize);
-            _versionToTable[version - 1].InitialGhost.CopyTo(union._data);
-            union._data.Set<GhostId>(0, GhostId.NewId(GhostIdKind.Entity, _versionToTable[version - 1].InitialGhost.Get<GhostId>().TypeIdentifier));
+            var ghost = &_versionToTable[version - 1].InitialGhost;
+            ghost->CopyTo(union._data);
+            union._data.Set<GhostId>(0, GhostId.NewId(GhostIdKind.Entity, ghost->As<GhostId>()->TypeIdentifier));
         }
 
         static public void BuildMappedVersion(PinnedMemory<byte> ghost, TBody body, bool readOnly)

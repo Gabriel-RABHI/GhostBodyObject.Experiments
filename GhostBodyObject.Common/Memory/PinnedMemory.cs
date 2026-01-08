@@ -172,6 +172,10 @@ public readonly unsafe struct PinnedMemory<T> : IEquatable<PinnedMemory<T>> wher
     public unsafe T Get<T>() where T : struct
         => *(T*)_ptr;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe T* As<T>() where T : struct
+        => (T*)_ptr;
+
     /// <summary>
     /// Writes the contents of the specified value type array to the underlying memory at the given byte offset.
     /// </summary>
