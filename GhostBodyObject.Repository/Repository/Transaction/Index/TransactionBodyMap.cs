@@ -80,6 +80,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             var randomParts = _randomParts;
             int mask = _mask;
 
+            if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+                throw new InvalidOperationException();
+
             while (true)
             {
                 if (entries[index] == null)
@@ -127,6 +130,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             var randomParts = _randomParts;
             int mask = _mask;
 
+            if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+                throw new InvalidOperationException();
+
             while (true)
             {
                 TBody current = entries[index];
@@ -170,6 +176,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             var randomParts = _randomParts;
             int mask = _mask;
 
+            if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+                throw new InvalidOperationException();
+
             while (true)
             {
                 TBody entry = entries[i];
@@ -209,6 +218,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             var randomParts = _randomParts;
             int mask = _mask;
             int capacity = _capacity;
+
+            if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+                throw new InvalidOperationException();
 
             while (true)
             {
@@ -252,6 +264,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             var entries = _entries;
             var randomParts = _randomParts;
             int mask = _mask;
+
+            if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+                throw new InvalidOperationException();
 
             for (int i = 0; i < oldCapacity; i++)
             {

@@ -14,7 +14,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
     // 4. The Customer Entity (User Code)
     // ---------------------------------------------------------
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
-    public sealed class BloggerUser : BloggerBodyBase
+    public sealed partial class BloggerUser : BloggerBodyBase
     {
         public const int ModelVersion = 1;
 

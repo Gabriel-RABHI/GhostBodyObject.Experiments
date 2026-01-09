@@ -144,6 +144,9 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             var randomParts = _randomParts;
             int mask = _mask;
 
+            if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+                throw new InvalidOperationException();
+
             GhostId newId = h->Id;
             short newRandomPart = newId.RandomPartTag;
             long newTxnId = h->TxnId;
@@ -221,6 +224,9 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
         var entries = state.Entries;
         var randomParts = state.RandomParts;
         int mask = state.Mask;
+
+        if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+            throw new InvalidOperationException();
 
         short searchRandomPart = id.RandomPartTag;
         int index = id.SlotComputation & mask;
@@ -301,6 +307,9 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             var entries = _entries;
             var randomParts = _randomParts;
             int mask = _mask;
+
+            if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+                throw new InvalidOperationException();
 
             short searchRandomPart = id.RandomPartTag;
             int index = id.SlotComputation & mask;
@@ -527,14 +536,14 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsBestVersion(
-  GhostId id,
-     short searchRandomPart,
-         SegmentReference candidate,
+            GhostId id,
+            short searchRandomPart,
+            SegmentReference candidate,
             SegmentReference[] entries,
             short[] randomParts,
-         int mask,
-    long maxTxnId,
-    ISegmentStore store)
+            int mask,
+            long maxTxnId,
+            ISegmentStore store)
         {
             // Slot uses specific bit-range
             int index = id.SlotComputation & mask;
