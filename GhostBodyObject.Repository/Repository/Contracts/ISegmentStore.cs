@@ -6,5 +6,7 @@ namespace GhostBodyObject.Repository.Repository.Contracts
     public unsafe interface ISegmentStore
     {
         GhostHeader* ToGhostHeaderPointer(SegmentReference reference);
+
+        SegmentReference StoreGhost(PinnedMemory<byte> ghost);
     }
 }

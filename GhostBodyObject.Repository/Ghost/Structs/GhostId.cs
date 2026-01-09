@@ -35,15 +35,26 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         [FieldOffset(8)]
         private readonly ulong _random;
 
+        /// <summary>
+        /// Bits 00-31 of the Random part. Used for Map Slot Computation.
+        /// </summary>
         [FieldOffset(8)]
-        private readonly int _upperRandom;
+        public readonly int SlotComputation;
 
-
+        /// <summary>
+        /// Bits 32-47 of the Random part. Used for the Fast Filter Tag (Short[]).
+        /// </summary>
         [FieldOffset(12)]
-        private readonly int _lowerRandom;
+        public readonly short RandomPartTag;
+
+        /// <summary>
+        /// Bits 48-63 of the Random part. Used for Shard Selection.
+        /// </summary>
+        [FieldOffset(14)]
+        public readonly short ShardComputation;
 
         [FieldOffset(0)]
-        private readonly ushort _typeCombo;
+        private readonly GhostTypeCombo _typeCombo;
 
         // ---------------------------------------------------------
         // Constants & Masks
@@ -63,17 +74,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
             get => _random;
         }
 
-        public int UpperRandomPart
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _upperRandom;
-        }
 
-        public int LowerRandomPart
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _lowerRandom;
-        }
 
         // ---------------------------------------------------------
         // Construction
@@ -131,7 +132,10 @@ namespace GhostBodyObject.Repository.Ghost.Structs
             }
         }
 
-        public ushort TypeCombo
+        /// <summary>
+        /// Gets the TypeCombo which combines Kind and TypeIdentifier in a single 16-bit value.
+        /// </summary>
+        public GhostTypeCombo TypeCombo
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _typeCombo;

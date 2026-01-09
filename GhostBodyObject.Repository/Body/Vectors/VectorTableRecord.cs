@@ -10,16 +10,14 @@ namespace GhostBodyObject.Repository.Body.Vectors
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct VectorTableRecord
     {
-        public int GhostSize;
-
         public PinnedMemory<byte> InitialGhost;
-
-        public VectorTableHeader* Initial;
 
         public VectorTableHeader* Standalone;
 
         public VectorTableHeader* MappedReadOnly;
 
         public VectorTableHeader* MappedMutable;
+
+        public int GhostSize;
     }
 }

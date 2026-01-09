@@ -35,5 +35,16 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         // ---------------------------------------------------------
         [FieldOffset(32)]
         public long White;
+
+        public void Initialize(ushort modelVersion)
+        {
+            Id = default;
+            TxnId = 0;
+            White = 0;
+            ModelVersion = modelVersion;
+            Status = GhostStatus.Alive;
+            Flags = 0x00;
+            MutationCounter = 0;
+        }
     }
 }

@@ -47,7 +47,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
     }
 
 
-    public class EntitiesBenchmarks : BenchmarkBase
+    public class BodyVsPOCOBenchmarks : BenchmarkBase
     {
         private const int COUNT = 1_000_000;
 
@@ -130,6 +130,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
         {
             BenchmarkResult r1 = null;
             BenchmarkResult r2 = null;
+            BenchmarkResult r3 = null;
             var repository = new BloggerRepository();
 
             WriteComment("The array retain 32 objects at any time, prevent the stack alloc.");
@@ -172,8 +173,28 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                 WriteComment($"{(array.Count(o => o.FirstName.Length > 0))}");
             }
 
+            using (BloggerContext.OpenReadContext(repository))
+            {
+                var userSrc = new BloggerUser();
+                var ghost = userSrc.Ghost;
+                var array = new BloggerUser[32];
+                r3 = RunMonitoredAction(() =>
+                {
+                    for (int j = 0; j < 100; j++)
+                        for (int i = 0; i < COUNT; i++)
+                        {
+                            var user = new BloggerUser(ghost, false);
+                            array[i % 32] = user;
+                        }
+                })
+                .PrintToConsole($"Create {COUNT * 100:N0} BloggerUser from existing Ghost")
+                .PrintDelayPerOp(COUNT * 100)
+                .PrintSpace();
+                WriteComment($"{(array.Count(o => o.FirstName.Length > 0))}");
+            }
+
             var arrayPoco = new UserPOCO[32];
-            var r3 = RunMonitoredAction(() =>
+            var r4 = RunMonitoredAction(() =>
             {
                 for (int j = 0; j < 100; j++)
                     for (int i = 0; i < COUNT; i++)
@@ -189,7 +210,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
 
             WriteComment($"{(arrayPoco.Count(o => o.FirstName != null))}");
 
-            PrintComparison("Body / POCO", "Create BloggerUser in mass", new BenchmarkResult[] { r1, r2, r3 });
+            PrintComparison("Body / POCO", "Create BloggerUser in mass", new BenchmarkResult[] { r1, r2, r3, r4 });
         }
 
         [BruteForceBenchmark("OBJ-03", "Garbage Collection time", "Objects")]

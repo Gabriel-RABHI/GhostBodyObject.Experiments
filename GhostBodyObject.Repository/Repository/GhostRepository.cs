@@ -39,14 +39,14 @@ namespace GhostBodyObject.Repository.Repository
 
         // TODO : to replace with a struct Enumerator to avoid allocations.
         protected IEnumerable<TBody> EnumerateGhostTable<TBody>(ushort typeCombo, ulong txnId)
-            where TBody : IEntityBody
+            where TBody : BodyBase
         {
             // -------- For Principle -------- //
             throw new NotSupportedException();
         }
 
         protected TBody Retreive<TBody>(GhostId id, ulong txnId)
-            where TBody : IEntityBody
+            where TBody : BodyBase
         {
             // -------- For Principle -------- //
             // Retreive the Ghost header.

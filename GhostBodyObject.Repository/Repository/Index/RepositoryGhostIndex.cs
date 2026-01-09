@@ -57,9 +57,9 @@ namespace GhostBodyObject.Repository.Repository.Index
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RepositorySingleKindGhostIndex<TSegmentStore> GetIndex(ushort typeCombo, bool create)
+        public RepositorySingleKindGhostIndex<TSegmentStore> GetIndex(GhostTypeCombo typeCombo, bool create)
         {
-            var typeMap = _maps[typeCombo];
+            var typeMap = _maps[typeCombo.Value];
             if (typeMap == null)
             {
                 if (create)
@@ -67,12 +67,12 @@ namespace GhostBodyObject.Repository.Repository.Index
                     _lock.Enter();
                     try
                     {
-                        if (_maps[typeCombo] == null)
+                        if (_maps[typeCombo.Value] == null)
                         {
                             typeMap = new RepositorySingleKindGhostIndex<TSegmentStore>(_store);
-                            _maps[typeCombo] = typeMap;
+                            _maps[typeCombo.Value] = typeMap;
                         }
-                        typeMap = _maps[typeCombo];
+                        typeMap = _maps[typeCombo.Value];
                     }
                     finally
                     {

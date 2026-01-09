@@ -12,7 +12,9 @@
     <Project Path="GhostBodyObject.Repository.Tests/GhostBodyObject.Repository.Tests.csproj" Id="dcdc959e-46d9-454d-96dc-0baa40041a23" />
     <Project Path="GhostBodyObject.Repository/GhostBodyObject.Repository.csproj" Id="9b7ac0a9-8468-435b-a165-35ea32d3dd23" />
   </Folder>
-  <Folder Name="/3-Generator/" />
+  <Folder Name="/3-Generator/">
+    <Project Path="GhostBodyObject.CodeGenerator/GhostBodyObject.CodeGenerator.csproj" Id="9ef3baab-77d1-4343-9081-074f02ff626c" />
+  </Folder>
   <Folder Name="/4-Reference/">
     <Project Path="GhostBodyObject.HandWritten.Benchmarks/GhostBodyObject.HandWritten.Benchmarks.csproj" Id="5c0cb33e-779d-45a4-9ad7-37e865142080" />
     <Project Path="GhostBodyObject.HandWritten.Tests/GhostBodyObject.HandWritten.Tests.csproj" Id="94f66966-6710-4c9a-9042-3ff6d509c947" />

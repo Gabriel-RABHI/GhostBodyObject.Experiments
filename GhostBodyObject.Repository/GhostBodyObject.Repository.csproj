@@ -9,6 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="GhostBodyObject.HandWritten" />
+    <InternalsVisibleTo Include="GhostBodyObject.HandWritten.Tests" />
+    <InternalsVisibleTo Include="GhostBodyObject.HandWritten.Benchmarks" />
+    <InternalsVisibleTo Include="GhostBodyObject.Repository.Tests" />
+    <InternalsVisibleTo Include="GhostBodyObject.Repository.Benchmarks" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\GhostBodyObject.Common\GhostBodyObject.Common.csproj" />
   </ItemGroup>
 

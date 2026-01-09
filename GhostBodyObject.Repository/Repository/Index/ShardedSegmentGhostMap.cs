@@ -31,7 +31,7 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private SegmentGhostMap<TSegmentStore> GetShard(GhostId id) =>  _shards[id.LowerRandomPart & ShardMask];
+    private SegmentGhostMap<TSegmentStore> GetShard(GhostId id) =>  _shards[id.ShardComputation & ShardMask];
 
     // --- CRUD OPERATIONS ---
 

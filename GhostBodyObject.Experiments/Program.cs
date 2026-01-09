@@ -13,10 +13,10 @@ class Program
             typeof(FastBufferBenchmarks),
             typeof(MemoryAllocatorBenchmarks),
             typeof(SpinLocksBenchmarks),
-            typeof(EntitiesBenchmarks),
+            typeof(BodyVsPOCOBenchmarks),
             typeof(SegmentGhostMapBenchmarks),
             typeof(BodyImplementationsBenchmarks),
-            typeof(EntitiesBenchmarks)
+            typeof(BodyVsPOCOBenchmarks)
         };
 
         foreach (var item in types)

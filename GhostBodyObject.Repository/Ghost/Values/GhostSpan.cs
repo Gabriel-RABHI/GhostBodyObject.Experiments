@@ -16,7 +16,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
     /// <typeparam name="T">The unmanaged element type.</typeparam>
     public ref struct GhostSpan<T> where T : unmanaged
     {
-        private readonly IEntityBody _body;
+        private readonly BodyBase _body;
         private readonly PinnedMemory<byte> _data;
         private readonly int _arrayIndex;
 
@@ -31,7 +31,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
         /// <summary>
         /// Initializes a new instance of GhostSpan with the specified body, array index, and pinned memory data.
         /// </summary>
-        public GhostSpan(IEntityBody body, int arrayIndex, PinnedMemory<byte> data)
+        public GhostSpan(BodyBase body, int arrayIndex, PinnedMemory<byte> data)
         {
             _body = body;
             _arrayIndex = arrayIndex;
@@ -167,8 +167,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
+            BodyBase.SwapAnyArray(_body, MemoryMarshal.AsBytes(value.AsSpan()), _arrayIndex);
         }
 
         /// <summary>
@@ -179,8 +178,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, value.AsBytes(), _arrayIndex);
+            BodyBase.SwapAnyArray(_body, value.AsBytes(), _arrayIndex);
         }
 
         /// <summary>
@@ -191,8 +189,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, MemoryMarshal.AsBytes(value), _arrayIndex);
+            BodyBase.SwapAnyArray(_body, MemoryMarshal.AsBytes(value), _arrayIndex);
         }
 
         /// <summary>
@@ -203,8 +200,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            ((VectorTableHeader*)union._vTablePtr)->SwapAnyArray(union, ReadOnlySpan<byte>.Empty, _arrayIndex);
+            BodyBase.SwapAnyArray(_body, ReadOnlySpan<byte>.Empty, _arrayIndex);
         }
 
         // -------------------------------------------------------------------------
@@ -220,10 +216,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
             var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in value));
-            vt->AppendToArray(union, valueBytes, _arrayIndex);
+            BodyBase.AppendToArray(_body, valueBytes, _arrayIndex);
         }
 
         /// <summary>
@@ -234,9 +228,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->AppendToArray(union, MemoryMarshal.AsBytes(values), _arrayIndex);
+            BodyBase.AppendToArray(_body, MemoryMarshal.AsBytes(values), _arrayIndex);
         }
 
         /// <summary>
@@ -255,10 +247,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
             var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in value));
-            vt->PrependToArray(union, valueBytes, _arrayIndex);
+            BodyBase.PrependToArray(_body, valueBytes, _arrayIndex);
         }
 
         /// <summary>
@@ -269,9 +259,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (_body == null)
                 ThrowReadOnly();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->PrependToArray(union, MemoryMarshal.AsBytes(values), _arrayIndex);
+            BodyBase.PrependToArray(_body, MemoryMarshal.AsBytes(values), _arrayIndex);
         }
 
         /// <summary>
@@ -292,10 +280,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if ((uint)index > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
             var valueBytes = MemoryMarshal.AsBytes(new ReadOnlySpan<T>(in value));
-            vt->InsertIntoArray(union, valueBytes, _arrayIndex, index * Unsafe.SizeOf<T>());
+            BodyBase.InsertIntoArray(_body, valueBytes, _arrayIndex, index * Unsafe.SizeOf<T>());
         }
 
         /// <summary>
@@ -308,17 +294,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if ((uint)index > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
-            vt->InsertIntoArray(union, MemoryMarshal.AsBytes(values), _arrayIndex, index * Unsafe.SizeOf<T>());
-        }
-
-        /// <summary>
-        /// Inserts elements from another GhostSpan at the specified index.
-        /// </summary>
-        public void InsertRangeAt(int index, GhostSpan<T> values)
-        {
-            InsertRangeAt(index, values.AsSpan());
+            BodyBase.InsertIntoArray(_body, MemoryMarshal.AsBytes(values), _arrayIndex, index * Unsafe.SizeOf<T>());
         }
 
         /// <summary>
@@ -331,10 +307,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if ((uint)index >= (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
             int elementSize = Unsafe.SizeOf<T>();
-            vt->RemoveFromArray(union, _arrayIndex, index * elementSize, elementSize);
+            BodyBase.RemoveFromArray(_body, _arrayIndex, index * elementSize, elementSize);
         }
 
         /// <summary>
@@ -349,10 +323,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (count == 0)
                 return;
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
             int elementSize = Unsafe.SizeOf<T>();
-            vt->RemoveFromArray(union, _arrayIndex, startIndex * elementSize, count * elementSize);
+            BodyBase.RemoveFromArray(_body, _arrayIndex, startIndex * elementSize, count * elementSize);
         }
 
         /// <summary>
@@ -409,10 +381,8 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (startIndex < 0 || count < 0 || (uint)(startIndex + count) > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var union = Unsafe.As<BodyUnion>(_body);
-            var vt = (VectorTableHeader*)union._vTablePtr;
             int elementSize = Unsafe.SizeOf<T>();
-            vt->ReplaceInArray(union, MemoryMarshal.AsBytes(replacement), _arrayIndex, startIndex * elementSize, count * elementSize);
+            BodyBase.ReplaceInArray(_body, MemoryMarshal.AsBytes(replacement), _arrayIndex, startIndex * elementSize, count * elementSize);
         }
 
         /// <summary>
@@ -1001,13 +971,6 @@ namespace GhostBodyObject.Repository.Ghost.Values
             }
             return list.ToArray();
         }
-
-        // -------------------------------------------------------------------------
-        // AGGREGATION
-        // -------------------------------------------------------------------------
-
-        // Note: Min/Max methods removed because generic type constraints cannot be applied to methods
-        // in a struct where T is already defined. Use LINQ extensions or manual iteration for these operations.
 
         // -------------------------------------------------------------------------
         // TRANSFORMATION (Read-only operations returning new arrays)

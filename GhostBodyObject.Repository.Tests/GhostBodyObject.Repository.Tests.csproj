@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GhostBodyObject.HandWritten\GhostBodyObject.HandWritten.csproj" />
     <ProjectReference Include="..\GhostBodyObject.Repository\GhostBodyObject.Repository.csproj" />
   </ItemGroup>
 

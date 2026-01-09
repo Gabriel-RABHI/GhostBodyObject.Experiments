@@ -8,7 +8,8 @@ using Spectre.Console;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using LocalMapType = ShardedSegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.PinnedSegmentStore>;
+using SmallMapType = SegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.SmallPinnedSegmentStore>;
+using LargeMapType = SegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.LargePinnedSegmentStore>;
 
 namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 {
@@ -17,19 +18,60 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         private const int COUNT = 1_000_000;
 
         // ---------------------------------------------------------
-        // FAST PINNED STORE IMPLEMENTATION FOR BENCHMARKS
+        // REALISTIC MEMORY BLOCK STRUCTURES FOR BENCHMARKS
+        // In real life, each GhostHeader is hosted in a larger memory
+        // block. These structures simulate small (64 bytes) and large
+        // (640 bytes) body sizes to create realistic cache miss patterns.
         // ---------------------------------------------------------
-        public class PinnedSegmentStore : ISegmentStore, IDisposable
-        {
-            private GhostHeader[] _headers;
-            private GCHandle _handle;
-            private GhostHeader* _basePointer;
+        public const int SMALL_BLOCK_SIZE = 64;
+        public const int LARGE_BLOCK_SIZE = 640;
 
-            public PinnedSegmentStore(int capacity)
+        [StructLayout(LayoutKind.Explicit, Size = SMALL_BLOCK_SIZE)]
+        public struct SmallGhostBlock
+        {
+            /// <summary>
+            /// The GhostHeader at the beginning of the block (40 bytes).
+            /// </summary>
+            [FieldOffset(0)]
+            public GhostHeader Header;
+
+            /// <summary>
+            /// Padding to simulate small body data (64 bytes total).
+            /// </summary>
+            [FieldOffset(40)]
+            private fixed byte _bodyPadding[SMALL_BLOCK_SIZE - GhostHeader.SIZE];
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = LARGE_BLOCK_SIZE)]
+        public struct LargeGhostBlock
+        {
+            /// <summary>
+            /// The GhostHeader at the beginning of the block (40 bytes).
+            /// </summary>
+            [FieldOffset(0)]
+            public GhostHeader Header;
+
+            /// <summary>
+            /// Padding to simulate large body data (640 bytes total).
+            /// </summary>
+            [FieldOffset(40)]
+            private fixed byte _bodyPadding[LARGE_BLOCK_SIZE - GhostHeader.SIZE];
+        }
+
+        // ---------------------------------------------------------
+        // SMALL PINNED STORE IMPLEMENTATION (64 bytes per block)
+        // ---------------------------------------------------------
+        public class SmallPinnedSegmentStore : ISegmentStore, IDisposable
+        {
+            private SmallGhostBlock[] _blocks;
+            private GCHandle _handle;
+            private SmallGhostBlock* _basePointer;
+
+            public SmallPinnedSegmentStore(int capacity)
             {
-                _headers = new GhostHeader[capacity];
-                _handle = GCHandle.Alloc(_headers, GCHandleType.Pinned);
-                _basePointer = (GhostHeader*)_handle.AddrOfPinnedObject();
+                _blocks = new SmallGhostBlock[capacity];
+                _handle = GCHandle.Alloc(_blocks, GCHandleType.Pinned);
+                _basePointer = (SmallGhostBlock*)_handle.AddrOfPinnedObject();
             }
 
             public void Dispose()
@@ -38,17 +80,67 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     _handle.Free();
             }
 
-            public GhostHeader* GetHeaderPointer(int index) => _basePointer + index;
+            public GhostHeader* GetHeaderPointer(int index) => &(_basePointer + index)->Header;
 
             public SegmentReference CreateReference(int index) => new SegmentReference
             {
                 SegmentId = 0,
-                Offset = (uint)(index * sizeof(GhostHeader))
+                Offset = (uint)(index * SMALL_BLOCK_SIZE)
             };
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
                 => (GhostHeader*)((byte*)_basePointer + reference.Offset);
+
+
+            public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long TotalMemoryBytes => (long)_blocks.Length * SMALL_BLOCK_SIZE;
+        }
+
+        // ---------------------------------------------------------
+        // LARGE PINNED STORE IMPLEMENTATION (640 bytes per block)
+        // ---------------------------------------------------------
+        public class LargePinnedSegmentStore : ISegmentStore, IDisposable
+        {
+            private LargeGhostBlock[] _blocks;
+            private GCHandle _handle;
+            private LargeGhostBlock* _basePointer;
+
+            public LargePinnedSegmentStore(int capacity)
+            {
+                _blocks = new LargeGhostBlock[capacity];
+                _handle = GCHandle.Alloc(_blocks, GCHandleType.Pinned);
+                _basePointer = (LargeGhostBlock*)_handle.AddrOfPinnedObject();
+            }
+
+            public void Dispose()
+            {
+                if (_handle.IsAllocated)
+                    _handle.Free();
+            }
+
+            public GhostHeader* GetHeaderPointer(int index) => &(_basePointer + index)->Header;
+
+            public SegmentReference CreateReference(int index) => new SegmentReference
+            {
+                SegmentId = 0,
+                Offset = (uint)(index * LARGE_BLOCK_SIZE)
+            };
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
+                => (GhostHeader*)((byte*)_basePointer + reference.Offset);
+                
+            public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long TotalMemoryBytes => (long)_blocks.Length * LARGE_BLOCK_SIZE;
         }
 
         // ---------------------------------------------------------
@@ -60,11 +152,11 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             public GhostHeader* HeaderPointer;
         }
 
-        [BruteForceBenchmark("RP-01", "Measure Set() insertion performance for SegmentGhostTransactionnalMap", "Index")]
-        public void Benchmark_Set_Insertion()
+        [BruteForceBenchmark("RP-01", "Measure Set() insertion performance (Small Body 64B)", "Index")]
+        public void Benchmark_Set_Insertion_SmallBody()
         {
-            using var store = new PinnedSegmentStore(COUNT);
-            var map = new LocalMapType(store);
+            using var store = new SmallPinnedSegmentStore(COUNT);
+            var map = new SmallMapType(store);
 
             // Prepare all data outside the measured loop
             var entries = new PreparedEntry[COUNT];
@@ -90,18 +182,55 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     map.Set(entries[i].Reference, entries[i].HeaderPointer);
                 }
             })
-            .PrintToConsole($"Set() {COUNT:N0} unique entries")
+            .PrintToConsole($"Set() {COUNT:N0} unique entries (Small Body {SMALL_BLOCK_SIZE}B)")
             .PrintDelayPerOp(COUNT)
             .PrintSpace();
 
-            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
         }
 
-        [BruteForceBenchmark("RP-02", "Measure Get() lookup performance for SegmentGhostTransactionnalMap", "Index")]
-        public void Benchmark_Get_Lookup()
+        [BruteForceBenchmark("RP-02", "Measure Set() insertion performance (Large Body 640B)", "Index")]
+        public void Benchmark_Set_Insertion_LargeBody()
         {
-            using var store = new PinnedSegmentStore(COUNT);
-            var map = new LocalMapType(store);
+            using var store = new LargePinnedSegmentStore(COUNT);
+            var map = new LargeMapType(store);
+
+            // Prepare all data outside the measured loop
+            var entries = new PreparedEntry[COUNT];
+            for (int i = 0; i < COUNT; i++)
+            {
+                var id = new GhostId(GhostIdKind.Entity, 50, (ulong)i, XorShift64.Next());
+                var headerPtr = store.GetHeaderPointer(i);
+                headerPtr->Id = id;
+                headerPtr->TxnId = i;
+
+                entries[i] = new PreparedEntry
+                {
+                    Reference = store.CreateReference(i),
+                    HeaderPointer = headerPtr
+                };
+            }
+
+            // Measure only the Set() calls
+            RunMonitoredAction(() =>
+            {
+                for (int i = 0; i < COUNT; i++)
+                {
+                    map.Set(entries[i].Reference, entries[i].HeaderPointer);
+                }
+            })
+            .PrintToConsole($"Set() {COUNT:N0} unique entries (Large Body {LARGE_BLOCK_SIZE}B)")
+            .PrintDelayPerOp(COUNT)
+            .PrintSpace();
+
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
+        }
+
+        [BruteForceBenchmark("RP-03", "Measure Get() lookup performance (Small Body 64B)", "Index")]
+        public void Benchmark_Get_Lookup_SmallBody()
+        {
+            using var store = new SmallPinnedSegmentStore(COUNT);
+            var map = new SmallMapType(store);
 
             // Prepare and insert all data
             var ids = new GhostId[COUNT];
@@ -117,7 +246,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 map.Set(store.CreateReference(i), headerPtr);
             }
 
-            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
 
             long maxTxnId = COUNT + 1;
 
@@ -129,20 +258,57 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     map.Get(ids[i], maxTxnId, out _);
                 }
             })
-            .PrintToConsole($"Get() {COUNT:N0} lookups")
+            .PrintToConsole($"Get() {COUNT:N0} lookups (Small Body {SMALL_BLOCK_SIZE}B)")
             .PrintDelayPerOp(COUNT)
             .PrintSpace();
         }
 
-        [BruteForceBenchmark("RP-03", "Measure Set() with multiple versions per entity", "Index")]
-        public void Benchmark_Set_MultipleVersions()
+        [BruteForceBenchmark("RP-04", "Measure Get() lookup performance (Large Body 640B)", "Index")]
+        public void Benchmark_Get_Lookup_LargeBody()
+        {
+            using var store = new LargePinnedSegmentStore(COUNT);
+            var map = new LargeMapType(store);
+
+            // Prepare and insert all data
+            var ids = new GhostId[COUNT];
+            for (int i = 0; i < COUNT; i++)
+            {
+                var id = new GhostId(GhostIdKind.Entity, 50, (ulong)i, XorShift64.Next());
+                ids[i] = id;
+
+                var headerPtr = store.GetHeaderPointer(i);
+                headerPtr->Id = id;
+                headerPtr->TxnId = i;
+
+                map.Set(store.CreateReference(i), headerPtr);
+            }
+
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
+
+            long maxTxnId = COUNT + 1;
+
+            // Measure only the Get() calls
+            RunMonitoredAction(() =>
+            {
+                for (int i = 0; i < COUNT; i++)
+                {
+                    map.Get(ids[i], maxTxnId, out _);
+                }
+            })
+            .PrintToConsole($"Get() {COUNT:N0} lookups (Large Body {LARGE_BLOCK_SIZE}B)")
+            .PrintDelayPerOp(COUNT)
+            .PrintSpace();
+        }
+
+        [BruteForceBenchmark("RP-05", "Measure Set() with multiple versions (Small Body 64B)", "Index")]
+        public void Benchmark_Set_MultipleVersions_SmallBody()
         {
             const int ENTITY_COUNT = 1_000_000;
             const int VERSIONS_PER_ENTITY = 10;
             int totalEntries = ENTITY_COUNT * VERSIONS_PER_ENTITY;
 
-            using var store = new PinnedSegmentStore(totalEntries);
-            var map = new LocalMapType(store);
+            using var store = new SmallPinnedSegmentStore(totalEntries);
+            var map = new SmallMapType(store);
 
             // Prepare all data outside the measured loop
             var entries = new PreparedEntry[totalEntries];
@@ -167,7 +333,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 }
             }
 
-            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
 
             // Measure only the Set() calls
             RunMonitoredAction(() =>
@@ -177,20 +343,67 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     map.Set(entries[i].Reference, entries[i].HeaderPointer);
                 }
             })
-            .PrintToConsole($"Set() {totalEntries:N0} entries ({ENTITY_COUNT:N0} entities x {VERSIONS_PER_ENTITY} versions)")
+            .PrintToConsole($"Set() {totalEntries:N0} entries ({ENTITY_COUNT:N0} entities x {VERSIONS_PER_ENTITY} versions) (Small Body {SMALL_BLOCK_SIZE}B)")
             .PrintDelayPerOp(totalEntries)
             .PrintSpace();
         }
 
-        [BruteForceBenchmark("RP-04", "Measure Remove() performance for SegmentGhostTransactionnalMap", "Index")]
-        public void Benchmark_Remove()
+        [BruteForceBenchmark("RP-06", "Measure Set() with multiple versions (Large Body 640B)", "Index")]
+        public void Benchmark_Set_MultipleVersions_LargeBody()
         {
-            using var store = new PinnedSegmentStore(COUNT);
-            var map = new LocalMapType(store);
+            const int ENTITY_COUNT = 1_000_000;
+            const int VERSIONS_PER_ENTITY = 10;
+            int totalEntries = ENTITY_COUNT * VERSIONS_PER_ENTITY;
 
-            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
+            using var store = new LargePinnedSegmentStore(totalEntries);
+            var map = new LargeMapType(store);
 
-            // Prepare and insert all data
+            // Prepare all data outside the measured loop
+            var entries = new PreparedEntry[totalEntries];
+            int entryIndex = 0;
+
+            for (int e = 0; e < ENTITY_COUNT; e++)
+            {
+                var id = new GhostId(GhostIdKind.Entity, 50, (ulong)e, XorShift64.Next());
+
+                for (int v = 0; v < VERSIONS_PER_ENTITY; v++)
+                {
+                    var headerPtr = store.GetHeaderPointer(entryIndex);
+                    headerPtr->Id = id;
+                    headerPtr->TxnId = (e * 100) + v;
+
+                    entries[entryIndex] = new PreparedEntry
+                    {
+                        Reference = store.CreateReference(entryIndex),
+                        HeaderPointer = headerPtr
+                    };
+                    entryIndex++;
+                }
+            }
+
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
+
+            // Measure only the Set() calls
+            RunMonitoredAction(() =>
+            {
+                for (int i = 0; i < totalEntries; i++)
+                {
+                    map.Set(entries[i].Reference, entries[i].HeaderPointer);
+                }
+            })
+            .PrintToConsole($"Set() {totalEntries:N0} entries ({ENTITY_COUNT:N0} entities x {VERSIONS_PER_ENTITY} versions) (Large Body {LARGE_BLOCK_SIZE}B)")
+            .PrintDelayPerOp(totalEntries)
+            .PrintSpace();
+        }
+
+        [BruteForceBenchmark("RP-07", "Measure Remove() performance (Small Body 64B)", "Index")]
+        public void Benchmark_Remove_SmallBody()
+        {
+            using var store = new SmallPinnedSegmentStore(COUNT);
+            var map = new SmallMapType(store);
+
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
+
             var removeData = new (GhostId Id, long TxnId)[COUNT];
             for (int i = 0; i < COUNT; i++)
             {
@@ -205,7 +418,6 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 map.Set(store.CreateReference(i), headerPtr);
             }
 
-            // Measure only the Remove() calls
             RunMonitoredAction(() =>
             {
                 for (int i = 0; i < COUNT; i++)
@@ -213,18 +425,54 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     map.Remove(removeData[i].Id, removeData[i].TxnId);
                 }
             })
-            .PrintToConsole($"Remove() {COUNT:N0} entries")
+            .PrintToConsole($"Remove() {COUNT:N0} entries (Small Body {SMALL_BLOCK_SIZE}B)")
             .PrintDelayPerOp(COUNT)
             .PrintSpace();
 
             AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
         }
 
-        [BruteForceBenchmark("RP-05", "Measure enumeration performance for SegmentGhostTransactionnalMap", "Index")]
-        public void Benchmark_Enumeration()
+        [BruteForceBenchmark("RP-08", "Measure Remove() performance (Large Body 640B)", "Index")]
+        public void Benchmark_Remove_LargeBody()
         {
-            using var store = new PinnedSegmentStore(COUNT);
-            var map = new LocalMapType(store);
+            using var store = new LargePinnedSegmentStore(COUNT);
+            var map = new LargeMapType(store);
+
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
+
+            var removeData = new (GhostId Id, long TxnId)[COUNT];
+            for (int i = 0; i < COUNT; i++)
+            {
+                var id = new GhostId(GhostIdKind.Entity, 50, (ulong)i, XorShift64.Next());
+                long txnId = i;
+                removeData[i] = (id, txnId);
+
+                var headerPtr = store.GetHeaderPointer(i);
+                headerPtr->Id = id;
+                headerPtr->TxnId = txnId;
+
+                map.Set(store.CreateReference(i), headerPtr);
+            }
+
+            RunMonitoredAction(() =>
+            {
+                for (int i = 0; i < COUNT; i++)
+                {
+                    map.Remove(removeData[i].Id, removeData[i].TxnId);
+                }
+            })
+            .PrintToConsole($"Remove() {COUNT:N0} entries (Large Body {LARGE_BLOCK_SIZE}B)")
+            .PrintDelayPerOp(COUNT)
+            .PrintSpace();
+
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
+        }
+
+        [BruteForceBenchmark("RP-09", "Measure enumeration performance (Small Body 64B)", "Index")]
+        public void Benchmark_Enumeration_SmallBody()
+        {
+            using var store = new SmallPinnedSegmentStore(COUNT);
+            var map = new SmallMapType(store);
 
             // Insert all data
             for (int i = 0; i < COUNT; i++)
@@ -238,7 +486,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 map.Set(store.CreateReference(i), headerPtr);
             }
 
-            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
             int enumCount = 0;
 
             // Measure enumeration
@@ -250,21 +498,56 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     enumCount++;
                 }
             })
-            .PrintToConsole($"Enumerate {COUNT:N0} entries (found {enumCount:N0})")
+            .PrintToConsole($"Enumerate {COUNT:N0} entries (found {enumCount:N0}) (Small Body {SMALL_BLOCK_SIZE}B)")
             .PrintDelayPerOp(COUNT)
             .PrintSpace();
         }
 
-        [BruteForceBenchmark("RP-06", "Measure deduplicated enumeration performance", "Index")]
-        public void Benchmark_DeduplicatedEnumeration()
+        [BruteForceBenchmark("RP-10", "Measure enumeration performance (Large Body 640B)", "Index")]
+        public void Benchmark_Enumeration_LargeBody()
+        {
+            using var store = new LargePinnedSegmentStore(COUNT);
+            var map = new LargeMapType(store);
+
+            // Insert all data
+            for (int i = 0; i < COUNT; i++)
+            {
+                var id = new GhostId(GhostIdKind.Entity, 50, (ulong)i, XorShift64.Next());
+
+                var headerPtr = store.GetHeaderPointer(i);
+                headerPtr->Id = id;
+                headerPtr->TxnId = i;
+
+                map.Set(store.CreateReference(i), headerPtr);
+            }
+
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
+            int enumCount = 0;
+
+            // Measure enumeration
+            RunMonitoredAction(() =>
+            {
+                var enumerator = map.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    enumCount++;
+                }
+            })
+            .PrintToConsole($"Enumerate {COUNT:N0} entries (found {enumCount:N0}) (Large Body {LARGE_BLOCK_SIZE}B)")
+            .PrintDelayPerOp(COUNT)
+            .PrintSpace();
+        }
+
+        [BruteForceBenchmark("RP-11", "Measure deduplicated enumeration (Small Body 64B)", "Index")]
+        public void Benchmark_DeduplicatedEnumeration_SmallBody()
         {
             const int ENTITY_COUNT = 10_000_000;
             const int VERSIONS_PER_ENTITY = 10;
             const int MULTI_VERSIONS_PERCENT = 5;
             int totalEntries = ENTITY_COUNT * VERSIONS_PER_ENTITY;
 
-            using var store = new PinnedSegmentStore(totalEntries);
-            var map = new LocalMapType(store);
+            using var store = new SmallPinnedSegmentStore(totalEntries);
+            var map = new SmallMapType(store);
 
             // Insert all data with multiple versions per entity
             var rnd = new Random(12345);
@@ -284,13 +567,14 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 }
             }
 
-            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo.");
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
 
             for (var thCount = 1; thCount <= Environment.ProcessorCount; thCount++)
             {
                 if (thCount != 1 && thCount % 2 != 0)
-                    continue; // Skip odd counts except 1
+                    continue;
                 int enumCount = 0;
+
                 // Measure deduplicated enumeration
                 RunParallelAction(thCount, (th) =>
                 {
@@ -300,7 +584,59 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                         Interlocked.Increment(ref enumCount);
                     }
                 })
-                .PrintToConsole($"Thread count = {thCount} / Deduplicated enumerate {entryIndex:N0} entries -> {enumCount:N0} unique entities")
+                .PrintToConsole($"Thread count = {thCount} / Deduplicated enumerate {entryIndex:N0} entries -> {enumCount:N0} unique entities (Small Body {SMALL_BLOCK_SIZE}B)")
+                .PrintDelayPerOp(enumCount > 0 ? enumCount * thCount : 1)
+                .PrintSpace();
+            }
+        }
+
+        [BruteForceBenchmark("RP-12", "Measure deduplicated enumeration (Large Body 640B)", "Index")]
+        public void Benchmark_DeduplicatedEnumeration_LargeBody()
+        {
+            const int ENTITY_COUNT = 10_000_000;
+            const int VERSIONS_PER_ENTITY = 10;
+            const int MULTI_VERSIONS_PERCENT = 5;
+            int totalEntries = ENTITY_COUNT * VERSIONS_PER_ENTITY;
+
+            using var store = new LargePinnedSegmentStore(totalEntries);
+            var map = new LargeMapType(store);
+
+            // Insert all data with multiple versions per entity
+            var rnd = new Random(12345);
+            int entryIndex = 0;
+            for (int e = 0; e < ENTITY_COUNT; e++)
+            {
+                var id = new GhostId(GhostIdKind.Entity, 50, (ulong)e, XorShift64.Next());
+
+                for (int v = 0; v < (rnd.Next(100) < MULTI_VERSIONS_PERCENT ? VERSIONS_PER_ENTITY : 1); v++)
+                {
+                    var headerPtr = store.GetHeaderPointer(entryIndex);
+                    headerPtr->Id = id;
+                    headerPtr->TxnId = 100 + v;
+
+                    map.Set(store.CreateReference(entryIndex), headerPtr);
+                    entryIndex++;
+                }
+            }
+
+            AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
+
+            for (var thCount = 1; thCount <= Environment.ProcessorCount; thCount++)
+            {
+                if (thCount != 1 && thCount % 2 != 0)
+                    continue;
+                int enumCount = 0;
+
+                // Measure deduplicated enumeration
+                RunParallelAction(thCount, (th) =>
+                {
+                    var enumerator = map.GetDeduplicatedEnumerator(105);
+                    while (enumerator.MoveNext())
+                    {
+                        Interlocked.Increment(ref enumCount);
+                    }
+                })
+                .PrintToConsole($"Thread count = {thCount} / Deduplicated enumerate {entryIndex:N0} entries -> {enumCount:N0} unique entities (Large Body {LARGE_BLOCK_SIZE}B)")
                 .PrintDelayPerOp(enumCount > 0 ? enumCount * thCount : 1)
                 .PrintSpace();
             }

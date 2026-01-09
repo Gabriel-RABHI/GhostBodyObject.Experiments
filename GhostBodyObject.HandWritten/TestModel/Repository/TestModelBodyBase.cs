@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace GhostBodyObject.HandWritten.TestModel.Repository
 {
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
-    public abstract class TestModelBodyBase : BodyBase, IEntityBody
+    public abstract class TestModelBodyBase : BodyBase
     {
         [FieldOffset(0)]
         protected TestModelTransaction _ownerTransaction;

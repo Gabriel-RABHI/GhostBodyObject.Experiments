@@ -6,8 +6,8 @@ using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Repository.Body.Contracts
 {
-    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
-    public unsafe abstract class BodyBase : IEntityBody
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 24)]
+    public unsafe abstract class BodyBase
     {
         // -----------------------------------------------------------------
         // Small Array Limits Constants
@@ -24,19 +24,23 @@ namespace GhostBodyObject.Repository.Body.Contracts
         public const int SmallArrayMaxLength = 2047;
 
         [FieldOffset(0)]
-        protected object _owner;
+        protected internal object _owner;
 
         [FieldOffset(8)]
-        protected IntPtr _vTablePtr;
+        protected internal IntPtr _vTablePtr;
 
         [FieldOffset(16)]
-        protected PinnedMemory<byte> _data;
+        protected internal PinnedMemory<byte> _data;
 
-        [FieldOffset(40)]
-        protected bool _mapped;
+        // -----------------------------------------------------------------
+        // VTable Header Access
+        // -----------------------------------------------------------------
 
-        [FieldOffset(41)]
-        protected bool _immutable;
+        internal VectorTableHeader* _vTableHeader
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (VectorTableHeader*)_vTablePtr;
+        }
 
         protected unsafe int TotalSize
         {
@@ -57,6 +61,31 @@ namespace GhostBodyObject.Repository.Body.Contracts
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe int GetTotalSize(BodyBase body)
+        {
+            var _vt = (VectorTableHeader*)body._vTablePtr;
+            if (_vt->LargeArrays)
+            {
+                ArrayMapLargeEntry* last = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset + ((_vt->ArrayMapLength - 1) * sizeof(ArrayMapLargeEntry)));
+                return last->ArrayEndOffset;
+            }
+            else
+            {
+                ArrayMapSmallEntry* last = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset + ((_vt->ArrayMapLength - 1) * sizeof(ArrayMapSmallEntry)));
+                return last->ArrayEndOffset;
+            }
+        }
+
+        public GhostHeader* Header
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return (GhostHeader*)_data.Ptr;
+            }
+        }
+
         // -----------------------------------------------------------------
         // Generic Array Swap Helpers
         // -----------------------------------------------------------------
@@ -68,11 +97,11 @@ namespace GhostBodyObject.Repository.Body.Contracts
         /// shifted to accommodate the change. This shift respect the needed alignement. Arrays are sorted by value size.
         /// Callers should ensure that the source buffer is valid and that the index
         /// refers to an existing array in the Array Map.</remarks>
+        /// <param name="body">The body instance to modify.</param>
         /// <param name="src">A span containing the new data to copy into the target array. The length of this buffer must match
         /// the expected size for the array at the specified index.</param>
         /// <param name="arrayIndex">The zero-based index of the array to be updated.</param>
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void SwapAnyArray(ReadOnlySpan<byte> src, int arrayIndex)
+        public static unsafe void SwapAnyArray(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex)
         {
             // This method must move arrays taking care of alignements and offsets.
             // Arrays are sorted from largest to smallest value size: [8, 4, 4, 2, 2, 1, 1]
@@ -81,14 +110,14 @@ namespace GhostBodyObject.Repository.Body.Contracts
             // This allows a single block copy for all subsequent arrays.
             if (arrayIndex < 0)
                 return;
-            var _vt = (VectorTableHeader*)_vTablePtr;
+            var _vt = (VectorTableHeader*)body._vTablePtr;
             if (_vt->LargeArrays)
             {
-                SwapAnyArrayLarge(src, arrayIndex, _vt);
+                SwapAnyArrayLarge(body, src, arrayIndex, _vt);
             }
             else
             {
-                SwapAnyArraySmall(src, arrayIndex, _vt);
+                SwapAnyArraySmall(body, src, arrayIndex, _vt);
             }
         }
 
@@ -100,11 +129,10 @@ namespace GhostBodyObject.Repository.Body.Contracts
             return (offset + mask) & ~mask;
         }
 
-        //[MethodImpl(MethodImplOptions.NoInlining)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void SwapAnyArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        private static unsafe void SwapAnyArrayLarge(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
         {
-            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = mapEntry->ValueSize;
 
@@ -123,22 +151,22 @@ namespace GhostBodyObject.Repository.Body.Contracts
                     return;
                 fixed (byte* srcPtr = src)
                 {
-                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    Unsafe.CopyBlockUnaligned(body._data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                 }
                 return;
             }
 
             // -------- Size changed: need to shift subsequent arrays --------
-            int oldTotalSize = TotalSize;
+            int oldTotalSize = GetTotalSize(body);
             int newArrayEnd = currentOffset + src.Length;
             bool hasSubsequentArrays = arrayIndex + 1 < arrayCount;
 
             if (!hasSubsequentArrays)
             {
                 // Last array: just resize and copy
-                if (src.Length > currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
+                if (src.Length > currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref body._data, newArrayEnd))
                 {
-                    mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                     mapEntry = mapBase + arrayIndex;
                 }
 
@@ -146,13 +174,13 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 {
                     fixed (byte* srcPtr = src)
                     {
-                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                        Unsafe.CopyBlockUnaligned(body._data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                     }
                 }
 
-                if (src.Length < currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
+                if (src.Length < currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref body._data, newArrayEnd))
                 {
-                    mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                     mapEntry = mapBase + arrayIndex;
                 }
 
@@ -178,7 +206,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 {
                     fixed (byte* srcPtr = src)
                     {
-                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                        Unsafe.CopyBlockUnaligned(body._data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                     }
                     mapEntry->ArrayLength = (uint)(src.Length / valueSize);
                     return;
@@ -189,25 +217,25 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 if (delta > 0)
                 {
                     // -------- Growing: resize first, then move tail backward (from end) --------
-                    if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                    if (TransientGhostMemoryAllocator.Resize(ref body._data, newTotalSize))
                     {
-                        mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                         mapEntry = mapBase + arrayIndex;
                     }
                     // Move all subsequent arrays in one block (use memmove semantics for overlapping)
                     if (tailLength > 0)
                     {
-                        Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                        Buffer.MemoryCopy(body._data.Ptr + oldNextOffset, body._data.Ptr + newNextOffset, tailLength, tailLength);
                     }
                 }
                 else
                 {
                     // -------- Shrinking: move tail forward first, then resize --------
                     if (tailLength > 0)
-                        Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
-                    if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                        Buffer.MemoryCopy(body._data.Ptr + oldNextOffset, body._data.Ptr + newNextOffset, tailLength, tailLength);
+                    if (TransientGhostMemoryAllocator.Resize(ref body._data, newTotalSize))
                     {
-                        mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                         mapEntry = mapBase + arrayIndex;
                     }
                 }
@@ -224,7 +252,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 {
                     fixed (byte* srcPtr = src)
                     {
-                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                        Unsafe.CopyBlockUnaligned(body._data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                     }
                 }
 
@@ -238,25 +266,25 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 if (delta > 0)
                 {
                     // -------- Growing: resize first, then move tail backward (from end) --------
-                    if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                    if (TransientGhostMemoryAllocator.Resize(ref body._data, newTotalSize))
                     {
-                        mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                         mapEntry = mapBase + arrayIndex;
                     }
                     // Move all subsequent arrays in one block (use memmove semantics for overlapping)
                     if (tailLength > 0)
                     {
-                        Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                        Buffer.MemoryCopy(body._data.Ptr + oldNextOffset, body._data.Ptr + newNextOffset, tailLength, tailLength);
                     }
                 }
                 else
                 {
                     // -------- Shrinking: move tail forward first, then resize --------
                     if (tailLength > 0)
-                        Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
-                    if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                        Buffer.MemoryCopy(body._data.Ptr + oldNextOffset, body._data.Ptr + newNextOffset, tailLength, tailLength);
+                    if (TransientGhostMemoryAllocator.Resize(ref body._data, newTotalSize))
                     {
-                        mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                        mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                         mapEntry = mapBase + arrayIndex;
                     }
                 }
@@ -273,7 +301,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 {
                     fixed (byte* srcPtr = src)
                     {
-                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                        Unsafe.CopyBlockUnaligned(body._data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                     }
                 }
 
@@ -281,11 +309,10 @@ namespace GhostBodyObject.Repository.Body.Contracts
             }
         }
 
-        //[MethodImpl(MethodImplOptions.NoInlining)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void SwapAnyArraySmall(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        private static unsafe void SwapAnyArraySmall(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
         {
-            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = (int)mapEntry->ValueSize;
 
@@ -309,13 +336,13 @@ namespace GhostBodyObject.Repository.Body.Contracts
                     return;
                 fixed (byte* srcPtr = src)
                 {
-                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    Unsafe.CopyBlockUnaligned(body._data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                 }
                 return;
             }
 
             // -------- Size changed: need to shift subsequent arrays --------
-            int oldTotalSize = TotalSize;
+            int oldTotalSize = GetTotalSize(body);
             int newArrayEnd = currentOffset + src.Length;
             
             // Check offset limit (ushort max = 65535)
@@ -327,9 +354,9 @@ namespace GhostBodyObject.Repository.Body.Contracts
             if (!hasSubsequentArrays)
             {
                 // Last array: just resize and copy
-                if (src.Length > currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
+                if (src.Length > currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref body._data, newArrayEnd))
                 {
-                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                     mapEntry = mapBase + arrayIndex;
                 }
 
@@ -337,13 +364,13 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 {
                     fixed (byte* srcPtr = src)
                     {
-                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                        Unsafe.CopyBlockUnaligned(body._data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                     }
                 }
 
-                if (src.Length < currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref _data, newArrayEnd))
+                if (src.Length < currentPhysicalSize && TransientGhostMemoryAllocator.Resize(ref body._data, newArrayEnd))
                 {
-                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                     mapEntry = mapBase + arrayIndex;
                 }
 
@@ -374,7 +401,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 {
                     fixed (byte* srcPtr = src)
                     {
-                        Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                        Unsafe.CopyBlockUnaligned(body._data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                     }
                 }
                 mapEntry->ArrayLength = (uint)(src.Length / valueSize);
@@ -384,16 +411,16 @@ namespace GhostBodyObject.Repository.Body.Contracts
             if (delta > 0)
             {
                 // -------- Growing: resize first, then move tail backward (from end) --------
-                if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                if (TransientGhostMemoryAllocator.Resize(ref body._data, newTotalSize))
                 {
-                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                     mapEntry = mapBase + arrayIndex;
                 }
 
                 // Move all subsequent arrays in one block (use memmove semantics for overlapping)
                 if (tailLength > 0)
                 {
-                    Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                    Buffer.MemoryCopy(body._data.Ptr + oldNextOffset, body._data.Ptr + newNextOffset, tailLength, tailLength);
                 }
             }
             else
@@ -401,11 +428,11 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 // -------- Shrinking: move tail forward first, then resize --------
                 if (tailLength > 0)
                 {
-                    Buffer.MemoryCopy(_data.Ptr + oldNextOffset, _data.Ptr + newNextOffset, tailLength, tailLength);
+                    Buffer.MemoryCopy(body._data.Ptr + oldNextOffset, body._data.Ptr + newNextOffset, tailLength, tailLength);
                 }
-                if (TransientGhostMemoryAllocator.Resize(ref _data, newTotalSize))
+                if (TransientGhostMemoryAllocator.Resize(ref body._data, newTotalSize))
                 {
-                    mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+                    mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
                     mapEntry = mapBase + arrayIndex;
                 }
             }
@@ -428,7 +455,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
             {
                 fixed (byte* srcPtr = src)
                 {
-                    Unsafe.CopyBlockUnaligned(_data.Ptr + currentOffset, srcPtr, (uint)src.Length);
+                    Unsafe.CopyBlockUnaligned(body._data.Ptr + currentOffset, srcPtr, (uint)src.Length);
                 }
             }
             mapEntry->ArrayLength = (uint)(src.Length / valueSize);
@@ -441,24 +468,25 @@ namespace GhostBodyObject.Repository.Body.Contracts
         /// <summary>
         /// Appends data to the end of the array at the specified index.
         /// </summary>
+        /// <param name="body">The body instance to modify.</param>
         /// <param name="src">The data to append.</param>
         /// <param name="arrayIndex">The zero-based index of the array.</param>
-        public unsafe void AppendToArray(ReadOnlySpan<byte> src, int arrayIndex)
+        public static unsafe void AppendToArray(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex)
         {
             if (arrayIndex < 0 || src.Length == 0)
                 return;
 
-            var _vt = (VectorTableHeader*)_vTablePtr;
+            var _vt = (VectorTableHeader*)body._vTablePtr;
             if (_vt->LargeArrays)
-                AppendToArrayLarge(src, arrayIndex, _vt);
+                AppendToArrayLarge(body, src, arrayIndex, _vt);
             else
-                AppendToArraySmall(src, arrayIndex, _vt);
+                AppendToArraySmall(body, src, arrayIndex, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void AppendToArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        private static unsafe void AppendToArrayLarge(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
         {
-            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = mapEntry->ValueSize;
 
@@ -473,18 +501,18 @@ namespace GhostBodyObject.Repository.Body.Contracts
             Span<byte> combined = stackalloc byte[newPhysicalSize];
             if (currentPhysicalSize > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined);
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined);
             }
             src.CopyTo(combined.Slice(currentPhysicalSize));
 
             // Use SwapAnyArray to handle all the resizing/shifting logic
-            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+            SwapAnyArrayLarge(body, combined, arrayIndex, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void AppendToArraySmall(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        private static unsafe void AppendToArraySmall(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
         {
-            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = (int)mapEntry->ValueSize;
 
@@ -499,35 +527,36 @@ namespace GhostBodyObject.Repository.Body.Contracts
             Span<byte> combined = stackalloc byte[newPhysicalSize];
             if (currentPhysicalSize > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined);
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined);
             }
             src.CopyTo(combined.Slice(currentPhysicalSize));
 
             // Use SwapAnyArray to handle all the resizing/shifting logic
-            SwapAnyArraySmall(combined, arrayIndex, _vt);
+            SwapAnyArraySmall(body, combined, arrayIndex, _vt);
         }
 
         /// <summary>
         /// Prepends data to the beginning of the array at the specified index.
         /// </summary>
+        /// <param name="body">The body instance to modify.</param>
         /// <param name="src">The data to prepend.</param>
         /// <param name="arrayIndex">The zero-based index of the array.</param>
-        public unsafe void PrependToArray(ReadOnlySpan<byte> src, int arrayIndex)
+        public static unsafe void PrependToArray(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex)
         {
             if (arrayIndex < 0 || src.Length == 0)
                 return;
 
-            var _vt = (VectorTableHeader*)_vTablePtr;
+            var _vt = (VectorTableHeader*)body._vTablePtr;
             if (_vt->LargeArrays)
-                PrependToArrayLarge(src, arrayIndex, _vt);
+                PrependToArrayLarge(body, src, arrayIndex, _vt);
             else
-                PrependToArraySmall(src, arrayIndex, _vt);
+                PrependToArraySmall(body, src, arrayIndex, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void PrependToArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        private static unsafe void PrependToArrayLarge(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
         {
-            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = mapEntry->ValueSize;
 
@@ -543,17 +572,17 @@ namespace GhostBodyObject.Repository.Body.Contracts
             src.CopyTo(combined);
             if (currentPhysicalSize > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined.Slice(src.Length));
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined.Slice(src.Length));
             }
 
             // Use SwapAnyArray to handle all the resizing/shifting logic
-            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+            SwapAnyArrayLarge(body, combined, arrayIndex, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void PrependToArraySmall(ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
+        private static unsafe void PrependToArraySmall(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex, VectorTableHeader* _vt)
         {
-            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = (int)mapEntry->ValueSize;
 
@@ -569,35 +598,36 @@ namespace GhostBodyObject.Repository.Body.Contracts
             src.CopyTo(combined);
             if (currentPhysicalSize > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined.Slice(src.Length));
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, currentPhysicalSize).CopyTo(combined.Slice(src.Length));
             }
 
             // Use SwapAnyArray to handle all the resizing/shifting logic
-            SwapAnyArraySmall(combined, arrayIndex, _vt);
+            SwapAnyArraySmall(body, combined, arrayIndex, _vt);
         }
 
         /// <summary>
         /// Inserts data at the specified byte offset within the array at the specified index.
         /// </summary>
+        /// <param name="body">The body instance to modify.</param>
         /// <param name="src">The data to insert.</param>
         /// <param name="arrayIndex">The zero-based index of the array.</param>
         /// <param name="byteOffset">The byte offset within the array where data should be inserted.</param>
-        public unsafe void InsertIntoArray(ReadOnlySpan<byte> src, int arrayIndex, int byteOffset)
+        public static unsafe void InsertIntoArray(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex, int byteOffset)
         {
             if (arrayIndex < 0 || src.Length == 0)
                 return;
 
-            var _vt = (VectorTableHeader*)_vTablePtr;
+            var _vt = (VectorTableHeader*)body._vTablePtr;
             if (_vt->LargeArrays)
-                InsertIntoArrayLarge(src, arrayIndex, byteOffset, _vt);
+                InsertIntoArrayLarge(body, src, arrayIndex, byteOffset, _vt);
             else
-                InsertIntoArraySmall(src, arrayIndex, byteOffset, _vt);
+                InsertIntoArraySmall(body, src, arrayIndex, byteOffset, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void InsertIntoArrayLarge(ReadOnlySpan<byte> src, int arrayIndex, int byteOffset, VectorTableHeader* _vt)
+        private static unsafe void InsertIntoArrayLarge(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex, int byteOffset, VectorTableHeader* _vt)
         {
-            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = mapEntry->ValueSize;
 
@@ -618,22 +648,22 @@ namespace GhostBodyObject.Repository.Body.Contracts
             Span<byte> combined = stackalloc byte[newPhysicalSize];
             if (byteOffset > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, byteOffset).CopyTo(combined);
             }
             src.CopyTo(combined.Slice(byteOffset));
             if (byteOffset < currentPhysicalSize)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + byteOffset, currentPhysicalSize - byteOffset)
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset + byteOffset, currentPhysicalSize - byteOffset)
                     .CopyTo(combined.Slice(byteOffset + src.Length));
             }
 
-            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+            SwapAnyArrayLarge(body, combined, arrayIndex, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void InsertIntoArraySmall(ReadOnlySpan<byte> src, int arrayIndex, int byteOffset, VectorTableHeader* _vt)
+        private static unsafe void InsertIntoArraySmall(BodyBase body, ReadOnlySpan<byte> src, int arrayIndex, int byteOffset, VectorTableHeader* _vt)
         {
-            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = (int)mapEntry->ValueSize;
 
@@ -654,40 +684,41 @@ namespace GhostBodyObject.Repository.Body.Contracts
             Span<byte> combined = stackalloc byte[newPhysicalSize];
             if (byteOffset > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, byteOffset).CopyTo(combined);
             }
             src.CopyTo(combined.Slice(byteOffset));
             if (byteOffset < currentPhysicalSize)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + byteOffset, currentPhysicalSize - byteOffset)
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset + byteOffset, currentPhysicalSize - byteOffset)
                     .CopyTo(combined.Slice(byteOffset + src.Length));
             }
 
-            SwapAnyArraySmall(combined, arrayIndex, _vt);
+            SwapAnyArraySmall(body, combined, arrayIndex, _vt);
         }
 
         /// <summary>
         /// Removes data from the array at the specified index.
         /// </summary>
+        /// <param name="body">The body instance to modify.</param>
         /// <param name="arrayIndex">The zero-based index of the array.</param>
         /// <param name="byteOffset">The byte offset where removal starts.</param>
         /// <param name="byteLength">The number of bytes to remove.</param>
-        public unsafe void RemoveFromArray(int arrayIndex, int byteOffset, int byteLength)
+        public static unsafe void RemoveFromArray(BodyBase body, int arrayIndex, int byteOffset, int byteLength)
         {
             if (arrayIndex < 0 || byteLength <= 0)
                 return;
 
-            var _vt = (VectorTableHeader*)_vTablePtr;
+            var _vt = (VectorTableHeader*)body._vTablePtr;
             if (_vt->LargeArrays)
-                RemoveFromArrayLarge(arrayIndex, byteOffset, byteLength, _vt);
+                RemoveFromArrayLarge(body, arrayIndex, byteOffset, byteLength, _vt);
             else
-                RemoveFromArraySmall(arrayIndex, byteOffset, byteLength, _vt);
+                RemoveFromArraySmall(body, arrayIndex, byteOffset, byteLength, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void RemoveFromArrayLarge(int arrayIndex, int byteOffset, int byteLength, VectorTableHeader* _vt)
+        private static unsafe void RemoveFromArrayLarge(BodyBase body, int arrayIndex, int byteOffset, int byteLength, VectorTableHeader* _vt)
         {
-            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = mapEntry->ValueSize;
 
@@ -710,7 +741,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
 
             if (newPhysicalSize == 0)
             {
-                SwapAnyArrayLarge(ReadOnlySpan<byte>.Empty, arrayIndex, _vt);
+                SwapAnyArrayLarge(body, ReadOnlySpan<byte>.Empty, arrayIndex, _vt);
                 return;
             }
 
@@ -718,22 +749,22 @@ namespace GhostBodyObject.Repository.Body.Contracts
             Span<byte> combined = stackalloc byte[newPhysicalSize];
             if (byteOffset > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, byteOffset).CopyTo(combined);
             }
             int afterOffset = byteOffset + byteLength;
             if (afterOffset < currentPhysicalSize)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
                     .CopyTo(combined.Slice(byteOffset));
             }
 
-            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+            SwapAnyArrayLarge(body, combined, arrayIndex, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void RemoveFromArraySmall(int arrayIndex, int byteOffset, int byteLength, VectorTableHeader* _vt)
+        private static unsafe void RemoveFromArraySmall(BodyBase body, int arrayIndex, int byteOffset, int byteLength, VectorTableHeader* _vt)
         {
-            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = (int)mapEntry->ValueSize;
 
@@ -756,7 +787,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
 
             if (newPhysicalSize == 0)
             {
-                SwapAnyArraySmall(ReadOnlySpan<byte>.Empty, arrayIndex, _vt);
+                SwapAnyArraySmall(body, ReadOnlySpan<byte>.Empty, arrayIndex, _vt);
                 return;
             }
 
@@ -764,41 +795,42 @@ namespace GhostBodyObject.Repository.Body.Contracts
             Span<byte> combined = stackalloc byte[newPhysicalSize];
             if (byteOffset > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, byteOffset).CopyTo(combined);
             }
             int afterOffset = byteOffset + byteLength;
             if (afterOffset < currentPhysicalSize)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
                     .CopyTo(combined.Slice(byteOffset));
             }
 
-            SwapAnyArraySmall(combined, arrayIndex, _vt);
+            SwapAnyArraySmall(body, combined, arrayIndex, _vt);
         }
 
         /// <summary>
         /// Replaces a range within the array with new data.
         /// </summary>
+        /// <param name="body">The body instance to modify.</param>
         /// <param name="replacement">The replacement data.</param>
         /// <param name="arrayIndex">The zero-based index of the array.</param>
         /// <param name="byteOffset">The byte offset where replacement starts.</param>
         /// <param name="byteLengthToRemove">The number of bytes to remove before inserting replacement.</param>
-        public unsafe void ReplaceInArray(ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove)
+        public static unsafe void ReplaceInArray(BodyBase body, ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove)
         {
             if (arrayIndex < 0)
                 return;
 
-            var _vt = (VectorTableHeader*)_vTablePtr;
+            var _vt = (VectorTableHeader*)body._vTablePtr;
             if (_vt->LargeArrays)
-                ReplaceInArrayLarge(replacement, arrayIndex, byteOffset, byteLengthToRemove, _vt);
+                ReplaceInArrayLarge(body, replacement, arrayIndex, byteOffset, byteLengthToRemove, _vt);
             else
-                ReplaceInArraySmall(replacement, arrayIndex, byteOffset, byteLengthToRemove, _vt);
+                ReplaceInArraySmall(body, replacement, arrayIndex, byteOffset, byteLengthToRemove, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void ReplaceInArrayLarge(ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove, VectorTableHeader* _vt)
+        private static unsafe void ReplaceInArrayLarge(BodyBase body, ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove, VectorTableHeader* _vt)
         {
-            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapLargeEntry* mapBase = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapLargeEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = mapEntry->ValueSize;
 
@@ -825,7 +857,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
             int pos = 0;
             if (byteOffset > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, byteOffset).CopyTo(combined);
                 pos = byteOffset;
             }
             if (replacement.Length > 0)
@@ -836,17 +868,17 @@ namespace GhostBodyObject.Repository.Body.Contracts
             int afterOffset = byteOffset + byteLengthToRemove;
             if (afterOffset < currentPhysicalSize)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
                     .CopyTo(combined.Slice(pos));
             }
 
-            SwapAnyArrayLarge(combined, arrayIndex, _vt);
+            SwapAnyArrayLarge(body, combined, arrayIndex, _vt);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void ReplaceInArraySmall(ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove, VectorTableHeader* _vt)
+        private static unsafe void ReplaceInArraySmall(BodyBase body, ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove, VectorTableHeader* _vt)
         {
-            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset);
+            ArrayMapSmallEntry* mapBase = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset);
             ArrayMapSmallEntry* mapEntry = mapBase + arrayIndex;
             int valueSize = (int)mapEntry->ValueSize;
 
@@ -873,7 +905,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
             int pos = 0;
             if (byteOffset > 0)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset, byteOffset).CopyTo(combined);
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset, byteOffset).CopyTo(combined);
                 pos = byteOffset;
             }
             if (replacement.Length > 0)
@@ -884,11 +916,11 @@ namespace GhostBodyObject.Repository.Body.Contracts
             int afterOffset = byteOffset + byteLengthToRemove;
             if (afterOffset < currentPhysicalSize)
             {
-                new ReadOnlySpan<byte>(_data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
+                new ReadOnlySpan<byte>(body._data.Ptr + currentOffset + afterOffset, currentPhysicalSize - afterOffset)
                     .CopyTo(combined.Slice(pos));
             }
 
-            SwapAnyArraySmall(combined, arrayIndex, _vt);
+            SwapAnyArraySmall(body, combined, arrayIndex, _vt);
         }
     }
 }

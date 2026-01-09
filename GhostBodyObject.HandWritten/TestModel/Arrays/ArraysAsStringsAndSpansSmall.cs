@@ -18,7 +18,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
     public sealed class ArraysAsStringsAndSpansSmall : TestModelBodyBase
     {
-        public int ModelVersion => 1;
+        public const int ModelVersion = 1;
 
         internal unsafe ArraysAsStringsAndSpansSmall_VectorTable* _vTable
         {
@@ -33,7 +33,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
         {
             unsafe
             {
-                VectorTableRegistry<TestModelRepository, ArraysAsStringsAndSpansSmall>.BuildInitialVersion(ModelVersion, this);
+                VectorTableRegistry<TestModelRepository, ArraysAsStringsAndSpansSmall>.BuildStandaloneVersion(ModelVersion, this);
             }
         }
 
@@ -53,16 +53,13 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (!_immutable)
-                    GuardLocalScope();
+                GuardLocalScope();
                 return _data.Get<DateTime>(_vTable->OneDateTime_FieldOffset);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
-                if (_immutable)
-                    throw new InvalidOperationException("Cannot modify an immutable Body object.");
                 using (GuardWriteScope())
                 {
                     _vTable->OneDateTime_Setter(this, value);
@@ -109,7 +106,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->Guids_MapEntryIndex);
+                        _vTable->Guids_Setter(this, value);
                     }
                 }
             }
@@ -135,7 +132,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->DateTimes_MapEntryIndex);
+                        _vTable->DateTimes_Setter(this, value);
                     }
                 }
             }
@@ -161,7 +158,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), MemoryMarshal.AsBytes(value.AsSpan()), _vTable->StringU16_MapEntryIndex);
+                        _vTable->StringU16_Setter(this, value);
                     }
                 }
             }
@@ -187,7 +184,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
                 {
                     using (GuardWriteScope())
                     {
-                        _vTable->Std.SwapAnyArray(Unsafe.As<BodyUnion>(this), value.AsBytes(), _vTable->StringU8_MapEntryIndex);
+                        _vTable->StringU8_Setter(this, value);
                     }
                 }
             }
@@ -198,7 +195,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
     // ---------------------------------------------------------
     // VECTOR TABLE BUILDER (V1 to V1 Mapping)
     // ---------------------------------------------------------
-    public unsafe static class ArraysAsStringsAndSpansSmall_V1_V1_MappingVectorTableBuilder
+    public unsafe static class ArraysAsStringsAndSpansSmall_MappingVectorTableBuilder
     {
         private static bool _initialized = false;
         private static VectorTableRecord _record;
@@ -209,16 +206,13 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
 
         public static int TypeIdentifier => 10;
 
-        public static int SourceVersion => 1;
-
-        public static int TargetVersion => 1;
+        public static int TargetVersion => ArraysAsStringsAndSpansSmall.ModelVersion;
 
         public static VectorTableRecord GetTableRecord()
         {
             if (_initialized)
                 return _record;
             _record = new VectorTableRecord();
-            _record.Initial = (VectorTableHeader*)GetInitial();
             _record.Standalone = (VectorTableHeader*)GetStandalone();
 
             _record.GhostSize = _record.Standalone->MinimalGhostSize;
@@ -226,7 +220,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
             var buff = GC.AllocateArray<byte>(_record.GhostSize, true);
             _record.InitialGhost = new PinnedMemory<byte>(buff, 0, buff.Length);
 
-            InitializeGhost(_record.InitialGhost, (ArraysAsStringsAndSpansSmall_VectorTable*)_record.Initial);
+            InitializeGhost(_record.InitialGhost, (ArraysAsStringsAndSpansSmall_VectorTable*)_record.Standalone);
 
             GhostHeader* header = (GhostHeader*)Unsafe.AsPointer(ref buff[0]);
             header->Id = new GhostId(GhostIdKind.Entity, 100, 0, 0);
@@ -247,7 +241,6 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
             f.Padd(4); // Padding to align
 
             // -------- ARRAY MAP ENTRIES SPACE RESERVATION -------- //
-            // 4 array properties, each with an ArrayMapSmallEntry (4 bytes each)
             vt->Guids_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
             vt->DateTimes_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
             vt->StringU16_MapEntryOffset = f.Push<ArrayMapSmallEntry>();
@@ -260,8 +253,8 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
             vt->StringU8_MapEntryIndex = 3;
 
             // -------- STANDARD FIELDS -------- //
-            vt->Std.TypeCombo = new GhostId(GhostIdKind.Entity, (ushort)TypeIdentifier, default, default).TypeCombo;
-            vt->Std.ModelVersion = (short)SourceVersion;
+            vt->Std.TypeCombo = new GhostTypeCombo(GhostIdKind.Entity, (ushort)TypeIdentifier);
+            vt->Std.ModelVersion = (short)TargetVersion;
             vt->Std.ReadOnly = false;
             vt->Std.LargeArrays = false;
             vt->Std.ArrayMapOffset = vt->Guids_MapEntryOffset;
@@ -275,6 +268,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
         public static void InitializeGhost(PinnedMemory<byte> ghost, ArraysAsStringsAndSpansSmall_VectorTable* _vTable)
         {
             var h = (GhostHeader*)ghost.Ptr;
+            h->Initialize((ushort)TargetVersion);
             h->Id = GhostId.NewId(GhostIdKind.Entity, (ushort)TypeIdentifier);
 
             var emptyGuid = new ArrayMapSmallEntry()
@@ -313,98 +307,48 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
         }
         #endregion
 
-        #region INITIAL
-        public static ArraysAsStringsAndSpansSmall_VectorTable* GetInitial()
-        {
-            var vt = GetCommon();
-
-            // -------- Function Pointers -------- //
-            vt->Std.SwapAnyArray = &Initial_SwapAnyArray;
-            vt->Std.AppendToArray = &Initial_AppendToArray;
-            vt->Std.PrependToArray = &Initial_PrependToArray;
-            vt->Std.InsertIntoArray = &Initial_InsertIntoArray;
-            vt->Std.RemoveFromArray = &Initial_RemoveFromArray;
-            vt->Std.ReplaceInArray = &Initial_ReplaceInArray;
-            vt->OneDateTime_Setter = &Initial_OneDateTime_Setter;
-            vt->OneInt_Setter = &Initial_OneInt_Setter;
-            return vt;
-        }
-
-        public static ArraysAsStringsAndSpansSmall InitialToStandalone(ArraysAsStringsAndSpansSmall body)
-        {
-            var union = Unsafe.As<BodyUnion>(body);
-            union._data = TransientGhostMemoryAllocator.Allocate(union._data.Length);
-            union._vTablePtr = (nint)_record.Standalone;
-            _record.InitialGhost.CopyTo(union._data);
-            union._data.Set<GhostId>(0, GhostId.NewId(GhostIdKind.Entity, (ushort)TypeIdentifier));
-            return body;
-        }
-
-        public static unsafe void Initial_SwapAnyArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
-            => InitialToStandalone(Unsafe.As<ArraysAsStringsAndSpansSmall>(body)).SwapAnyArray(src, arrayIndex);
-
-        public static unsafe void Initial_AppendToArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
-            => InitialToStandalone(Unsafe.As<ArraysAsStringsAndSpansSmall>(body)).AppendToArray(src, arrayIndex);
-
-        public static unsafe void Initial_PrependToArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
-            => InitialToStandalone(Unsafe.As<ArraysAsStringsAndSpansSmall>(body)).PrependToArray(src, arrayIndex);
-
-        public static unsafe void Initial_InsertIntoArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex, int byteOffset)
-            => InitialToStandalone(Unsafe.As<ArraysAsStringsAndSpansSmall>(body)).InsertIntoArray(src, arrayIndex, byteOffset);
-
-        public static unsafe void Initial_RemoveFromArray(BodyUnion body, int arrayIndex, int byteOffset, int byteLength)
-            => InitialToStandalone(Unsafe.As<ArraysAsStringsAndSpansSmall>(body)).RemoveFromArray(arrayIndex, byteOffset, byteLength);
-
-        public static unsafe void Initial_ReplaceInArray(BodyUnion body, ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove)
-            => InitialToStandalone(Unsafe.As<ArraysAsStringsAndSpansSmall>(body)).ReplaceInArray(replacement, arrayIndex, byteOffset, byteLengthToRemove);
-
-        public static unsafe void Initial_OneDateTime_Setter(ArraysAsStringsAndSpansSmall body, DateTime value)
-            => Standalone_OneDateTime_Setter(InitialToStandalone(body), value);
-
-        public static unsafe void Initial_OneInt_Setter(ArraysAsStringsAndSpansSmall body, int value)
-            => Standalone_OneInt_Setter(InitialToStandalone(body), value);
-        #endregion
-
         #region STANDALONE
         public static ArraysAsStringsAndSpansSmall_VectorTable* GetStandalone()
         {
             var vt = GetCommon();
 
             // -------- Function Pointers -------- //
-            vt->Std.SwapAnyArray = &Standalone_SwapAnyArray;
-            vt->Std.AppendToArray = &Standalone_AppendToArray;
-            vt->Std.PrependToArray = &Standalone_PrependToArray;
-            vt->Std.InsertIntoArray = &Standalone_InsertIntoArray;
-            vt->Std.RemoveFromArray = &Standalone_RemoveFromArray;
-            vt->Std.ReplaceInArray = &Standalone_ReplaceInArray;
+            // Values Setters
             vt->OneDateTime_Setter = &Standalone_OneDateTime_Setter;
             vt->OneInt_Setter = &Standalone_OneInt_Setter;
+
+            // Arrays Setters
+            vt->Guids_Setter = &Guids_Setter;
+            vt->DateTimes_Setter = &DateTimes_Setter;
+            vt->StringU16_Setter = &StringU16_Setter;
+            vt->StringU8_Setter = &StringU8_Setter;
+
             return vt;
         }
 
-        public static unsafe void Standalone_SwapAnyArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
-            => Unsafe.As<ArraysAsStringsAndSpansSmall>(body).SwapAnyArray(src, arrayIndex);
-
-        public static unsafe void Standalone_AppendToArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
-            => Unsafe.As<ArraysAsStringsAndSpansSmall>(body).AppendToArray(src, arrayIndex);
-
-        public static unsafe void Standalone_PrependToArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex)
-            => Unsafe.As<ArraysAsStringsAndSpansSmall>(body).PrependToArray(src, arrayIndex);
-
-        public static unsafe void Standalone_InsertIntoArray(BodyUnion body, ReadOnlySpan<byte> src, int arrayIndex, int byteOffset)
-            => Unsafe.As<ArraysAsStringsAndSpansSmall>(body).InsertIntoArray(src, arrayIndex, byteOffset);
-
-        public static unsafe void Standalone_RemoveFromArray(BodyUnion body, int arrayIndex, int byteOffset, int byteLength)
-            => Unsafe.As<ArraysAsStringsAndSpansSmall>(body).RemoveFromArray(arrayIndex, byteOffset, byteLength);
-
-        public static unsafe void Standalone_ReplaceInArray(BodyUnion body, ReadOnlySpan<byte> replacement, int arrayIndex, int byteOffset, int byteLengthToRemove)
-            => Unsafe.As<ArraysAsStringsAndSpansSmall>(body).ReplaceInArray(replacement, arrayIndex, byteOffset, byteLengthToRemove);
-
+        // ---------------------------------------------------------
+        // Value Setters
+        // ---------------------------------------------------------
         public static unsafe void Standalone_OneDateTime_Setter(ArraysAsStringsAndSpansSmall body, DateTime value)
-            => Unsafe.As<BodyUnion>(body)._data.Set<DateTime>(body._vTable->OneDateTime_FieldOffset, value);
+            => body._data.Set<DateTime>(body._vTable->OneDateTime_FieldOffset, value);
 
         public static unsafe void Standalone_OneInt_Setter(ArraysAsStringsAndSpansSmall body, int value)
-            => Unsafe.As<BodyUnion>(body)._data.Set<int>(body._vTable->OneInt_FieldOffset, value);
+            => body._data.Set<int>(body._vTable->OneInt_FieldOffset, value);
+
+        // ---------------------------------------------------------
+        // Arrays Setters
+        // ---------------------------------------------------------
+        public static unsafe void Guids_Setter(ArraysAsStringsAndSpansSmall body, GhostSpan<Guid> src)
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Guids_MapEntryIndex);
+
+        public static unsafe void DateTimes_Setter(ArraysAsStringsAndSpansSmall body, GhostSpan<DateTime> src)
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->DateTimes_MapEntryIndex);
+
+        public static unsafe void StringU16_Setter(ArraysAsStringsAndSpansSmall body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->StringU16_MapEntryIndex);
+
+        public static unsafe void StringU8_Setter(ArraysAsStringsAndSpansSmall body, GhostStringUtf8 src)
+            => BodyBase.SwapAnyArray(body, src.AsBytes(), body._vTable->StringU8_MapEntryIndex);
         #endregion
     }
 
@@ -446,10 +390,21 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
         public int StringU8_MapEntryIndex;
 
         // ---------------------------------------------------------
-        // Setters
+        // Value Setters
         // ---------------------------------------------------------
         public delegate*<ArraysAsStringsAndSpansSmall, DateTime, void> OneDateTime_Setter;
 
         public delegate*<ArraysAsStringsAndSpansSmall, int, void> OneInt_Setter;
+
+        // ---------------------------------------------------------
+        // Arrays Setters
+        // ---------------------------------------------------------
+        public delegate*<ArraysAsStringsAndSpansSmall, GhostSpan<Guid>, void> Guids_Setter;
+
+        public delegate*<ArraysAsStringsAndSpansSmall, GhostSpan<DateTime>, void> DateTimes_Setter;
+
+        public delegate*<ArraysAsStringsAndSpansSmall, GhostStringUtf16, void> StringU16_Setter;
+
+        public delegate*<ArraysAsStringsAndSpansSmall, GhostStringUtf8, void> StringU8_Setter;
     }
 }

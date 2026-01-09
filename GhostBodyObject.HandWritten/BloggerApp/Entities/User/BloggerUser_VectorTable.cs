@@ -1,4 +1,6 @@
-﻿using GhostBodyObject.Repository.Body.Vectors;
+﻿using GhostBodyObject.Repository;
+using GhostBodyObject.Repository.Body.Vectors;
+using GhostBodyObject.Repository.Ghost.Values;
 
 namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 {
@@ -70,15 +72,40 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public int Hobbies_MapEntryIndex;
 
-
         // ---------------------------------------------------------
-        // Setters
+        // Value Setters
         // ---------------------------------------------------------
-
         public delegate*<BloggerUser, bool, void> Active_Setter;
 
         public delegate*<BloggerUser, int, void> CustomerCode_Setter;
 
         public delegate*<BloggerUser, DateTime, void> BirthDate_Setter;
+
+        // ---------------------------------------------------------
+        // Arrays Setters
+        // ---------------------------------------------------------
+        public delegate*<BloggerUser, GhostStringUtf16, void> FirstName_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> LastName_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> Pseudonyme_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> Presentation_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> City_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> Country_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> CompanyName_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> Address1_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> Address2_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> Address3_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> ZipCode_Setter;
+
+        public delegate*<BloggerUser, GhostStringUtf16, void> Hobbies_Setter;
     }
 }
