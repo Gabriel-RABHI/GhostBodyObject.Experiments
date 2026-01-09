@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GhostBodyObject.Repository.Model.Schema.Constants;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -57,13 +58,11 @@ namespace GhostBodyObject.Repository.Model.Schema
             }
      * 
      */
-
-
     public class ModelDescriptor
     {
         // -------- FIXED PROPERTIES -------- //
         // Unique identifier for the repository in the model, fixed for the software lifetime
-        public ushort RepositoryIdentifier { get; }
+        public int RepositoryIdentifier { get; }
 
         // -------- VARIABLE -------- //
         // List of repository versions in the model, where name or entities list can differ
@@ -102,6 +101,7 @@ namespace GhostBodyObject.Repository.Model.Schema
         // This permit to the add the properties of the parent entity, and having the generated interface
         // MTenantEntity => TenantEntity + ITenantEntity
         // MUser (with MTenantEntity) => User : ITenantEntity + IUser : ITenantEntity
+        // New version of inherited Entity induce new version of the child Entity descriptor
         public List<EntityInheritanceDescriptor> Inheritences { get; }
 
         public List<AttributeDescriptor> Attributes { get; }
@@ -112,49 +112,6 @@ namespace GhostBodyObject.Repository.Model.Schema
         public int TypeIdentifier { get; }
 
         public int Version { get; }
-    }
-
-
-    public enum PropertyKind
-    {
-        Value,
-        ArrayOfValues,
-        WeakBodyReference, // Simply a GhostId, used as an Handle (resolved dynamically)
-        BodyReference, // Strong reference to another BodyObject, stored as GhostId in the relation table
-        WeakBodyCollection,
-        BodyCollection,
-    }
-
-    public enum PropertyRelationStoreSpace
-    {
-        InGhost,
-        InDedicatedGhost,
-        AsEdge,
-    }
-
-    public enum PropertyRelationCardinality
-    {
-        _1_1,
-        _1_N,
-        _N_1,
-        _N_N
-    }
-
-    public enum PropertyRelationAutomation
-    {
-        None,
-        CascadeDeleteTarget,
-        CascadingDeleteSource,
-        DeleteTargetOrphan,
-        DeleteSourceOrphan
-    }
-
-    public enum PropertyRelationContraint
-    {
-        None,
-        ForbidTargetDeletion,
-        ForbidSourceDeletion,
-        RequiredForCommit
     }
 
     public class PropertyDescriptor

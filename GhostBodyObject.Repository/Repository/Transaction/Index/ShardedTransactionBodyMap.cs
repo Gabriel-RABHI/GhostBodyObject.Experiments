@@ -41,11 +41,11 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private TransactionBodyMap<TBody> GetShard(GhostId id) 
-            => _shards[id.LowerRandomPart & _shardMask];
+            => _shards[id.ShardComputation & _shardMask];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private TransactionBodyMap<TBody> GetShard(int lowerRandomPart) 
-            => _shards[lowerRandomPart & _shardMask];
+        private TransactionBodyMap<TBody> GetShard(short shardComputation) 
+            => _shards[shardComputation & _shardMask];
 
         // --- CRUD OPERATIONS ---
 
@@ -54,7 +54,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(TBody entry)
-            => GetShard(entry.Header->Id.LowerRandomPart).Set(entry);
+            => GetShard(entry.Header->Id.ShardComputation).Set(entry);
 
         /// <summary>
         /// Retrieves the entry with the specified Id from the appropriate shard.

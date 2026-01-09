@@ -92,6 +92,12 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
                 => (GhostHeader*)((byte*)_basePointer + reference.Offset);
 
+
+            public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+            {
+                throw new NotImplementedException();
+            }
+
             public long TotalMemoryBytes => (long)_blocks.Length * SMALL_BLOCK_SIZE;
         }
 
@@ -128,6 +134,11 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
                 => (GhostHeader*)((byte*)_basePointer + reference.Offset);
+                
+            public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+            {
+                throw new NotImplementedException();
+            }
 
             public long TotalMemoryBytes => (long)_blocks.Length * LARGE_BLOCK_SIZE;
         }

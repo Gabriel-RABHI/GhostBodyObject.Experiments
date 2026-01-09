@@ -87,6 +87,11 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                 }
                 return null;
             }
+            
+            public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+            {
+                throw new NotImplementedException();
+            }
 
             public void Update<TSegmentStore>(SegmentGhostMap<TSegmentStore> map)
                 where TSegmentStore : ISegmentStore

@@ -104,15 +104,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     }
 
     /// <summary>
-    /// Extracts the upper 16 bits from UpperRandomPart for the fast filter cache.
-    /// This ensures the cached value uses different bits than slot calculation (lower bits)
-    /// and shard selection (LowerRandomPart), maximizing filter effectiveness.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static short GetFilterKey(GhostId id) => (short)(id.UpperRandomPart >> 16);
-
-    /// <summary>
-    /// Adds or updates an entry using Tombstone-aware probing.
+    /// Adds or Updates the entry using Tombstone-aware probing.
     /// Uses direct field access for lower overhead (protected by lock).
     /// </summary>
     public void Set(SegmentReference r, GhostHeader* h)
@@ -153,11 +145,11 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             int mask = _mask;
 
             GhostId newId = h->Id;
-            short newRandomPart = GetFilterKey(newId); // Upper 16 bits of UpperRandomPart
+            short newRandomPart = newId.RandomPartTag;
             long newTxnId = h->TxnId;
 
-            // Slot calculation uses lower bits of UpperRandomPart
-            int index = newId.UpperRandomPart & mask;
+            // Slot calculation uses specific bit-range
+            int index = newId.SlotComputation & mask;
             int firstTombstoneIndex = -1;
 
             while (true)
@@ -230,8 +222,8 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
         var randomParts = state.RandomParts;
         int mask = state.Mask;
 
-        short searchRandomPart = GetFilterKey(id); // Upper 16 bits of UpperRandomPart
-        int index = id.UpperRandomPart & mask; // Lower bits for slot
+        short searchRandomPart = id.RandomPartTag;
+        int index = id.SlotComputation & mask;
         int bestIndex = -1;
         long bestTxnFound = long.MinValue;
 
@@ -310,8 +302,8 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             var randomParts = _randomParts;
             int mask = _mask;
 
-            short searchRandomPart = GetFilterKey(id); // Upper 16 bits of UpperRandomPart
-            int index = id.UpperRandomPart & mask; // Lower bits for slot
+            short searchRandomPart = id.RandomPartTag;
+            int index = id.SlotComputation & mask;
 
             while (true)
             {
@@ -377,8 +369,8 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 var h = (GhostHeader*)_store.ToGhostHeaderPointer(e);
                 if (h != null)
                 {
-                    // Slot uses lower bits of UpperRandomPart
-                    int index = h->Id.UpperRandomPart & newMask;
+                    // Slot uses specific bit-range
+                    int index = h->Id.SlotComputation & newMask;
                     while (!newEntries[index].IsEmpty())
                     {
                         index = (index + 1) & newMask;
@@ -544,8 +536,8 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     long maxTxnId,
     ISegmentStore store)
         {
-            // Slot uses lower bits of UpperRandomPart
-            int index = id.UpperRandomPart & mask;
+            // Slot uses specific bit-range
+            int index = id.SlotComputation & mask;
 
             SegmentReference bestRef = default;
             long bestTxnFound = long.MinValue;

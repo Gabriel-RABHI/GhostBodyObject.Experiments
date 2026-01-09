@@ -15,19 +15,18 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
     /// <remarks>
     /// <para>
     /// <b>Performance Optimization:</b> This implementation uses a parallel <c>_randomParts</c> array 
-    /// that caches the lower 32 bits of each GhostId's RandomPart as a <c>uint</c>. During probing, 
+    /// that caches the 16-bit Tag of each GhostId's RandomPart as a <c>short</c>. During probing, 
     /// the cached random part is compared first (fast, L1-cache friendly) before dereferencing the 
-    /// body pointer. The slot calculation uses a hash mix of the full 64-bit RandomPart for optimal
-    /// distribution.
+    /// body pointer.
     /// </para>
     /// </remarks>
     public unsafe class TransactionBodyMap<TBody>
         where TBody : BodyBase
     {
         // Parallel arrays for better cache locality during probing
-        // Using uint (4 bytes) for good balance between cache density and collision avoidance
+        // Using short (2 bytes) for memory efficiency
         // Correctness is guaranteed by full GhostId verification on match
-        private uint[] _randomParts;  // Cached lower 32 bits of GhostId.RandomPart
+        private short[] _randomParts;  // Cached 16-bit GhostId.RandomPartTag
         private TBody[] _entries;
         private int _count;
         private int _capacity;
@@ -53,22 +52,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             _capacity = PowerOf2(initialCapacity);
             _mask = _capacity - 1;
             _entries = new TBody[_capacity];
-            _randomParts = new uint[_capacity];
+            _randomParts = new short[_capacity];
 
             UpdateThresholds();
-        }
-
-        /// <summary>
-        /// Computes a well-distributed hash slot from a 64-bit random value.
-        /// Uses xor-shift folding to mix all bits into the lower bits used for masking.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeSlot(ulong random, int mask)
-        {
-            // Fold the 64-bit value to mix entropy into lower bits
-            // This ensures good distribution even when mask is small
-            uint folded = (uint)random ^ (uint)(random >> 32);
-            return (int)(folded & (uint)mask);
         }
 
         /// <summary>
@@ -87,9 +73,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
 
             // Cache the ID once - avoid repeated pointer dereferences
             var entryId = entry.Header->Id;
-            ulong entryRandomFull = entryId.RandomPart;
-            uint entryRandom = (uint)entryRandomFull; // Cache lower 32 bits for comparison
-            int index = ComputeSlot(entryRandomFull, _mask);
+            short entryTag = entryId.RandomPartTag;
+            int index = entryId.SlotComputation & _mask;
+            
             var entries = _entries;
             var randomParts = _randomParts;
             int mask = _mask;
@@ -99,14 +85,14 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 if (entries[index] == null)
                 {
                     entries[index] = entry;
-                    randomParts[index] = entryRandom;
+                    randomParts[index] = entryTag;
                     _count++;
                     return;
                 }
 
-                // Fast filter: compare cached random parts first (32-bit, good cache density)
+                // Fast filter: compare cached random parts first (16-bit, excellent cache density)
                 // Then verify full ID match to handle RandomPart collisions
-                if (randomParts[index] == entryRandom && entries[index].Header->Id == entryId)
+                if (randomParts[index] == entryTag && entries[index].Header->Id == entryId)
                 {
                     entries[index] = entry;
                     return;
@@ -134,9 +120,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             try
             {
 #endif
-            ulong idRandomFull = id.RandomPart;
-            uint idRandom = (uint)idRandomFull; // Cache lower 32 bits for comparison
-            int index = ComputeSlot(idRandomFull, _mask);
+            short idTag = id.RandomPartTag;
+            int index = id.SlotComputation & _mask;
+            
             var entries = _entries;
             var randomParts = _randomParts;
             int mask = _mask;
@@ -150,7 +136,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                     return null;
                 }
                 // Fast filter + full verification for correctness
-                if (randomParts[index] == idRandom && current.Header->Id == id)
+                if (randomParts[index] == idTag && current.Header->Id == id)
                 {
                     exists = true;
                     return current;
@@ -177,9 +163,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
      try
         {
 #endif
-            ulong idRandomFull = id.RandomPart;
-            uint idRandom = (uint)idRandomFull; // Cache lower 32 bits for comparison
-            int i = ComputeSlot(idRandomFull, _mask);
+            short idTag = id.RandomPartTag;
+            int i = id.SlotComputation & _mask;
+
             var entries = _entries;
             var randomParts = _randomParts;
             int mask = _mask;
@@ -191,7 +177,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                     return false;
 
                 // Fast filter + full verification for correctness
-                if (randomParts[i] == idRandom && entry.Header->Id == id)
+                if (randomParts[i] == idTag && entry.Header->Id == id)
                 {
                     _count--;
                     ShiftBack(i);
@@ -235,8 +221,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                     return;
                 }
 
-                // Recompute ideal slot from full random (need to dereference header here)
-                int idealSlot = ComputeSlot(currentEntry.Header->Id.RandomPart, mask);
+                // Recompute ideal slot from SlotComputation
+                int idealSlot = currentEntry.Header->Id.SlotComputation & mask;
 
                 int distToGap = (gapIndex - idealSlot + capacity) & mask;
                 int distToCurr = (curr - idealSlot + capacity) & mask;
@@ -260,7 +246,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             _capacity = newCapacity;
             _mask = _capacity - 1;
             _entries = new TBody[_capacity];
-            _randomParts = new uint[_capacity];
+            _randomParts = new short[_capacity];
             UpdateThresholds();
 
             var entries = _entries;
@@ -272,13 +258,14 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 TBody e = oldEntries[i];
                 if (e != null)
                 {
-                    ulong randomFull = e.Header->Id.RandomPart;
-                    uint random = (uint)randomFull;
-                    int index = ComputeSlot(randomFull, mask);
+                    short tag = e.Header->Id.RandomPartTag;
+                    int index = e.Header->Id.SlotComputation & mask;
+                    
                     while (entries[index] != null)
                         index = (index + 1) & mask;
+                    
                     entries[index] = e;
-                    randomParts[index] = random;
+                    randomParts[index] = tag;
                 }
             }
         }

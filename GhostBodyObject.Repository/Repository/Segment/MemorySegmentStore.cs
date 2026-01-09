@@ -72,5 +72,11 @@ namespace GhostBodyObject.Repository.Repository.Segment
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
             => (GhostHeader*)(_segmentPointers[reference.SegmentId] + reference.Offset);
+
+
+        public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
