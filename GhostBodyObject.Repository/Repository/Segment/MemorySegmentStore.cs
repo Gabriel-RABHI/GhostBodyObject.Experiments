@@ -21,6 +21,10 @@ namespace GhostBodyObject.Repository.Repository.Segment
             _segmentPointers = new byte*[64];
         }
 
+        /// <summary>
+        /// Called when adding a reference to a segment in the Ghost Map
+        /// </summary>
+        /// <param name="segmentId"></param>
         public void IncrementSegmentReferenceCount(int segmentId)
         {
             _segmentHolders[segmentId].IncrementReferenceCount();
@@ -42,6 +46,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                 if (_segmentHolders[i] != null && _segmentHolders[i].ReferenceCount > 0)
                     newHolders[i] = _segmentHolders[i];
             }
+            _segmentHolders = newHolders;
         }
 
         /// <summary>
@@ -56,11 +61,21 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public int CreateSegment(int capacity)
         {
-            var segment = new MemorySegment(SegmentType, _lastSegmentId, capacity);
+            MemorySegment segment = null;
+            switch (SegmentType)
+            {
+                case SegmentImplementationType.LOHPinnedMemory:
+                    segment = MemorySegment.NewInMemory(_lastSegmentId, capacity);
+                    break;
+                case SegmentImplementationType.ProtectedMemoryMappedFile:
+                    throw new NotImplementedException();
+            }
+            if (segment == null)
+                throw new InvalidOperationException("Segment creation failed.");
             return AddSegment(segment);
         }
 
-        public int AddSegment(MemorySegment segment)
+        private int AddSegment(MemorySegment segment)
         {
             int segmentId = _lastSegmentId;
             _segmentHolders[segmentId] = new MemorySegmentHolder(segment);
