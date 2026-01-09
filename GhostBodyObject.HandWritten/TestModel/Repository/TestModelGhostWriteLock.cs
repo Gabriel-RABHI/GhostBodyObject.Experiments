@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace GhostBodyObject.HandWritten.TestModel.Repository
+namespace GhostBodyObject.HandWritten.Entities.Repository
 {
     public readonly struct TestModelGhostWriteLock : IDisposable
     {

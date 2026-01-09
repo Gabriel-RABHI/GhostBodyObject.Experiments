@@ -1,11 +1,11 @@
-﻿using GhostBodyObject.HandWritten.TestModel;
-using GhostBodyObject.HandWritten.TestModel.Arrays;
-using GhostBodyObject.HandWritten.TestModel.Repository;
+﻿using GhostBodyObject.HandWritten.Entities;
+using GhostBodyObject.HandWritten.Entities.Arrays;
+using GhostBodyObject.HandWritten.Entities.Repository;
 using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using System.Text;
 
-namespace GhostBodyObject.HandWritten.Tests.BloggerAll
+namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
 {
     public class ArraysAsStringsAndSpansSmallShould
     {
@@ -756,7 +756,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
                 Assert.Equal(2, body.DateTimes.Length);
                 
                 // Create a GhostSpan from array (implicit conversion)
-                GhostBodyObject.Repository.Ghost.Values.GhostSpan<DateTime> sourceSpan = dates2;
+                Repository.Ghost.Values.GhostSpan<DateTime> sourceSpan = dates2;
                 body.DateTimes.SetArray(sourceSpan);
 
                 Assert.Equal(3, body.DateTimes.Length);
@@ -805,7 +805,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
 
                 var initialGuids = new[] { Guid.NewGuid() };
                 var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
-                GhostBodyObject.Repository.Ghost.Values.GhostSpan<Guid> toAppend = newGuids;
+                Repository.Ghost.Values.GhostSpan<Guid> toAppend = newGuids;
                 
                 body.Guids = initialGuids;
                 body.Guids.AppendRange(toAppend);
@@ -845,7 +845,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
 
                 var initialGuids = new[] { Guid.NewGuid() };
                 var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
-                GhostBodyObject.Repository.Ghost.Values.GhostSpan<Guid> toPrepend = newGuids;
+                Repository.Ghost.Values.GhostSpan<Guid> toPrepend = newGuids;
                 
                 body.Guids = initialGuids;
                 body.Guids.PrependRange(toPrepend);
@@ -900,7 +900,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
                 var date3 = new DateTime(2022, 1, 1);
                 var date4 = new DateTime(2023, 1, 1);
                 
-                GhostBodyObject.Repository.Ghost.Values.GhostSpan<DateTime> toInsert = new[] { date2, date3 };
+                Repository.Ghost.Values.GhostSpan<DateTime> toInsert = new[] { date2, date3 };
                 
                 body.DateTimes = new[] { date1, date4 };
                 body.DateTimes.InsertRangeAt(1, toInsert);
@@ -1075,7 +1075,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
                 var date3 = new DateTime(2022, 1, 1);
                 var newDate = new DateTime(2025, 1, 1);
                 
-                GhostBodyObject.Repository.Ghost.Values.GhostSpan<DateTime> replacement = new[] { newDate };
+                Repository.Ghost.Values.GhostSpan<DateTime> replacement = new[] { newDate };
                 
                 body.DateTimes = new[] { date1, date2, date3 };
                 body.DateTimes.ReplaceRange(1, 1, replacement);

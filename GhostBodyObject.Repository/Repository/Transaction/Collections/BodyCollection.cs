@@ -1,4 +1,5 @@
 ﻿using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Repository.Transaction.Index;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,15 +10,16 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Collections
     public ref struct BodyCollection<TBody> : IEnumerable<TBody>
         where TBody : BodyBase
     {
-        public IEnumerator<TBody> GetEnumerator()
+        private ShardedTransactionBodyMap<TBody> _map;
+
+        public BodyCollection(ShardedTransactionBodyMap<TBody> map)
         {
-            throw new NotImplementedException();
+            _map = map;
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        public IEnumerator<TBody> GetEnumerator() => _map.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => _map.GetEnumerator();
 
         public IEnumerable<TBody> Filter(Func<TBody, bool> predicate)
         {
