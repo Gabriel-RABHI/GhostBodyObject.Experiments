@@ -1,5 +1,9 @@
-﻿using GhostBodyObject.Repository.Repository.Constants;
+﻿using GhostBodyObject.Repository.Ghost.Constants;
+using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Repository.Constants;
 using System;
+using System.ComponentModel;
+using System.Drawing;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
@@ -79,6 +83,22 @@ namespace GhostBodyObject.Repository.Repository.Segment
             var memory = new PinnedMemory<byte>(_inMemoryData, _offset, size);
             _offset += size;
             return memory;
+        }
+
+        public int InsertGhost(PinnedMemory<byte> data, long txnId)
+        {
+            var size = data.Length;
+            if (_offset + size + 4 > _inMemoryData.Length)
+                throw new OverflowException();
+            Write(data.Length);
+            var offset = _offset;
+            var memory = new PinnedMemory<byte>(_inMemoryData, _offset, size);
+            data.CopyTo(memory);
+            var h = memory.As<GhostHeader>();
+            h->TxnId = txnId;
+            h->Status = GhostStatus.Mapped;
+            _offset += size;
+            return offset;
         }
 
         public int Write<T>(T value) where T : unmanaged

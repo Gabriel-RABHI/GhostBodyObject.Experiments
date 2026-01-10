@@ -2,7 +2,7 @@
 
 namespace GhostBodyObject.HandWritten.Entities.Repository
 {
-    public class TestModelRepository : GhostRepository
+    public class TestModelRepository : GhostRepositoryBase
     {
     }
 }

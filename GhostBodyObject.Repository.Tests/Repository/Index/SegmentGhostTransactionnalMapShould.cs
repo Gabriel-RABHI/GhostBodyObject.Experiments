@@ -116,6 +116,11 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                     }
                 }
             }
+
+            public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         // ---------------------------------------------------------

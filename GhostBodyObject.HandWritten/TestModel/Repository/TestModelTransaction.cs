@@ -5,7 +5,7 @@ using GhostBodyObject.Repository.Repository.Transaction.Index;
 
 namespace GhostBodyObject.HandWritten.Entities.Repository
 {
-    public class TestModelTransaction : RepositoryTransaction
+    public class TestModelTransaction : RepositoryTransactionBase
     {
         public TestModelRepository Repository { get; }
 
@@ -38,8 +38,8 @@ namespace GhostBodyObject.HandWritten.Entities.Repository
         public void RegisterBody(ArraysAsStringsAndSpansLarge body)
             => _arraysAsStringsAndSpansLargeMap.Set(body);
 
-        public BodyCollection<ArraysAsStringsAndSpansLarge> ArraysAsStringsAndSpansLargeCollection
-            => new BodyCollection<ArraysAsStringsAndSpansLarge>(_arraysAsStringsAndSpansLargeMap);
+        //public BodyCollection<ArraysAsStringsAndSpansLarge> ArraysAsStringsAndSpansLargeCollection
+        //    => new BodyCollection<ArraysAsStringsAndSpansLarge>(_arraysAsStringsAndSpansLargeMap);
         #endregion
 
         #region
@@ -48,8 +48,8 @@ namespace GhostBodyObject.HandWritten.Entities.Repository
         public void RegisterBody(ArraysAsStringsAndSpansSmall body)
             => _arraysAsStringsAndSpansSmallMap.Set(body);
 
-        public BodyCollection<ArraysAsStringsAndSpansSmall> ArraysAsStringsAndSpansSmallCollection
-            => new BodyCollection<ArraysAsStringsAndSpansSmall>(_arraysAsStringsAndSpansSmallMap);
+        //public BodyCollection<ArraysAsStringsAndSpansSmall> ArraysAsStringsAndSpansSmallCollection
+        //    => new BodyCollection<ArraysAsStringsAndSpansSmall>(_arraysAsStringsAndSpansSmallMap);
         #endregion
     }
 }

@@ -9,6 +9,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
     public sealed unsafe class MemorySegmentStore : ISegmentStore
     {
         private MemorySegmentHolder[] _segmentHolders;
+        private MemorySegmentHolder _currentHolder;
         private byte*[] _segmentPointers;
         private int _lastSegmentId = 0;
 
@@ -78,7 +79,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private int AddSegment(MemorySegment segment)
         {
             int segmentId = _lastSegmentId;
-            _segmentHolders[segmentId] = new MemorySegmentHolder(segment);
+            _currentHolder = new MemorySegmentHolder(segment, segmentId);
+            _segmentHolders[segmentId] = _currentHolder;
             _segmentPointers[segmentId] = segment.BasePointer;
             _lastSegmentId++;
             return segmentId;
@@ -88,10 +90,25 @@ namespace GhostBodyObject.Repository.Repository.Segment
         public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
             => (GhostHeader*)(_segmentPointers[reference.SegmentId] + reference.Offset);
 
-
-        public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public PinnedMemory<byte> ToGhost(SegmentReference reference)
         {
-            throw new NotImplementedException();
+            var h = ToGhostHeaderPointer(reference);
+            var b = (int*)h;
+            return new PinnedMemory<byte>(_segmentHolders[reference.SegmentId], h, *(b-1));
+        }
+
+        public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
+        {
+            if (_currentHolder == null || _currentHolder.Segment.FreeSpace < ghost.Length)
+            {
+                CreateSegment(1024 * 1024 * 8);
+            }
+            var offset = _currentHolder.Segment.InsertGhost(ghost, txnId);
+            return new SegmentReference() { 
+                SegmentId = (uint)_currentHolder.Index,
+                Offset = (uint)offset
+            };
         }
     }
 }

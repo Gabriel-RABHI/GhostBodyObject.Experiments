@@ -5,15 +5,15 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace GhostBodyObject.HandWritten.Tests.BloggerAll
+namespace GhostBodyObject.HandWritten.Tests.BloggerApp.Entities
 {
-    public class BloggerEntitiesShould
+    public class BloggerUserEntityShould
     {
         [Fact]
         public void ChangeValueProperty()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var user = new BloggerUser();
 
@@ -35,7 +35,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerAll
         public void ChangeStringProperty()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var user = new BloggerUser();
 

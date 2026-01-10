@@ -2,8 +2,9 @@
 {
     public enum GhostStatus : byte
     {
-        Standalone = 0x00,
+        Inserted = 0x00,
         Mapped = 0x02,
-        MappedDeleted = 0x04
+        MappedModified = 0x04,
+        MappedDeleted = 0x06
     }
 }

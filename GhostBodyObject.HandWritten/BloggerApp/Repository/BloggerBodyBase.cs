@@ -26,7 +26,22 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             if (current == null)
                 throw new InvalidOperationException("Must be created in a transaction."); // Option B: _ownerToken = new GhostContext();
             else
+            {
+                if (BloggerContext.Transaction.IsReadOnly)
+                    throw new InvalidOperationException("Cannot create new body in a read-only transaction.");
                 _ownerTransaction = current;
+            }
+        }
+
+        protected BloggerBodyBase(PinnedMemory<byte> ghost)
+        {
+            var current = BloggerContext.Transaction;
+            if (current == null)
+                throw new InvalidOperationException("Must be created in a transaction."); // Option B: _ownerToken = new GhostContext();
+            else
+            {
+                _ownerTransaction = current;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

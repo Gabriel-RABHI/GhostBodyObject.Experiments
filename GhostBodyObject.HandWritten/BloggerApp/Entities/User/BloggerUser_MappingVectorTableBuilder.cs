@@ -34,6 +34,8 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 return _record;
             _record = new VectorTableRecord();
             _record.Standalone = (VectorTableHeader*)GetStandalone();
+            _record.MappedMutable = (VectorTableHeader*)GetMappedMutable();
+            _record.MappedReadOnly = (VectorTableHeader*)GetMappedReadOnly();
 
             _record.GhostSize = _record.Standalone->MinimalGhostSize;
 
@@ -144,18 +146,18 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             vt->BirthDate_Setter = &Standalone_BirthDate_Setter;
 
             // Arrays Setters
-            vt->FirstName_Setter = &FirstName_Setter;
-            vt->LastName_Setter = &LastName_Setter;
-            vt->Pseudonyme_Setter = &Pseudonyme_Setter;
-            vt->Presentation_Setter = &Presentation_Setter;
-            vt->City_Setter = &City_Setter;
-            vt->Country_Setter = &Country_Setter;
-            vt->CompanyName_Setter = &CompanyName_Setter;
-            vt->Address1_Setter = &Address1_Setter;
-            vt->Address2_Setter = &Address2_Setter;
-            vt->Address3_Setter = &Address3_Setter;
-            vt->ZipCode_Setter = &ZipCode_Setter;
-            vt->Hobbies_Setter = &Hobbies_Setter;
+            vt->FirstName_Setter = &FirstName_Setter_Standalone;
+            vt->LastName_Setter = &LastName_Setter_Standalone;
+            vt->Pseudonyme_Setter = &Pseudonyme_Setter_Standalone;
+            vt->Presentation_Setter = &Presentation_Setter_Standalone;
+            vt->City_Setter = &City_Setter_Standalone;
+            vt->Country_Setter = &Country_Setter_Standalone;
+            vt->CompanyName_Setter = &CompanyName_Setter_Standalone;
+            vt->Address1_Setter = &Address1_Setter_Standalone;
+            vt->Address2_Setter = &Address2_Setter_Standalone;
+            vt->Address3_Setter = &Address3_Setter_Standalone;
+            vt->ZipCode_Setter = &ZipCode_Setter_Standalone;
+            vt->Hobbies_Setter = &Hobbies_Setter_Standalone;
 
             return vt;
         }
@@ -175,41 +177,170 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
         // ---------------------------------------------------------
         // Arrays Setters
         // ---------------------------------------------------------
-        public static unsafe void FirstName_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void FirstName_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->FirstName_MapEntryIndex);
 
-        public static unsafe void LastName_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void LastName_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->LastName_MapEntryIndex);
 
-        public static unsafe void Pseudonyme_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void Pseudonyme_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Pseudonyme_MapEntryIndex);
 
-        public static unsafe void Presentation_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void Presentation_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Presentation_MapEntryIndex);
 
-        public static unsafe void City_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void City_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->City_MapEntryIndex);
 
-        public static unsafe void Country_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void Country_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Country_MapEntryIndex);
 
-        public static unsafe void CompanyName_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void CompanyName_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->CompanyName_MapEntryIndex);
 
-        public static unsafe void Address1_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void Address1_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address1_MapEntryIndex);
 
-        public static unsafe void Address2_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void Address2_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address2_MapEntryIndex);
 
-        public static unsafe void Address3_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void Address3_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address3_MapEntryIndex);
 
-        public static unsafe void ZipCode_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void ZipCode_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->ZipCode_MapEntryIndex);
 
-        public static unsafe void Hobbies_Setter(BloggerUser body, GhostStringUtf16 src)
+        public static unsafe void Hobbies_Setter_Standalone(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body, MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Hobbies_MapEntryIndex);
+        #endregion
+
+        #region MAPPED MUTABLE
+        public static BloggerUser_VectorTable* GetMappedMutable()
+        {
+            var vt = GetCommon();
+
+            // -------- Function Pointers -------- //
+            // Values Setters
+            vt->Active_Setter = &Active_Setter_MappedMutable;
+            vt->CustomerCode_Setter = &CustomerCode_Setter_MappedMutable;
+            vt->BirthDate_Setter = &BirthDate_Setter_MappedMutable;
+
+            // Arrays Setters
+            vt->FirstName_Setter = &FirstName_Setter_MappedMutable;
+            vt->LastName_Setter = &LastName_Setter_MappedMutable;
+            vt->Pseudonyme_Setter = &Pseudonyme_Setter_MappedMutable;
+            vt->Presentation_Setter = &Presentation_Setter_MappedMutable;
+            vt->City_Setter = &City_Setter_MappedMutable;
+            vt->Country_Setter = &Country_Setter_MappedMutable;
+            vt->CompanyName_Setter = &CompanyName_Setter_MappedMutable;
+            vt->Address1_Setter = &Address1_Setter_MappedMutable;
+            vt->Address2_Setter = &Address2_Setter_MappedMutable;
+            vt->Address3_Setter = &Address3_Setter_MappedMutable;
+            vt->ZipCode_Setter = &ZipCode_Setter_MappedMutable;
+            vt->Hobbies_Setter = &Hobbies_Setter_MappedMutable;
+
+            return vt;
+        }
+
+        // ---------------------------------------------------------
+        // Value Setters
+        // ---------------------------------------------------------
+        public static unsafe void Active_Setter_MappedMutable(BloggerUser body, bool value)
+            => body._data.Set<bool>(body.ToStandalone()._vTable->Active_FieldOffset, value);
+
+        public static unsafe void CustomerCode_Setter_MappedMutable(BloggerUser body, int value)
+            => body._data.Set<int>(body.ToStandalone()._vTable->CustomerCode_FieldOffset, value);
+
+        public static unsafe void BirthDate_Setter_MappedMutable(BloggerUser body, DateTime value)
+            => body._data.Set<DateTime>(body.ToStandalone()._vTable->BirthDate_FieldOffset, value);
+
+        // ---------------------------------------------------------
+        // Arrays Setters
+        // ---------------------------------------------------------
+        public static unsafe void FirstName_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->FirstName_MapEntryIndex);
+
+        public static unsafe void LastName_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->LastName_MapEntryIndex);
+
+        public static unsafe void Pseudonyme_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Pseudonyme_MapEntryIndex);
+
+        public static unsafe void Presentation_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Presentation_MapEntryIndex);
+
+        public static unsafe void City_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->City_MapEntryIndex);
+
+        public static unsafe void Country_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Country_MapEntryIndex);
+
+        public static unsafe void CompanyName_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->CompanyName_MapEntryIndex);
+
+        public static unsafe void Address1_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address1_MapEntryIndex);
+
+        public static unsafe void Address2_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address2_MapEntryIndex);
+
+        public static unsafe void Address3_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Address3_MapEntryIndex);
+
+        public static unsafe void ZipCode_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->ZipCode_MapEntryIndex);
+
+        public static unsafe void Hobbies_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
+            => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Hobbies_MapEntryIndex);
+        
+        #endregion
+
+        #region MAPPED MUTABLE
+        public static BloggerUser_VectorTable* GetMappedReadOnly()
+        {
+            var vt = GetCommon();
+
+            // -------- Function Pointers -------- //
+            // Values Setters
+            vt->Active_Setter = &Active_Setter_MappedReadOnly;
+            vt->CustomerCode_Setter = &CustomerCode_Setter_MappedReadOnly;
+            vt->BirthDate_Setter = &BirthDate_Setter_MappedReadOnly;
+
+            // Arrays Setters
+            vt->FirstName_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->LastName_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->Pseudonyme_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->Presentation_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->City_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->Country_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->CompanyName_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->Address1_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->Address2_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->Address3_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->ZipCode_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+            vt->Hobbies_Setter = &GhostStringUtf16_Setter_MappedReadOnly;
+
+            return vt;
+        }
+
+        // ---------------------------------------------------------
+        // Value Setters
+        // ---------------------------------------------------------
+        public static unsafe void Active_Setter_MappedReadOnly(BloggerUser body, bool value)
+            => throw new InvalidOperationException("Cannot modify read-only body.");
+
+        public static unsafe void CustomerCode_Setter_MappedReadOnly(BloggerUser body, int value)
+            => throw new InvalidOperationException("Cannot modify read-only body.");
+
+        public static unsafe void BirthDate_Setter_MappedReadOnly(BloggerUser body, DateTime value)
+            => throw new InvalidOperationException("Cannot modify read-only body.");
+
+        // ---------------------------------------------------------
+        // Arrays Setters
+        // ---------------------------------------------------------
+        public static unsafe void GhostStringUtf16_Setter_MappedReadOnly(BloggerUser body, GhostStringUtf16 src)
+            => throw new InvalidOperationException("Cannot modify read-only body.");
+
         #endregion
     }
 }

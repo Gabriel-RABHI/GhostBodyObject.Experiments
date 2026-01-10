@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace GhostBodyObject.Repository.Body.Vectors
 {
     public unsafe static class VectorTableRegistry<TRepository, TBody>
-        where TRepository : GhostRepository
+        where TRepository : GhostRepositoryBase
         where TBody : BodyBase
     {
         private static VectorTableRecord* _versionToTable;
@@ -122,6 +122,16 @@ namespace GhostBodyObject.Repository.Body.Vectors
             else
                 body._vTablePtr = (nint)_versionToTable[ghost.Get<GhostHeader>().ModelVersion - 1].MappedMutable;
             body._data = ghost;
+        }
+
+        static public void MappedToStandaloneVersion(TBody body, GhostStatus newStatus)
+        {
+            var v = body._vTableHeader->ModelVersion;
+            var g = body._data;
+            body._vTablePtr = (nint)_versionToTable[v - 1].Standalone;
+            body._data = TransientGhostMemoryAllocator.Allocate(g.Length);
+            body.Header->Status = newStatus;
+            g.CopyTo(body._data);
         }
     }
 }

@@ -62,7 +62,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         /// Retrieves the entry with the specified Id from the appropriate shard.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TBody GetRef(GhostId id, out bool exists)
+        public TBody Get(GhostId id, out bool exists)
             => GetShard(id).GetRef(id, out exists);
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Repository.Body.Vectors;
+using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -90,6 +91,26 @@ namespace GhostBodyObject.Repository.Body.Contracts
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Header->Id;
+        }
+
+        public GhostStatus Status
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Header->Status;
+        }
+
+        public bool Inserted => Status == GhostStatus.Inserted;
+
+        public bool Mapped => Status == GhostStatus.Mapped;
+
+        public bool MappedModified => Status == GhostStatus.MappedModified;
+
+        public bool MappedDeleted => Status == GhostStatus.MappedDeleted;
+
+        public long TxnId
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Header->TxnId;
         }
 
         // -----------------------------------------------------------------

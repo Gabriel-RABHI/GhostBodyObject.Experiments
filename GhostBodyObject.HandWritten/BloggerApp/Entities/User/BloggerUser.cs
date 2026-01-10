@@ -17,6 +17,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
     public sealed partial class BloggerUser : BloggerBodyBase
     {
+        public static GhostTypeCombo TypeCombo => new GhostTypeCombo(GhostIdKind.Entity, 100);
         public const int ModelVersion = 1;
 
         public PinnedMemory<byte> Ghost => _data;
@@ -39,7 +40,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             }
         }
 
-        public BloggerUser(PinnedMemory<byte> ghost, bool mapped = true)
+        public BloggerUser(PinnedMemory<byte> ghost, bool mapped = true, bool register = true) : base(ghost)
         {
             unsafe
             {
@@ -47,8 +48,22 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                     VectorTableRegistry<BloggerRepository, BloggerUser>.BuildMappedVersion(ghost, this, Transaction.IsReadOnly);
                 else
                     VectorTableRegistry<BloggerRepository, BloggerUser>.BuildStandaloneVersion(ghost, this);
-                Transaction.RegisterBody(this);
+                if (register)
+                    Transaction.RegisterBody(this);
             }
+        }
+
+        public BloggerUser ToStandalone()
+        {
+            using (GuardWriteScope())
+            {
+                unsafe
+                {
+                    VectorTableRegistry<BloggerRepository, BloggerUser>.MappedToStandaloneVersion(this, GhostStatus.MappedModified);
+                    Transaction.RegisterBody(this);
+                }
+            }
+            return this;
         }
 
         public void Delete()
@@ -62,10 +77,15 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                     var h = Header;
                     switch (h->Status)
                     {
-                        case GhostStatus.Standalone:
+                        case GhostStatus.Inserted:
                             Transaction.RemoveBody(this);
                             break;
                         case GhostStatus.Mapped:
+                            VectorTableRegistry<BloggerRepository, BloggerUser>.MappedToStandaloneVersion(this, GhostStatus.MappedDeleted);
+                            Transaction.RegisterBody(this);
+                            break;
+                        case GhostStatus.MappedModified:
+                            h->Status = GhostStatus.MappedDeleted;
                             break;
                         case GhostStatus.MappedDeleted:
                             break;

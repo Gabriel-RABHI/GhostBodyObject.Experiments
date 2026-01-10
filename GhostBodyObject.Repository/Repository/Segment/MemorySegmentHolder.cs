@@ -5,13 +5,16 @@
 
         public MemorySegment Segment { get; set; }
 
+        public int Index { get; set; }
+
         public int ReferenceCount => _referenceCount;
 
         public bool Forgotten => Segment == null;
 
-        public MemorySegmentHolder(MemorySegment segment)
+        public MemorySegmentHolder(MemorySegment segment, int index)
         {
             Segment = segment;
+            Index = index;
         }
 
         public void IncrementReferenceCount() => Interlocked.Increment(ref _referenceCount);

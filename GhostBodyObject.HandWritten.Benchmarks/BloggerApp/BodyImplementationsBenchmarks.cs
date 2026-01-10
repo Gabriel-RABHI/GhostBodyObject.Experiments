@@ -35,7 +35,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             var bools = new bool[] { true, false, true, false };
             var strings = new string[] { "John", "Alice", "Bob", "Charlie" };
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 RunMonitoredAction(() =>
                 {

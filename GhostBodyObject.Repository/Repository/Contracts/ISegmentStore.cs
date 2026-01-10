@@ -7,6 +7,6 @@ namespace GhostBodyObject.Repository.Repository.Contracts
     {
         GhostHeader* ToGhostHeaderPointer(SegmentReference reference);
 
-        SegmentReference StoreGhost(PinnedMemory<byte> ghost);
+        SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId);
     }
 }

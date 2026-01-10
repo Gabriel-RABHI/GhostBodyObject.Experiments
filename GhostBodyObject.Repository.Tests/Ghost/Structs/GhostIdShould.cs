@@ -22,6 +22,17 @@ namespace GhostBodyObject.Common.Tests.Objects
         // ---------------------------------------------------------
         // 2. Construction & Packing Tests
         // ---------------------------------------------------------
+        [Fact]
+        public void TypeComboCorrect()
+        {
+            var tc = new GhostTypeCombo(GhostIdKind.Edge, 105);
+            Assert.Equal(GhostIdKind.Edge, tc.Kind);
+            Assert.Equal(105, tc.TypeIdentifier);
+
+            tc = new GhostTypeCombo(GhostIdKind.Entity, 100);
+            Assert.Equal(GhostIdKind.Entity, tc.Kind);
+            Assert.Equal(100, tc.TypeIdentifier);
+        }
 
         [Fact]
         public void Pack_And_Unpack_Fields_Correctly()
@@ -46,6 +57,8 @@ namespace GhostBodyObject.Common.Tests.Objects
             Assert.Equal(kind, id.Kind);
             Assert.Equal(typeId, id.TypeIdentifier);
             Assert.Equal(targetTime, id.CreatedAt);
+            Assert.Equal(kind, id.TypeCombo.Kind);
+            Assert.Equal(typeId, id.TypeCombo.TypeIdentifier);
         }
 
         [Fact]

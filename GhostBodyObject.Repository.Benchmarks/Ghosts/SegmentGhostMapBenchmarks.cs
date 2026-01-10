@@ -96,7 +96,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 => (GhostHeader*)((byte*)_basePointer + reference.Offset);
 
 
-            public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+            public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
             {
                 throw new NotImplementedException();
             }
@@ -138,7 +138,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
                 => (GhostHeader*)((byte*)_basePointer + reference.Offset);
                 
-            public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+            public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
             {
                 throw new NotImplementedException();
             }

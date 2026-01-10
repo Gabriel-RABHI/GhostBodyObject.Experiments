@@ -15,16 +15,20 @@ namespace GhostBodyObject.HandWritten.Blogger
         private static void OnContextChanged(AsyncLocalValueChangedArgs<BloggerTransaction?> args)
             => FastCache = args.CurrentValue;
 
-        public static IBloggerScope OpenReadContext(BloggerRepository repository, bool readOnly = false)
+        private static IBloggerScope NewContext(BloggerRepository repository, bool readOnly = false)
         {
             if (FastCache != null)
             {
                 throw new InvalidOperationException("Cannot nest contexts.");
             }
-            var newToken = new BloggerTransaction(repository);
+            var newToken = new BloggerTransaction(repository, readOnly);
             _currentToken.Value = newToken;
             return new BloggerContextScope(newToken);
         }
+
+        public static IBloggerScope NewWriteContext(BloggerRepository repository) => NewContext(repository, false);
+
+        public static IBloggerScope NewReadContext(BloggerRepository repository) => NewContext(repository, true);
 
         private class BloggerContextScope : IBloggerScope
         {

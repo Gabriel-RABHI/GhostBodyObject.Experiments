@@ -26,7 +26,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var user = CreateUser(repository);
 
@@ -41,7 +41,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var user = CreateUser(repository);
                 var id = user.Header->Id;
@@ -59,7 +59,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var user = CreateUser(repository);
                 index.Set(user);
@@ -78,7 +78,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var user1 = CreateUser(repository);
                 var id = user1.Header->Id;
@@ -106,7 +106,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 const int count = 100;
                 var users = new BloggerUser[count];
@@ -136,7 +136,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var user = CreateUser(repository);
                 var id = user.Header->Id;
@@ -158,7 +158,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var user = CreateUser(repository);
                 index.Set(user);
@@ -176,7 +176,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 const int count = 50;
                 var users = new BloggerUser[count];
@@ -223,7 +223,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
             // Start with small capacity to trigger resize
             var index = new TransactionBodyMap<BloggerUser>(16);
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 int initialCapacity = index.Capacity;
                 const int count = 100; // More than 75% of 16
@@ -257,7 +257,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>(16);
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 const int count = 100;
                 var users = new BloggerUser[count];
@@ -298,7 +298,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 const int count = 50;
                 var users = new HashSet<BloggerUser>();
@@ -342,7 +342,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var user = CreateUser(repository);
                 index.Set(user);
@@ -367,7 +367,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 const int count = 20;
                 var ids = new GhostId[count];
@@ -400,7 +400,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
             // Insert many entries to ensure collisions occur
             var index = new TransactionBodyMap<BloggerUser>(16);
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 const int count = 200;
                 var users = new BloggerUser[count];
@@ -431,7 +431,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
             // Insert entries and remove some to test ShiftBack with collisions
             var index = new TransactionBodyMap<BloggerUser>(16);
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 const int count = 100;
                 var users = new BloggerUser[count];
@@ -495,7 +495,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
         {
             var index = new TransactionBodyMap<BloggerUser>();
             var repository = CreateRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 const int count = 10;
                 var userSet = new HashSet<BloggerUser>();
