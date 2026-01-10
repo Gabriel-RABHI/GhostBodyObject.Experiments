@@ -18,8 +18,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
         public MemorySegmentStore(SegmentImplementationType t)
         {
             SegmentType = t;
-            _segmentHolders = new MemorySegmentHolder[64];
-            _segmentPointers = new byte*[64];
+            _segmentHolders = new MemorySegmentHolder[1024];
+            _segmentPointers = new byte*[1024];
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
         {
-            if (_currentHolder == null || _currentHolder.Segment.FreeSpace < ghost.Length)
+            if (_currentHolder == null || _currentHolder.Segment.FreeSpace < ghost.Length + 4)
             {
                 CreateSegment(1024 * 1024 * 8);
             }

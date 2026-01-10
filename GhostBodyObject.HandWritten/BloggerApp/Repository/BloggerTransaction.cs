@@ -102,6 +102,11 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                 throw new NotImplementedException();
             }
 
+            public BloggerUser Retreive(GhostId id)
+            {
+                throw new NotImplementedException();
+            }
+
             public void ForEach(Action<BloggerUser> action)
             {
                 unsafe

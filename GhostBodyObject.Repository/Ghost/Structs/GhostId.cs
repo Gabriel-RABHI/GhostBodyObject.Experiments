@@ -53,7 +53,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         [FieldOffset(14)]
         public readonly short ShardComputation;
 
-        [FieldOffset(0)]
+        [FieldOffset(6)]
         private readonly GhostTypeCombo _typeCombo;
 
         // ---------------------------------------------------------
