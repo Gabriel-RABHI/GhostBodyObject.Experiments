@@ -138,6 +138,34 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                     }
                 }
             }
+
+            public void ForEachCursor(Action<BloggerUser> action)
+            {
+                unsafe
+                {
+                    var map = _txn.Repository.GhostIndex.GetIndex(BloggerUser.TypeCombo, false);
+                    if (_txn.IsReadOnly)
+                    {
+                        if (map != null)
+                        {
+                            BloggerUser body = null;
+                            foreach (var segmentReference in map.GhostMap)
+                            {
+                                var ghost = _txn.Repository.Store.ToGhost(segmentReference);
+                                if (body == null)
+                                    body = new BloggerUser(ghost, true, true);
+                                else
+                                    body.SwapGhost(ghost);
+                                action(body);
+                            }
+                        }
+                    }
+                    else
+                    {
+
+                    }
+                }
+            }
         }
         #endregion
     }

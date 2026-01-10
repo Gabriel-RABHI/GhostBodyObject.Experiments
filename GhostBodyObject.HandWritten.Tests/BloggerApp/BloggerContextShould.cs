@@ -210,7 +210,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int j = 0; j < 1000000; j++)
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    for (int i=0;i< 5; i++)
+                    for (int i=0;i< 10; i++)
                     {
                         var user = new BloggerUser()
                         {
@@ -229,7 +229,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     var n = 0;
                     sw = Stopwatch.StartNew();
                     //Assert.True(BloggerContext.Transaction.BloggerUserCollection.Any());
-                    BloggerContext.Transaction.BloggerUserCollection.ForEach(user =>
+                    BloggerContext.Transaction.BloggerUserCollection.ForEachCursor(user =>
                     {
                         Assert.True(user.Active);
                         n++;

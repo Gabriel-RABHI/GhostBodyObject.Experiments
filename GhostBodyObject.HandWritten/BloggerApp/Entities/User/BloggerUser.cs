@@ -66,6 +66,9 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             return this;
         }
 
+        // TODO : change vPtr is version missmatch
+        public void SwapGhost(PinnedMemory<byte> ghost) => _data = ghost;
+
         public void Delete()
         {
             using (GuardWriteScope())
