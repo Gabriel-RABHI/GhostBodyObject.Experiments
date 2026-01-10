@@ -24,6 +24,8 @@ namespace GhostBodyObject.Repository.Repository
         private readonly List<WeakReference<RepositoryTransaction>> _transactions;
         private readonly IBodyFactory[] _bodyFactories;
 
+        protected RepositoryGhostIndex<MemorySegmentStore> Index => _index;
+
         public GhostRepository(SegmentImplementationType segmentType = SegmentImplementationType.LOHPinnedMemory, string path = default)
         {
             _store = new MemorySegmentStore(segmentType);

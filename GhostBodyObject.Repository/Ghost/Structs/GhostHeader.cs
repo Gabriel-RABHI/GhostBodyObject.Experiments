@@ -42,7 +42,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
             TxnId = 0;
             White = 0;
             ModelVersion = modelVersion;
-            Status = GhostStatus.Alive;
+            Status = GhostStatus.Standalone;
             Flags = 0x00;
             MutationCounter = 0;
         }

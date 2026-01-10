@@ -7,10 +7,13 @@ using System.Text;
 
 namespace GhostBodyObject.Repository.Repository.Transaction.Collections
 {
-    public ref struct BodyCollection<TBody> : IEnumerable<TBody>
+    public struct BodyCollection<TBody> : IEnumerable<TBody>
         where TBody : BodyBase
     {
         private ShardedTransactionBodyMap<TBody> _map;
+
+
+        public int Count => _map.Count;
 
         public BodyCollection(ShardedTransactionBodyMap<TBody> map)
         {

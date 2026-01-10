@@ -39,12 +39,7 @@ namespace GhostBodyObject.HandWritten.Entities.Repository
             => _arraysAsStringsAndSpansLargeMap.Set(body);
 
         public BodyCollection<ArraysAsStringsAndSpansLarge> ArraysAsStringsAndSpansLargeCollection
-        {
-            get
-            {
-                return new BodyCollection<ArraysAsStringsAndSpansLarge>(_arraysAsStringsAndSpansLargeMap);
-            }
-        }
+            => new BodyCollection<ArraysAsStringsAndSpansLarge>(_arraysAsStringsAndSpansLargeMap);
         #endregion
 
         #region
@@ -54,12 +49,7 @@ namespace GhostBodyObject.HandWritten.Entities.Repository
             => _arraysAsStringsAndSpansSmallMap.Set(body);
 
         public BodyCollection<ArraysAsStringsAndSpansSmall> ArraysAsStringsAndSpansSmallCollection
-        {
-            get
-            {
-                return new BodyCollection<ArraysAsStringsAndSpansSmall>(_arraysAsStringsAndSpansSmallMap);
-            }
-        }
+            => new BodyCollection<ArraysAsStringsAndSpansSmall>(_arraysAsStringsAndSpansSmallMap);
         #endregion
     }
 }

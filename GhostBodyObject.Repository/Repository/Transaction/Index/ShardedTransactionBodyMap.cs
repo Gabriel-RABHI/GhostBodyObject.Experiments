@@ -1,5 +1,7 @@
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Transaction.Index
@@ -9,7 +11,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
     /// Distributes entries across multiple <see cref="TransactionBodyMap{TBody}"/> shards
     /// to reduce contention and improve cache locality in concurrent scenarios.
     /// </summary>
-    public unsafe sealed class ShardedTransactionBodyMap<TBody>
+    public unsafe sealed class ShardedTransactionBodyMap<TBody> : IEnumerable<TBody>
         where TBody : BodyBase
     {
         // Default shard count of 8 - power of 2 for fast masking
@@ -120,10 +122,14 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ShardedEnumerator GetEnumerator() => new ShardedEnumerator(_shards);
 
+        IEnumerator<TBody> IEnumerable<TBody>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
         /// <summary>
         /// Allocation-free enumerator struct that iterates across all shards.
         /// </summary>
-        public struct ShardedEnumerator
+        public struct ShardedEnumerator : IEnumerator<TBody>
         {
             private readonly TransactionBodyMap<TBody>[] _shards;
             private int _shardIndex;
@@ -157,6 +163,16 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _currentEnum.Current;
             }
+
+            object IEnumerator.Current => Current;
+
+            public void Reset()
+            {
+                _shardIndex = 0;
+                _currentEnum = _shards.Length > 0 ? _shards[0].GetEnumerator() : default;
+            }
+
+            public void Dispose() { }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

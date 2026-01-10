@@ -23,7 +23,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
             {
                 var body = new ArraysAsStringsAndSpansLarge();
 
-                Assert.Equal(1, body.Transaction.ArraysAsStringsAndSpansLargeCollection.Count());
+                Assert.Equal(1, body.Transaction.ArraysAsStringsAndSpansLargeCollection.Count);
 
                 Assert.Equal(default(DateTime), body.OneDateTime);
                 Assert.Equal(0, body.OneInt);

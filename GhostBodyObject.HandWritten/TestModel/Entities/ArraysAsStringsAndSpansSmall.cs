@@ -34,6 +34,7 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             unsafe
             {
                 VectorTableRegistry<TestModelRepository, ArraysAsStringsAndSpansSmall>.BuildStandaloneVersion(ModelVersion, this);
+                Transaction.RegisterBody(this);
             }
         }
 
@@ -45,6 +46,7 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
                     VectorTableRegistry<TestModelRepository, ArraysAsStringsAndSpansSmall>.BuildMappedVersion(ghost, this, Transaction.IsReadOnly);
                 else
                     VectorTableRegistry<TestModelRepository, ArraysAsStringsAndSpansSmall>.BuildStandaloneVersion(ghost, this);
+                Transaction.RegisterBody(this);
             }
         }
 

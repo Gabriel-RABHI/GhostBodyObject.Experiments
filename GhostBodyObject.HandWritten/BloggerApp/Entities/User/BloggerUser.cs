@@ -3,6 +3,7 @@ using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Body.Vectors;
+using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -34,6 +35,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             unsafe
             {
                 VectorTableRegistry<BloggerRepository, BloggerUser>.BuildStandaloneVersion(ModelVersion, this);
+                Transaction.RegisterBody(this);
             }
         }
 
@@ -45,6 +47,30 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                     VectorTableRegistry<BloggerRepository, BloggerUser>.BuildMappedVersion(ghost, this, Transaction.IsReadOnly);
                 else
                     VectorTableRegistry<BloggerRepository, BloggerUser>.BuildStandaloneVersion(ghost, this);
+                Transaction.RegisterBody(this);
+            }
+        }
+
+        public void Delete()
+        {
+            using (GuardWriteScope())
+            {
+                unsafe
+                {
+                    if (_vTable->Std.ReadOnly)
+                        throw new InvalidOperationException("Cannot delete a body in a read-only transaction.");
+                    var h = Header;
+                    switch (h->Status)
+                    {
+                        case GhostStatus.Standalone:
+                            Transaction.RemoveBody(this);
+                            break;
+                        case GhostStatus.Mapped:
+                            break;
+                        case GhostStatus.MappedDeleted:
+                            break;
+                    }
+                }
             }
         }
 

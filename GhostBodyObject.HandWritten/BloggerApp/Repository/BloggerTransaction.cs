@@ -1,6 +1,9 @@
 ﻿using GhostBodyObject.HandWritten.BloggerApp.Entities.Post;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
+using GhostBodyObject.HandWritten.Entities.Arrays;
 using GhostBodyObject.Repository.Repository.Transaction;
+using GhostBodyObject.Repository.Repository.Transaction.Collections;
+using GhostBodyObject.Repository.Repository.Transaction.Index;
 
 namespace GhostBodyObject.HandWritten.Blogger.Repository
 {
@@ -27,13 +30,23 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         public BloggerTransaction(BloggerRepository repository, bool readOnly = false) : base(repository, readOnly)
         {
             Repository = repository;
+            _bloggerUserMap = new ShardedTransactionBodyMap<BloggerUser>();
         }
 
         // --------------------------------------------------------- //
         // The Entities
         // --------------------------------------------------------- //
-        public IEnumerable<BloggerUser> UserCollection => new BloggerUser[0];
+        #region
+        private ShardedTransactionBodyMap<BloggerUser> _bloggerUserMap;
 
-        public IEnumerable<BloggerPost> PostCollection => new BloggerPost[0];
+        public void RegisterBody(BloggerUser body)
+            => _bloggerUserMap.Set(body);
+
+        public void RemoveBody(BloggerUser body)
+            => _bloggerUserMap.Remove(body.Id);
+
+        public BodyCollection<BloggerUser> BloggerUserCollection
+            => new BodyCollection<BloggerUser>(_bloggerUserMap);
+        #endregion
     }
 }

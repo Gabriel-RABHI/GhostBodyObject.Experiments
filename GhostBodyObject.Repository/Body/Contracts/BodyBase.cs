@@ -86,6 +86,12 @@ namespace GhostBodyObject.Repository.Body.Contracts
             }
         }
 
+        public GhostId Id
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Header->Id;
+        }
+
         // -----------------------------------------------------------------
         // Generic Array Swap Helpers
         // -----------------------------------------------------------------

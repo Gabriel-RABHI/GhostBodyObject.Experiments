@@ -146,6 +146,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                         {
                             var user = new BloggerUser();
                             array[i% 32] = user;
+                            user.Delete();
                         }
                 })
                 .PrintToConsole($"Create {COUNT * 100:N0} initial BloggerUser")
@@ -165,6 +166,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                             var user = new BloggerUser();
                             user.FirstName = "Ted is in the wild.";
                             array[i % 32] = user;
+                            user.Delete();
                         }
                 })
                 .PrintToConsole($"Create {COUNT * 100:N0} BloggerUser with 1 string assigned")
@@ -185,6 +187,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                         {
                             var user = new BloggerUser(ghost, false);
                             array[i % 32] = user;
+                            user.Delete();
                         }
                 })
                 .PrintToConsole($"Create {COUNT * 100:N0} BloggerUser from existing Ghost")
