@@ -1,5 +1,6 @@
 ﻿using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Repository.Segment;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,6 +13,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction
         private readonly bool _isReadOnly;
         private List<GhostId> _inserted;
         private List<GhostId> _mappedMuted;
+        private long _openingTxnId;
+        private MemorySegmentStoreHolders _holders;
 
         public RepositoryTransactionBase(GhostRepositoryBase repository, bool isReadOnly)
         {
@@ -22,9 +25,13 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                 _inserted = new List<GhostId>();
                 _mappedMuted = new List<GhostId>();
             }
+            _holders = repository.Store.GetHolders();
+            _openingTxnId = repository.CurrentTransactionId;
         }
 
         public bool IsReadOnly => _isReadOnly;
+
+        public long OpeningTxnId => _openingTxnId;
 
         public List<GhostId> InsertedIds => _inserted;
 

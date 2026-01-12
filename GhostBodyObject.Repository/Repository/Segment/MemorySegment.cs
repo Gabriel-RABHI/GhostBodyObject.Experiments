@@ -11,7 +11,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
     {
         private byte[] _inMemoryData;
         private int _offset;
-
+        private long _startTxnId = long.MaxValue;
+        private long _endTxnId = long.MinValue;
         public SegmentImplementationType SegmentType { get; private set; }
 
         public byte* BasePointer { get; private set; }
@@ -87,6 +88,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public int InsertGhost(PinnedMemory<byte> data, long txnId)
         {
+            _startTxnId = Math.Min(_startTxnId, txnId);
+            _endTxnId = Math.Max(_endTxnId, txnId);
             var size = data.Length;
             if (_offset + size + 4 > _inMemoryData.Length)
                 throw new OverflowException();

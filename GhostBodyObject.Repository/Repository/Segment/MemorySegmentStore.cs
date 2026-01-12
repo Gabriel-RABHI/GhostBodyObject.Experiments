@@ -55,9 +55,14 @@ namespace GhostBodyObject.Repository.Repository.Segment
         /// </summary>
         /// <returns>An array of <see cref="MemorySegmentHolder"/> objects representing the current memory segment holders. The
         /// array may be empty if no holders are present.</returns>
-        public MemorySegmentHolder[] GetHolders()
+        public MemorySegmentStoreHolders GetHolders()
         {
-            return _segmentHolders;
+            return new MemorySegmentStoreHolders(_segmentHolders);
+        }
+
+        public void UpdateHolders(long bottomTxnId, long topTxnId)
+        {
+            // TODO : remove segments that are holding only ghosts from transactions older than bottomTxnId
         }
 
         public int CreateSegment(int capacity)

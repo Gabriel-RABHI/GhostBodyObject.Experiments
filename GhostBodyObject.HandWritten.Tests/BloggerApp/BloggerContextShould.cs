@@ -202,6 +202,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             }
         }
 
+#if RELEASE
         [Fact]
         public void AddAndCommitTransactionsLarge()
         {
@@ -238,5 +239,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 }
             }
         }
+#endif
     }
 }

@@ -23,16 +23,17 @@ namespace GhostBodyObject.Repository.Repository
         /// The ghost index that reference memory segment.
         /// </summary>
         private readonly RepositoryGhostIndex<MemorySegmentStore> _ghostIndex;
-        private long _txnId = 0;
+        private GhostRepositoryTransactionIdRange _transactionRange = new GhostRepositoryTransactionIdRange();
 
-        public long TransactionId => _txnId;
+        public long CurrentTransactionId => _transactionRange.CurrentTransactionId;
 
         public void CommitTransaction(Action<long> commiter)
         {
             lock (_locker)
             {
-                _txnId++;
-                commiter(_txnId);
+                var commitedId = _transactionRange.CurrentTransactionId;
+                commiter(commitedId);
+                _transactionRange.IncrementGetCurrentTransactionId();
             }
         }
 
@@ -45,5 +46,49 @@ namespace GhostBodyObject.Repository.Repository
         }
 
         public MemorySegmentStore Store => _store;
+
+        /// <summary>
+        /// When a transaction is opened, his _openingTxnId field is the view generation of the ghost repository.
+        /// The 
+        /// </summary>
+        /// <param name="tnx"></param>
+        public void Retain(RepositoryTransactionBase tnx)
+        {
+            _transactionRange.IncrementTransactionViewId(tnx.OpeningTxnId);
+        }
+
+        public void Forget(RepositoryTransactionBase tnx)
+        {
+            if (_transactionRange.DecrementTransactionViewId(tnx.OpeningTxnId))
+            {
+                Store.UpdateHolders(_transactionRange.BottomTransactionId, _transactionRange.TopTransactionId);
+            }
+        }
+    }
+
+    public class GhostRepositoryTransactionIdRange
+    {
+        public long _currentTxnId = 0;
+
+        public long CurrentTransactionId => _currentTxnId;
+
+        public long BottomTransactionId => throw new NotImplementedException();
+
+        public long TopTransactionId => throw new NotImplementedException();
+
+        public long IncrementGetCurrentTransactionId()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IncrementTransactionViewId(long txnId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool DecrementTransactionViewId(long txnId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
