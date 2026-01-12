@@ -12,8 +12,8 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
 {
     public class BloggerRepository : GhostRepositoryBase
     {
-        public BloggerRepository(SegmentImplementationType segmentType = SegmentImplementationType.LOHPinnedMemory, string path = default)
-            : base(segmentType, path)
+        public BloggerRepository(SegmentStoreMode mode = SegmentStoreMode.InMemoryRepository, string path = default)
+            : base(mode, path)
         {
         }
     }

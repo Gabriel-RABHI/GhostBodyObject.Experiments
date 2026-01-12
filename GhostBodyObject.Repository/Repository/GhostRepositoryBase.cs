@@ -39,9 +39,9 @@ namespace GhostBodyObject.Repository.Repository
 
         public RepositoryGhostIndex<MemorySegmentStore> GhostIndex => _ghostIndex;
 
-        public GhostRepositoryBase(SegmentImplementationType segmentType = SegmentImplementationType.LOHPinnedMemory, string path = default)
+        public GhostRepositoryBase(SegmentStoreMode mode = SegmentStoreMode.InMemoryRepository, string path = default)
         {
-            _store = new MemorySegmentStore(segmentType);
+            _store = new MemorySegmentStore(mode);
             _ghostIndex = new RepositoryGhostIndex<MemorySegmentStore>(_store);
         }
 
@@ -63,32 +63,6 @@ namespace GhostBodyObject.Repository.Repository
             {
                 Store.UpdateHolders(_transactionRange.BottomTransactionId, _transactionRange.TopTransactionId);
             }
-        }
-    }
-
-    public class GhostRepositoryTransactionIdRange
-    {
-        public long _currentTxnId = 0;
-
-        public long CurrentTransactionId => _currentTxnId;
-
-        public long BottomTransactionId => throw new NotImplementedException();
-
-        public long TopTransactionId => throw new NotImplementedException();
-
-        public long IncrementGetCurrentTransactionId()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool IncrementTransactionViewId(long txnId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool DecrementTransactionViewId(long txnId)
-        {
-            throw new NotImplementedException();
         }
     }
 }

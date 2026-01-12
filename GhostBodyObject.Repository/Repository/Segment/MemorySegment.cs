@@ -1,6 +1,7 @@
 ﻿using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
+using GhostBodyObject.Repository.Repository.Structs;
 using System;
 using System.ComponentModel;
 using System.Drawing;
@@ -13,6 +14,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private int _offset;
         private long _startTxnId = long.MaxValue;
         private long _endTxnId = long.MinValue;
+        private SegmentHeader* _header;
+
         public SegmentImplementationType SegmentType { get; private set; }
 
         public byte* BasePointer { get; private set; }
@@ -20,12 +23,12 @@ namespace GhostBodyObject.Repository.Repository.Segment
         public bool Deletable { get; private set; }
 
 
-        public static MemorySegment NewInMemory(int id, int capacity = 1024 * 1024 * 8)
+        public static MemorySegment NewInMemory(SegmentStoreMode mode, int id, int capacity = 1024 * 1024 * 8)
         {
-            return new MemorySegment(SegmentImplementationType.LOHPinnedMemory, id, capacity, true, null, null, null);
+            return new MemorySegment(mode, SegmentImplementationType.LOHPinnedMemory, id, capacity, true, null, null, null);
         }
 
-        private MemorySegment(SegmentImplementationType t, int id, int capacity, bool deletable = true, string? directoryPath = null, string? prefix = null, string? name = null)
+        private MemorySegment(SegmentStoreMode mode, SegmentImplementationType t, int id, int capacity, bool deletable = true, string? directoryPath = null, string? prefix = null, string? name = null)
         {
             if (capacity < 1024)
                 throw new InvalidOperationException(nameof(capacity));
@@ -38,6 +41,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     fixed (byte* p = &_inMemoryData[0])
                     {
                         BasePointer = p;
+                        _header = (SegmentHeader*)p;
                     }
                     break;
                 case SegmentImplementationType.ProtectedMemoryMappedFile:
@@ -53,6 +57,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     }
                     break;
             }
+            *_header = SegmentHeader.Create(mode, id, capacity);
         }
 
         ~MemorySegment()
@@ -109,9 +114,26 @@ namespace GhostBodyObject.Repository.Repository.Segment
             int size = sizeof(T);
             if (_offset + size > _inMemoryData.Length)
                 throw new OverflowException();
+            T* r;
             fixed (byte* p = &_inMemoryData[_offset])
             {
-                *(T*)p = value;
+                r = (T*)p;
+                *r = value;
+            }
+            int currentOffset = _offset;
+            _offset += size;
+            return currentOffset;
+        }
+
+        public int Write<T>(T value, out T* r) where T : unmanaged
+        {
+            int size = sizeof(T);
+            if (_offset + size > _inMemoryData.Length)
+                throw new OverflowException();
+            fixed (byte* p = &_inMemoryData[_offset])
+            {
+                r = (T*)p;
+                *r = value;
             }
             int currentOffset = _offset;
             _offset += size;

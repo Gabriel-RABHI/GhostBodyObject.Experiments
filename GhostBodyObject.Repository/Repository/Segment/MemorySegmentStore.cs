@@ -8,18 +8,41 @@ namespace GhostBodyObject.Repository.Repository.Segment
 {
     public sealed unsafe class MemorySegmentStore : ISegmentStore
     {
+        private SegmentStoreMode _storeMode;
+        private SegmentImplementationType _implementationType;
+        private bool _isPersistant = false;
+
         private MemorySegmentHolder[] _segmentHolders;
         private MemorySegmentHolder _currentHolder;
         private byte*[] _segmentPointers;
         private int _lastSegmentId = 0;
 
-        public SegmentImplementationType SegmentType { get; private set; }
+        public SegmentImplementationType ImplementationType => _implementationType;
 
-        public MemorySegmentStore(SegmentImplementationType t)
+        public SegmentStoreMode StoreMode { get; private set; }
+
+        public bool IsPersistant => _isPersistant;
+
+        public MemorySegmentStore(SegmentStoreMode mode)
         {
-            SegmentType = t;
-            _segmentHolders = new MemorySegmentHolder[1024];
-            _segmentPointers = new byte*[1024];
+            _storeMode = mode;
+            switch (_storeMode)
+            {
+                case SegmentStoreMode.InMemoryRepository:
+                case SegmentStoreMode.InMemoryLog:
+                    _implementationType = SegmentImplementationType.LOHPinnedMemory;
+                    _isPersistant = false;
+                    break;
+                case SegmentStoreMode.PersistantRepository:
+                case SegmentStoreMode.PersistantLog:
+                    _implementationType = SegmentImplementationType.ProtectedMemoryMappedFile;
+                    _isPersistant = true;
+                    break;
+                default:
+                    throw new InvalidOperationException("Unsupported Segment Store Mode.");
+            }
+            _segmentHolders = new MemorySegmentHolder[16];
+            _segmentPointers = new byte*[16];
         }
 
         /// <summary>
@@ -68,10 +91,10 @@ namespace GhostBodyObject.Repository.Repository.Segment
         public int CreateSegment(int capacity)
         {
             MemorySegment segment = null;
-            switch (SegmentType)
+            switch (_implementationType)
             {
                 case SegmentImplementationType.LOHPinnedMemory:
-                    segment = MemorySegment.NewInMemory(_lastSegmentId, capacity);
+                    segment = MemorySegment.NewInMemory(_storeMode, _lastSegmentId, capacity);
                     break;
                 case SegmentImplementationType.ProtectedMemoryMappedFile:
                     throw new NotImplementedException();
@@ -84,6 +107,15 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private int AddSegment(MemorySegment segment)
         {
             int segmentId = _lastSegmentId;
+
+            if (segmentId >= _segmentHolders.Length)
+            {
+                Array.Resize(ref _segmentHolders, _segmentHolders.Length * 2);
+                var newPointers = new byte*[_segmentPointers.Length * 2];
+                Array.Copy(_segmentPointers, newPointers, _segmentPointers.Length);
+                _segmentPointers = newPointers;
+            }
+
             _currentHolder = new MemorySegmentHolder(segment, segmentId);
             _segmentHolders[segmentId] = _currentHolder;
             _segmentPointers[segmentId] = segment.BasePointer;
