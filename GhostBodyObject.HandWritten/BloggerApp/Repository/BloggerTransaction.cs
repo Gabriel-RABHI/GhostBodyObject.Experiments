@@ -4,6 +4,7 @@ using GhostBodyObject.HandWritten.Entities.Arrays;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository;
+using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Index;
 using GhostBodyObject.Repository.Repository.Segment;
 using GhostBodyObject.Repository.Repository.Transaction;
@@ -12,10 +13,12 @@ using GhostBodyObject.Repository.Repository.Transaction.Index;
 
 namespace GhostBodyObject.HandWritten.Blogger.Repository
 {
-    public class BloggerTransaction : RepositoryTransactionBase
+    public class BloggerTransaction : RepositoryTransactionBase, IModifiedBodyStream
     {
         private BloggerRepository _repository;
         private bool _closed;
+        private int _mapIndex = 0;
+        private int _indexInMap = 0;
 
         public BloggerRepository Repository => _repository;
 
@@ -26,17 +29,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             if (_closed)
                 throw new InvalidOperationException("Cannot commit a closed transaction.");
 
-            _repository.CommitTransaction((ref StoreTransactionWriter writer) =>
-            {
-                foreach (var ids in InsertedIds)
-                {
-                    var body = _bloggerUserMap.Get(ids, out var exist);
-                    if (exist)
-                    {
-                        var segmentReference = writer.StoreGhost(body._data);
-                    }
-                }
-            });
+            _repository.CommitTransaction(this);
         }
 
         public void Rollback()
@@ -68,6 +61,14 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         }
 
         // --------------------------------------------------------- //
+        // Streaming For Transaction
+        // --------------------------------------------------------- //
+        public void ReadModifiedBodies(Action<BodyBase> reader)
+        {
+            _bloggerUserMap.ReadModifiedBodies(reader);
+        }
+
+        // --------------------------------------------------------- //
         // The Entities
         // --------------------------------------------------------- //
         #region
@@ -76,16 +77,16 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         public void RegisterBody(BloggerUser body)
         {
             if (body.Inserted)
-                InsertedIds.Add(body.Id);
+                _bloggerUserMap.InsertedIds.Add(body.Id);
             if (body.MappedDeleted || body.MappedModified)
-                MappedMutedIds.Add(body.Id);
+                _bloggerUserMap.MappedMutedIds.Add(body.Id);
             _bloggerUserMap.Set(body);
         }
 
         public void RemoveBody(BloggerUser body)
         {
             _bloggerUserMap.Remove(body.Id);
-            InsertedIds.Remove(body.Id);
+            _bloggerUserMap.InsertedIds.Remove(body.Id);
         }
 
         public BloggerUserTxnCollection BloggerUserCollection

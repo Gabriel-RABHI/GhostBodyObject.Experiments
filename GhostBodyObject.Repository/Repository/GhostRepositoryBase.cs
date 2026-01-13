@@ -29,12 +29,15 @@
  * --------------------------------------------------------------------------
  */
 
+using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Repository.Constants;
+using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Index;
 using GhostBodyObject.Repository.Repository.Segment;
 using GhostBodyObject.Repository.Repository.Structs;
 using GhostBodyObject.Repository.Repository.Transaction;
+using System.Collections.Specialized;
 
 namespace GhostBodyObject.Repository.Repository
 {
@@ -67,21 +70,63 @@ namespace GhostBodyObject.Repository.Repository
         public MemorySegmentStore Store => _store;
         #endregion
 
-        public void CommitTransaction(TransactionCommiter commiter)
+        public void CommitTransaction<T>(T commiter, bool twoStage = false)
+            where T : IModifiedBodyStream
         {
-            lock (_locker)
+            if (twoStage)
             {
-                var writer = new StoreTransactionWriter()
+                // -------- Split this process in two steps -------- //
+                // 1. Compute the necessary space, reserve it in the store.
+                List<BodyBase> modifiedBodies = new List<BodyBase>();
+                lock (_locker)
                 {
-                    Repository = this,
-                    Store = _store,
-                    TransactionId = _transactionRange.CurrentTransactionId
-                };
-                writer.OpenTransaction();
-                commiter(ref writer);
-                writer.CloseTransaction();
-                _transactionRange.IncrementCurrentTransactionId();
+                    commiter.ReadModifiedBodies((body) => modifiedBodies.Add(body));
+                    foreach (var body in modifiedBodies)
+                    {
+                        // reserve space int the store
+                    }
+                }
+                // 2. Write the transaction in the reserved store memory.
+                //    Concurrently, an another thread can enter the critical section to reserve Store space.
+                if (modifiedBodies.Count > 0)
+                {
+                    var writer = new StoreTransactionWriter()
+                    {
+                        Repository = this,
+                        Store = _store,
+                        TransactionId = _transactionRange.CurrentTransactionId
+                    };
+                    writer.OpenTransaction();
+                    foreach (var body in modifiedBodies)
+                        writer.StoreGhost(body._data);
+                    writer.CloseTransaction();
+                    _transactionRange.IncrementCurrentTransactionId();
+                }
             }
+            else
+            {
+                // -------- Single stage commit -------- //
+                lock (_locker)
+                {
+                    List<BodyBase> modifiedBodies = new List<BodyBase>();
+                    commiter.ReadModifiedBodies((body) => modifiedBodies.Add(body));
+                    if (modifiedBodies.Count > 0)
+                    {
+                        var writer = new StoreTransactionWriter()
+                        {
+                            Repository = this,
+                            Store = _store,
+                            TransactionId = _transactionRange.CurrentTransactionId
+                        };
+                        writer.OpenTransaction();
+                        foreach (var body in modifiedBodies)
+                            writer.StoreGhost(body._data);
+                        writer.CloseTransaction();
+                        _transactionRange.IncrementCurrentTransactionId();
+                    }
+                }
+            }
+                
         }
 
         public GhostRepositoryBase(SegmentStoreMode mode = SegmentStoreMode.InMemoryRepository, string path = default)

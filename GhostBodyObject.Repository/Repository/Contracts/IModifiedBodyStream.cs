@@ -29,33 +29,12 @@
  * --------------------------------------------------------------------------
  */
 
-using GhostBodyObject.Repository.Ghost.Structs;
-using GhostBodyObject.Repository.Repository.Contracts;
-using GhostBodyObject.Repository.Repository.Segment;
+using GhostBodyObject.Repository.Body.Contracts;
 
-namespace GhostBodyObject.Repository.Repository.Transaction
+namespace GhostBodyObject.Repository.Repository.Contracts
 {
-    public abstract class RepositoryTransactionBase
+    public unsafe interface IModifiedBodyStream
     {
-        private readonly GhostRepositoryBase _repository;
-        private readonly bool _isReadOnly;
-        private long _openingTxnId;
-        private MemorySegmentStoreHolders _holders;
-
-        public RepositoryTransactionBase(GhostRepositoryBase repository, bool isReadOnly)
-        {
-            _repository = repository;
-            _isReadOnly = isReadOnly;
-            _holders = repository.Store.GetHolders();
-            _openingTxnId = repository.CurrentTransactionId;
-        }
-
-        public bool IsReadOnly => _isReadOnly;
-
-        public bool NeedReborn => false; // throw new NotImplementedException();
-
-        public long OpeningTxnId => _openingTxnId;
-
-        public volatile bool IsBusy;
+        void ReadModifiedBodies(Action<BodyBase> reader);
     }
 }

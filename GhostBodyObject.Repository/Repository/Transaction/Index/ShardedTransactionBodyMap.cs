@@ -31,6 +31,7 @@
 
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Repository.Contracts;
 using System.Collections;
 using System.Runtime.CompilerServices;
 
@@ -41,13 +42,16 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
     /// Distributes entries across multiple <see cref="TransactionBodyMap{TBody}"/> shards
     /// to reduce contention and improve cache locality in concurrent scenarios.
     /// </summary>
-    public unsafe sealed class ShardedTransactionBodyMap<TBody> : IEnumerable<TBody>
+    public unsafe sealed class ShardedTransactionBodyMap<TBody> : IEnumerable<TBody>, IModifiedBodyStream
         where TBody : BodyBase
     {
         // Default shard count of 8 - power of 2 for fast masking
         private const int DefaultShardCount = 8;
         private readonly int _shardCount;
         private readonly int _shardMask;
+
+        private List<GhostId> _inserted;
+        private List<GhostId> _mappedMuted;
 
         private readonly TransactionBodyMap<TBody>[] _shards;
 
@@ -69,6 +73,23 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             {
                 _shards[i] = new TransactionBodyMap<TBody>(capPerShard);
             }
+        }
+
+        public List<GhostId> InsertedIds
+            => _inserted == null ? (_inserted = new List<GhostId>()) : _inserted;
+
+        public List<GhostId> MappedMutedIds
+            => _mappedMuted == null ? (_mappedMuted = new List<GhostId>()) : _mappedMuted;
+
+        
+        public void ReadModifiedBodies(Action<BodyBase> reader)
+        {
+            if (_inserted != null)
+                foreach (var id in _inserted)
+                    reader(Get(id, out var exist));
+            if (_mappedMuted != null)
+                foreach (var id in _mappedMuted)
+                    reader(Get(id, out var exist));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

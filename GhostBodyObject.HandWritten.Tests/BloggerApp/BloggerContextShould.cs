@@ -208,17 +208,20 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         {
             var repository = new BloggerRepository();
             var sw = Stopwatch.StartNew();
-            for (int j = 0; j < 1000000; j++)
+            long sum = 0;
+            for (int j = 0; j < 1_000; j++)
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    for (int i=0;i< 10; i++)
+                    for (int i=0;i< 10_000; i++)
                     {
                         var user = new BloggerUser()
                         {
                             Active = true,
                             FirstName = "John" + i,
-                            LastName = "Doe"
+                            LastName = "Doe",
+                            CustomerCode = i + (j % 99)
                         };
+                        sum += user.CustomerCode;
                     }
                     BloggerContext.Transaction.Commit();
                 }
@@ -227,15 +230,18 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             {
                 for (int i = 0; i < 3; i++)
                 {
+                    long verifySum = 0;
                     var n = 0;
                     sw = Stopwatch.StartNew();
                     //Assert.True(BloggerContext.Transaction.BloggerUserCollection.Any());
                     BloggerContext.Transaction.BloggerUserCollection.ForEachCursor(user =>
                     {
                         Assert.True(user.Active);
+                        verifySum += user.CustomerCode;
                         n++;
                     });
                     Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
+                    Assert.Equal(sum, verifySum);
                 }
             }
         }
