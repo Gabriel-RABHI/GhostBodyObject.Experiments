@@ -121,6 +121,22 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             {
                 throw new NotImplementedException();
             }
+
+            public Dictionary<uint, int> UsageCounts = new();
+
+            public void IncrementSegmentHolderUsage(uint segmentId)
+            {
+                if (!UsageCounts.ContainsKey(segmentId))
+                    UsageCounts[segmentId] = 0;
+                UsageCounts[segmentId]++;
+            }
+
+            public void DecrementSegmentHolderUsage(uint segmentId)
+            {
+                if (!UsageCounts.ContainsKey(segmentId))
+                    UsageCounts[segmentId] = 0;
+                UsageCounts[segmentId]--;
+            }
         }
 
         // ---------------------------------------------------------

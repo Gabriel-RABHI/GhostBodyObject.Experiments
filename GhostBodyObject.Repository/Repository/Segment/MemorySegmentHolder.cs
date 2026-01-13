@@ -29,6 +29,8 @@
  * --------------------------------------------------------------------------
  */
 
+using System.Runtime.CompilerServices;
+
 namespace GhostBodyObject.Repository.Repository.Segment
 {
     public sealed class MemorySegmentHolder {
@@ -48,8 +50,12 @@ namespace GhostBodyObject.Repository.Repository.Segment
             Index = index;
         }
 
-        public void IncrementReferenceCount() => Interlocked.Increment(ref _referenceCount);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void IncrementReferenceCount()
+            => Interlocked.Increment(ref _referenceCount);
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool DecrementReferenceCount()
             => Interlocked.Decrement(ref _referenceCount) == 0;
     }

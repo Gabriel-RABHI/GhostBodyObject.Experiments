@@ -69,6 +69,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             private SmallGhostBlock[] _blocks;
             private GCHandle _handle;
             private SmallGhostBlock* _basePointer;
+            private int _usageCount = 0;
 
             public SmallPinnedSegmentStore(int capacity)
             {
@@ -101,6 +102,17 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 throw new NotImplementedException();
             }
 
+
+            public void IncrementSegmentHolderUsage(uint segmentId)
+            {
+                Interlocked.Increment(ref _usageCount);
+            }
+
+            public void DecrementSegmentHolderUsage(uint segmentId)
+            {
+                Interlocked.Decrement(ref _usageCount);
+            }
+
             public long TotalMemoryBytes => (long)_blocks.Length * SMALL_BLOCK_SIZE;
         }
 
@@ -112,6 +124,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             private LargeGhostBlock[] _blocks;
             private GCHandle _handle;
             private LargeGhostBlock* _basePointer;
+            private int _usageCount = 0;
 
             public LargePinnedSegmentStore(int capacity)
             {
@@ -141,6 +154,16 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
             {
                 throw new NotImplementedException();
+            }
+
+            public void IncrementSegmentHolderUsage(uint segmentId)
+            {
+                Interlocked.Increment(ref _usageCount);
+            }
+
+            public void DecrementSegmentHolderUsage(uint segmentId)
+            {
+                Interlocked.Decrement(ref _usageCount);
             }
 
             public long TotalMemoryBytes => (long)_blocks.Length * LARGE_BLOCK_SIZE;

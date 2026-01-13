@@ -69,23 +69,6 @@ namespace GhostBodyObject.Repository.Repository.Segment
             _segmentPointers = new byte*[2];
         }
 
-        /// <summary>
-        /// Called when adding a reference to a segment in the Ghost Map
-        /// </summary>
-        /// <param name="segmentId"></param>
-        public void IncrementSegmentReferenceCount(int segmentId)
-        {
-            _segmentHolders[segmentId].IncrementReferenceCount();
-        }
-
-        public void DecrementSegmentReferenceCount(int segmentId)
-        {
-            if (_segmentHolders[segmentId].DecrementReferenceCount())
-            {
-                RebuildSegmentHolders();
-            }
-        }
-
         public void RebuildSegmentHolders()
         {
             var newHolders = new MemorySegmentHolder[_segmentHolders.Length];
@@ -95,6 +78,21 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     newHolders[i] = _segmentHolders[i];
             }
             _segmentHolders = newHolders;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void IncrementSegmentHolderUsage(uint segmentId)
+        {
+            _segmentHolders[segmentId].IncrementReferenceCount();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DecrementSegmentHolderUsage(uint segmentId)
+        {
+            if (_segmentHolders[segmentId].DecrementReferenceCount())
+            {
+                RebuildSegmentHolders();
+            }
         }
 
         /// <summary>

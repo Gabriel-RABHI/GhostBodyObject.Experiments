@@ -306,6 +306,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                             randomParts[firstTombstoneIndex] = newRandomPart;
                             _count++;
                             _tombstoneCount--;
+                            _store.IncrementSegmentHolderUsage(r.SegmentId);
                         }
                         else
                         {
@@ -313,6 +314,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                             randomParts[index] = newRandomPart;
                             _count++;
                             _occupied++;
+                            _store.IncrementSegmentHolderUsage(r.SegmentId);
                         }
                     }
                     return;
@@ -339,7 +341,9 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                         if (currentTxnId == newTxnId)
                         {
                             // Logical duplicate (same ID, same Version) -> Update logic.
+                            _store.DecrementSegmentHolderUsage(current.SegmentId);
                             entries[index] = r;
+                            _store.IncrementSegmentHolderUsage(r.SegmentId);
                             insertionPending = false;
                         }
 
@@ -373,17 +377,21 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                                 }
 
                                 // Dispose of the garbage slot
+                                var garbageRef = entries[garbageIndex];
                                 if (insertionPending)
                                 {
                                     // Recycle for the new insertion
+                                    _store.DecrementSegmentHolderUsage(garbageRef.SegmentId);
                                     entries[garbageIndex] = r;
                                     randomParts[garbageIndex] = newRandomPart;
+                                    _store.IncrementSegmentHolderUsage(r.SegmentId);
                                     insertionPending = false;
                                     // Count unchanged (1 replace 1)
                                 }
                                 else
                                 {
                                     // Mark as tombstone
+                                    _store.DecrementSegmentHolderUsage(garbageRef.SegmentId);
                                     entries[garbageIndex] = SegmentReference.Tombstone;
                                     randomParts[garbageIndex] = RandomPart_Tombstone;
                                     _count--;
@@ -467,6 +475,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                         randomParts[firstTombstoneIndex] = newRandomPart;
                         _count++;
                         _tombstoneCount--;
+                        _store.IncrementSegmentHolderUsage(r.SegmentId);
                         return;
                     }
 
@@ -475,6 +484,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                     randomParts[index] = newRandomPart;
                     _count++;
                     _occupied++;
+                    _store.IncrementSegmentHolderUsage(r.SegmentId);
                     return;
                 }
 
@@ -496,7 +506,9 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                     if (existingHeader != null && existingHeader->Id == newId && existingHeader->TxnId == newTxnId)
                     {
                         // Logical duplicate found - update the reference
+                        _store.DecrementSegmentHolderUsage(current.SegmentId);
                         entries[index] = r;
+                        _store.IncrementSegmentHolderUsage(r.SegmentId);
                         // randomParts[index] unchanged (same Id)
                         return;
                     }
@@ -627,6 +639,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                         if (h != null && h->Id == id && h->TxnId == txnId)
                         {
                             // Mark as Tombstone
+                            _store.DecrementSegmentHolderUsage(current.SegmentId);
                             entries[index] = SegmentReference.Tombstone;
                             randomParts[index] = RandomPart_Tombstone;
                             _count--;

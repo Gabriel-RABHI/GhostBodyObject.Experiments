@@ -39,5 +39,9 @@ namespace GhostBodyObject.Repository.Repository.Contracts
         GhostHeader* ToGhostHeaderPointer(SegmentReference reference);
 
         SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId);
+
+        void IncrementSegmentHolderUsage(uint segmentId);
+
+        void DecrementSegmentHolderUsage(uint segmentId);
     }
 }

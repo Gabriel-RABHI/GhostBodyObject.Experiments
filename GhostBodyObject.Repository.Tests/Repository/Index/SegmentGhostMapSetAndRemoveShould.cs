@@ -253,5 +253,66 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             Assert.True(map.Get(id, 25, out var res25));
             Assert.Equal(20, store.ToGhostHeaderPointer(res25)->TxnId);
         }
+
+        [Fact]
+        public void Verify_Segment_Usage_Counting()
+        {
+            var store = new FakeSegmentStore();
+            var map = new SegmentGhostMap<FakeSegmentStore>(store);
+            var id = new GhostId(GhostIdKind.Entity, 6, 6, 6);
+
+            // 1. Initial Insert (Set)
+            var r10 = store.NewHeader(id, 10);
+            // r10.Reference.SegmentId is 0 by default in FakeStore
+            store.Update(map);
+            
+            // Usage of Segment 0 should be 1
+            Assert.Equal(1, store.UsageCounts[0]);
+
+            // 2. Second Insert (Set)
+            var r20 = store.NewHeader(id, 20);
+            store.Update(map);
+            
+            // Usage of Segment 0 should be 2
+            Assert.Equal(2, store.UsageCounts[0]);
+
+            // 3. SetAndRemove - Insert New, Prune Old
+            // Insert V30, Bottom = 25.
+            // V10 (Txn 10) <= 25.
+            // V20 (Txn 20) <= 25. V20 > V10.
+            // V10 is Garbage.
+            // V10 should be recycled for V30.
+            // Net result: V10 removed (Dec), V30 added (Inc).
+            // Usage should remain 2.
+            
+            var r30 = store.NewHeader(id, 30);
+            fixed (GhostHeader* h = &r30.Header)
+            {
+                map.SetAndRemove(r30.Reference, h, 25);
+            }
+
+            Assert.Equal(2, store.UsageCounts[0]);
+
+            // 4. SetAndRemove - No Pruning (Pure Insert)
+            // Insert V40, Bottom = 25.
+            // V20 <= 25 (Best Old).
+            // V30 > 25.
+            // V40 > 25.
+            // No garbage.
+            // V40 added. Usage -> 3.
+            
+            var r40 = store.NewHeader(id, 40);
+            fixed (GhostHeader* h = &r40.Header)
+            {
+                map.SetAndRemove(r40.Reference, h, 25);
+            }
+            
+            Assert.Equal(3, store.UsageCounts[0]);
+
+            // 5. Remove (Explicit)
+            map.Remove(id, 40); // Remove V40
+            // Usage -> 2
+            Assert.Equal(2, store.UsageCounts[0]);
+        }
     }
 }
