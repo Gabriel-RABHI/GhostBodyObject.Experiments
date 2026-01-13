@@ -1,10 +1,37 @@
-﻿using GhostBodyObject.Repository.Body.Contracts;
-using GhostBodyObject.Repository.Body.Vectors;
-using System;
-using System.Collections.Generic;
+﻿/*
+ * Copyright (c) 2026 Gabriel RABHI / DOT-BEES
+ *
+ * This file is part of Ghost-Body-Object (GBO).
+ *
+ * Ghost-Body-Object (GBO) is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Ghost-Body-Object (GBO) is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * --------------------------------------------------------------------------
+ *
+ * COMMERICIAL LICENSING:
+ *
+ * If you wish to use this software in a proprietary (closed-source) application,
+ * you must purchase a Commercial License from Gabriel RABHI / DOT-BEES.
+ *
+ * For licensing inquiries, please contact: <mailto:gabriel.rabhi@gmail.com>
+ * or visit: <https://www.ghost-body-object.com>
+ *
+ * --------------------------------------------------------------------------
+ */
+
+using GhostBodyObject.Repository.Body.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace GhostBodyObject.Repository.Ghost.Values
 {
@@ -425,7 +452,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
         {
             if (newLength < 0)
                 throw new ArgumentOutOfRangeException(nameof(newLength));
-            
+
             int currentLength = Length;
             if (newLength == currentLength)
                 return;
@@ -617,7 +644,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
         {
             if (value.IsEmpty)
                 return 0;
-            
+
             var span = AsSpan();
             if (value.Length > span.Length)
                 return -1;
@@ -677,7 +704,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
         {
             if (value.IsEmpty)
                 return Length;
-            
+
             var span = AsSpan();
             if (value.Length > span.Length)
                 return -1;
@@ -1126,12 +1153,12 @@ namespace GhostBodyObject.Repository.Ghost.Values
             comparer ??= Comparer<T>.Default;
             int lo = 0;
             int hi = span.Length - 1;
-            
+
             while (lo <= hi)
             {
                 int mid = lo + ((hi - lo) >> 1);
                 int cmp = comparer.Compare(span[mid], value);
-                
+
                 if (cmp == 0)
                     return mid;
                 if (cmp < 0)
@@ -1139,7 +1166,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
                 else
                     hi = mid - 1;
             }
-            
+
             return ~lo;
         }
 
@@ -1169,7 +1196,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
             var span = AsSpan();
             if (span.IsEmpty)
                 return "[]";
-            
+
             return $"[{string.Join(", ", ToArray())}]";
         }
 

@@ -1,14 +1,39 @@
-﻿using GhostBodyObject.Common.SpinLocks;
-using GhostBodyObject.Repository.Ghost.Constants;
+﻿/*
+ * Copyright (c) 2026 Gabriel RABHI / DOT-BEES
+ *
+ * This file is part of Ghost-Body-Object (GBO).
+ *
+ * Ghost-Body-Object (GBO) is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Ghost-Body-Object (GBO) is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * --------------------------------------------------------------------------
+ *
+ * COMMERICIAL LICENSING:
+ *
+ * If you wish to use this software in a proprietary (closed-source) application,
+ * you must purchase a Commercial License from Gabriel RABHI / DOT-BEES.
+ *
+ * For licensing inquiries, please contact: <mailto:gabriel.rabhi@gmail.com>
+ * or visit: <https://www.ghost-body-object.com>
+ *
+ * --------------------------------------------------------------------------
+ */
+
+using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Structs;
-using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
 
 namespace GhostBodyObject.Repository.Repository.Index
 {
@@ -18,7 +43,7 @@ namespace GhostBodyObject.Repository.Repository.Index
         private ShortSpinLock _lock = new ShortSpinLock();
         private TSegmentStore _store;
         private RepositorySingleKindGhostIndex<TSegmentStore>[] _maps;
-        
+
         public RepositoryGhostIndex(TSegmentStore store)
         {
             _store = store;
@@ -80,7 +105,8 @@ namespace GhostBodyObject.Repository.Repository.Index
                     {
                         _lock.Exit();
                     }
-                } else return null;
+                }
+                else return null;
             }
             return typeMap;
         }

@@ -1,4 +1,35 @@
-﻿using GhostBodyObject.Common.SpinLocks;
+﻿/*
+ * Copyright (c) 2026 Gabriel RABHI / DOT-BEES
+ *
+ * This file is part of Ghost-Body-Object (GBO).
+ *
+ * Ghost-Body-Object (GBO) is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Ghost-Body-Object (GBO) is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * --------------------------------------------------------------------------
+ *
+ * COMMERICIAL LICENSING:
+ *
+ * If you wish to use this software in a proprietary (closed-source) application,
+ * you must purchase a Commercial License from Gabriel RABHI / DOT-BEES.
+ *
+ * For licensing inquiries, please contact: <mailto:gabriel.rabhi@gmail.com>
+ * or visit: <https://www.ghost-body-object.com>
+ *
+ * --------------------------------------------------------------------------
+ */
+
+using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Structs;
@@ -101,6 +132,113 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
         _randomParts = new short[_capacity];
         _state = new MapState(_entries, _randomParts, _mask);
         UpdateThresholds();
+    }
+
+    /// <summary>
+    /// Adds or Updates the entry using Tombstone-aware probing.
+    /// Uses direct field access for lower overhead (protected by lock).
+    /// It scan more than necessary to remove non valid versions.
+    /// 
+    /// It is usefull for :
+    /// - initial map building : we set the bottomTxnId to the current txnId.
+    /// - transaction commit : we set the bottomTxnId to the known min opened transaction.
+    /// 
+    /// If bottomTxnId == h.TxnId, it means we are inserting the first version of this ghost,
+    /// we have to replace any older version.
+    /// 
+    /// If bottomTxnId < h.TxnId, when we find an older version, we have to remove it.
+    /// 
+    /// 
+    ///   5
+    ///   |
+    ///   10
+    ///   |
+    ///   18
+    ///   |
+    ///   26
+    ///   |
+    ///   32
+    /// 
+    /// We insert version 35 with bottomTxnId = 20
+    /// We must preserve 18, 26, 32. 5 and 10 must be removed.
+    /// But when enumerate, we don't know if 5 is not the latest version vor 20.
+    /// Only when we find 10, we know that 5 is not valid anymore.
+    /// We replace 5.
+    /// 
+    ///   35
+    ///   |
+    ///   10
+    ///   |
+    ///   18
+    ///   |
+    ///   26
+    ///   |
+    ///   32
+    ///   
+    /// We continue tu enumerate while Txn < bottomTxnId
+    /// 18 is the latest valid version < 20
+    /// We remove 10 :
+    /// 
+    ///   35
+    ///   |
+    ///   x
+    ///   |
+    ///   18
+    ///   |
+    ///   26
+    ///   |
+    ///   32
+    ///   
+    /// We continue : 26 is over 20, we stop.
+    /// 
+    /// -------- Next update
+    /// 
+    /// We insert 40, bottomTxnId = 30
+    /// 35 is above. We found empty slot. We insert.
+    /// 
+    ///   35
+    ///   |
+    ///   40
+    ///   |
+    ///   18
+    ///   |
+    ///   26
+    ///   |
+    ///   32
+    ///   
+    /// We insert 45, bottomTxnId = 33
+    /// 
+    ///   35
+    ///   |
+    ///   40
+    ///   |
+    ///   18
+    ///   |
+    ///   26
+    ///   |
+    ///   32
+    ///   
+    /// 35 is above 33. 40 is above. We find 18 - it is potentiolly the 33 official.
+    /// 26 is above 18, we replace 18.
+    /// 
+    ///   35
+    ///   |
+    ///   40
+    ///   |
+    ///   45
+    ///   |
+    ///   26
+    ///   |
+    ///   32
+    /// 
+    /// We find an empty slot, we stop.
+    /// 
+    /// </summary>
+    public void SetAndRemove(SegmentReference r, GhostHeader* h, long bottomTxnId)
+    {
+        // Loop on entries
+        // If match, 
+        throw new NotImplementedException();
     }
 
     /// <summary>

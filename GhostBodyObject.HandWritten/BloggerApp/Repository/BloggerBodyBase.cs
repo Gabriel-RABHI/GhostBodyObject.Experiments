@@ -50,6 +50,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             var current = BloggerContext.Transaction;
             if (_ownerTransaction != current)
                 ThrowContextMismatch();
+            CheckTransactionStatus();
             return new BloggerGhostWriteLock(_ownerTransaction);
         }
 
@@ -58,9 +59,26 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         {
             if (_ownerTransaction != BloggerContext.Transaction)
                 ThrowContextMismatch();
+            CheckTransactionStatus();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ThrowContextMismatch() => throw new InvalidOperationException("Cross-Context Violation.");
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void CheckTransactionStatus()
+        {
+            if (_ownerTransaction.NeedReborn)
+            {
+                // It the transaction is closed :
+                //      - It is not readonly (write transaction)
+                //      - It is readonly (read transaction) but not the "common read" transaction
+                // -> throw a ClosedTransactionException
+                // 
+                // Otherwise, renew the body in the current "common read" transaction :
+                // - Retreive the current transaction
+                throw new NotImplementedException();
+            }
+        }
     }
 }

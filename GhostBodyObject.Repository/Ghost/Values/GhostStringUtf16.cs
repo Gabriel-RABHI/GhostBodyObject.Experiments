@@ -1,5 +1,35 @@
-﻿using GhostBodyObject.Repository.Body.Contracts;
-using GhostBodyObject.Repository.Body.Vectors;
+﻿/*
+ * Copyright (c) 2026 Gabriel RABHI / DOT-BEES
+ *
+ * This file is part of Ghost-Body-Object (GBO).
+ *
+ * Ghost-Body-Object (GBO) is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Ghost-Body-Object (GBO) is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * --------------------------------------------------------------------------
+ *
+ * COMMERICIAL LICENSING:
+ *
+ * If you wish to use this software in a proprietary (closed-source) application,
+ * you must purchase a Commercial License from Gabriel RABHI / DOT-BEES.
+ *
+ * For licensing inquiries, please contact: <mailto:gabriel.rabhi@gmail.com>
+ * or visit: <https://www.ghost-body-object.com>
+ *
+ * --------------------------------------------------------------------------
+ */
+
+using GhostBodyObject.Repository.Body.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -15,7 +45,7 @@ namespace GhostBodyObject.Repository
         private readonly BodyBase _body;
         private readonly PinnedMemory<byte> _data;
         private readonly int _arrayIndex;
-        
+
         // When created from a string, we store the string directly and use its span
         // This avoids storing raw pointers to managed memory which could be moved by GC
         private readonly string? _sourceString;
@@ -109,7 +139,7 @@ namespace GhostBodyObject.Repository
             // If we have a source string, use its span directly (GC-safe)
             if (_sourceString != null)
                 return _sourceString.AsSpan();
-            
+
             return MemoryMarshal.Cast<byte, char>(_data.Span);
         }
 
@@ -122,7 +152,7 @@ namespace GhostBodyObject.Repository
         {
             if (_sourceString != null)
                 ThrowReadOnly();
-            
+
             return MemoryMarshal.Cast<byte, char>(_data.Span);
         }
 
@@ -400,8 +430,8 @@ namespace GhostBodyObject.Repository
             if (startIndex < 0 || count < 0 || (uint)(startIndex + count) > (uint)Length)
                 ThrowIndexOutOfRange();
 
-            var replacementBytes = string.IsNullOrEmpty(replacement) 
-                ? ReadOnlySpan<byte>.Empty 
+            var replacementBytes = string.IsNullOrEmpty(replacement)
+                ? ReadOnlySpan<byte>.Empty
                 : MemoryMarshal.AsBytes(replacement.AsSpan());
             BodyBase.ReplaceInArray(_body, replacementBytes, _arrayIndex, startIndex * sizeof(char), count * sizeof(char));
         }
@@ -443,7 +473,7 @@ namespace GhostBodyObject.Repository
             if (string.IsNullOrEmpty(oldValue))
                 return 0;
             newValue ??= string.Empty;
-            
+
             // For same-length replacements, we can use simple position tracking
             if (oldValue.Length == newValue.Length)
             {
@@ -457,27 +487,27 @@ namespace GhostBodyObject.Repository
                 }
                 return count;
             }
-            
+
             // For different-length replacements, use ToString() to get fresh data
             // and then set the result back
             string current = ToString();
             int occurrences = 0;
             int searchPos = 0;
-            
+
             // Count occurrences
             while ((searchPos = current.IndexOf(oldValue, searchPos, StringComparison.Ordinal)) >= 0)
             {
                 occurrences++;
                 searchPos += oldValue.Length;
             }
-            
+
             if (occurrences == 0)
                 return 0;
-            
+
             // Do the replacement using standard string methods
             string result = current.Replace(oldValue, newValue);
             SetString(result);
-            
+
             return occurrences;
         }
 
@@ -500,7 +530,7 @@ namespace GhostBodyObject.Repository
             var span = AsSpan();
             int start = 0;
             int end = span.Length;
-            
+
             while (start < end && char.IsWhiteSpace(span[start]))
                 start++;
             while (end > start && char.IsWhiteSpace(span[end - 1]))
@@ -523,7 +553,7 @@ namespace GhostBodyObject.Repository
         {
             var span = AsSpan();
             int start = 0;
-            
+
             while (start < span.Length && char.IsWhiteSpace(span[start]))
                 start++;
 
@@ -538,7 +568,7 @@ namespace GhostBodyObject.Repository
         {
             var span = AsSpan();
             int end = span.Length;
-            
+
             while (end > 0 && char.IsWhiteSpace(span[end - 1]))
                 end--;
 
@@ -634,7 +664,7 @@ namespace GhostBodyObject.Repository
             // If we have a source string, return it directly (no allocation)
             if (_sourceString != null)
                 return _sourceString;
-            
+
             return new string(AsSpan());
         }
 
@@ -1082,7 +1112,7 @@ namespace GhostBodyObject.Repository
         {
             if (_sourceString != null)
                 return new GhostStringUtf16(_sourceString.Substring(start));
-            
+
             return new GhostStringUtf16(_data.Slice(start * sizeof(char)));
         }
 
@@ -1094,7 +1124,7 @@ namespace GhostBodyObject.Repository
         {
             if (_sourceString != null)
                 return new GhostStringUtf16(_sourceString.Substring(start, length));
-            
+
             return new GhostStringUtf16(_data.Slice(start * sizeof(char), length * sizeof(char)));
         }
 
