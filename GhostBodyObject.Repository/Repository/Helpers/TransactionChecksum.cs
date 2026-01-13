@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace GhostBodyObject.Repository.Repository.Segment
+namespace GhostBodyObject.Repository.Repository.Helpers
 {
     public sealed class TransactionChecksum : IDisposable
     {

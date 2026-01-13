@@ -1,4 +1,4 @@
-﻿namespace GhostBodyObject.Repository.Repository
+﻿namespace GhostBodyObject.Repository.Repository.Helpers
 {
     /// <summary>
     /// This class manage the transaction id range for a Ghost Repository.
@@ -22,9 +22,7 @@
                 lock (_lock)
                 {
                     if (_views.Count == 0)
-                    {
-                        return System.Threading.Interlocked.Read(ref _currentTxnId);
-                    }
+                        return Interlocked.Read(ref _currentTxnId);
                     return _views.Keys[0];
                 }
             }
@@ -36,10 +34,7 @@
         /// Increments the current transaction identifier and returns the updated value.
         /// </summary>
         /// <returns>The new transaction identifier after incrementing the current value.</returns>
-        public long IncrementGetCurrentTransactionId()
-        {
-            return System.Threading.Interlocked.Increment(ref _currentTxnId);
-        }
+        public long IncrementCurrentTransactionId() => Interlocked.Increment(ref _currentTxnId);
 
         /// <summary>
         /// Increment the view counter for the specific transaction id.

@@ -1,48 +1,41 @@
 ﻿using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Contracts;
+using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;
 using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
+
     public sealed unsafe class MemorySegmentStore : ISegmentStore
     {
         private SegmentStoreMode _storeMode;
         private SegmentImplementationType _implementationType;
-        private bool _isPersistant = false;
+        private bool _isPersistent = false;
+        private bool _isCompactable = false;
 
         private MemorySegmentHolder[] _segmentHolders;
         private MemorySegmentHolder _currentHolder;
         private byte*[] _segmentPointers;
         private int _lastSegmentId = 0;
+        private int _segmentCount = 0;
 
         public SegmentImplementationType ImplementationType => _implementationType;
 
         public SegmentStoreMode StoreMode { get; private set; }
 
-        public bool IsPersistant => _isPersistant;
+        public bool IsPersistant => _isPersistent;
 
         public MemorySegmentStore(SegmentStoreMode mode)
         {
             _storeMode = mode;
-            switch (_storeMode)
-            {
-                case SegmentStoreMode.InMemoryRepository:
-                case SegmentStoreMode.InMemoryLog:
-                    _implementationType = SegmentImplementationType.LOHPinnedMemory;
-                    _isPersistant = false;
-                    break;
-                case SegmentStoreMode.PersistantRepository:
-                case SegmentStoreMode.PersistantLog:
-                    _implementationType = SegmentImplementationType.ProtectedMemoryMappedFile;
-                    _isPersistant = true;
-                    break;
-                default:
-                    throw new InvalidOperationException("Unsupported Segment Store Mode.");
-            }
-            _segmentHolders = new MemorySegmentHolder[16];
-            _segmentPointers = new byte*[16];
+            _implementationType = mode.ImplementationMode();
+            _isPersistent = mode.IsPersistent();
+            _isCompactable = mode.IsCompactable();
+
+            _segmentHolders = new MemorySegmentHolder[2];
+            _segmentPointers = new byte*[2];
         }
 
         /// <summary>
@@ -120,6 +113,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             _segmentHolders[segmentId] = _currentHolder;
             _segmentPointers[segmentId] = segment.BasePointer;
             _lastSegmentId++;
+            _segmentCount++;
             return segmentId;
         }
 
@@ -137,9 +131,10 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
         {
-            if (_currentHolder == null || _currentHolder.Segment.FreeSpace < ghost.Length + 4)
+            var neededSpace = GetSize.Of8Aligned<StoreTransactionRecordHeader>(GetSize.Of(ghost));
+            if (_currentHolder == null || _currentHolder.Segment.FreeSpace < GetSize.Of8Aligned<StoreTransactionRecordHeader>(GetSize.Of(ghost)))
             {
-                CreateSegment(1024 * 1024 * 8);
+                CreateSegment(SegmentSizeComputation.GetNextSegmentSize(_storeMode, _segmentCount));
             }
             var offset = _currentHolder.Segment.InsertGhost(ghost, txnId);
             return new SegmentReference() { 

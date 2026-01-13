@@ -3,6 +3,7 @@ using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.HandWritten.Entities.Arrays;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Repository;
 using GhostBodyObject.Repository.Repository.Index;
 using GhostBodyObject.Repository.Repository.Segment;
 using GhostBodyObject.Repository.Repository.Transaction;
@@ -25,15 +26,14 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             if (_closed)
                 throw new InvalidOperationException("Cannot commit a closed transaction.");
 
-            _repository.CommitTransaction((txnId) =>
+            _repository.CommitTransaction((ref StoreTransactionWriter writer) =>
             {
                 foreach (var ids in InsertedIds)
                 {
                     var body = _bloggerUserMap.Get(ids, out var exist);
                     if (exist)
                     {
-                        var segmentReference = _repository.Store.StoreGhost(body._data, txnId);
-                        _repository.GhostIndex.AddGhost(segmentReference);
+                        var segmentReference = writer.StoreGhost(body._data);
                     }
                 }
             });
