@@ -666,6 +666,86 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     }
 
     /// <summary>
+    /// Removes all entries that are obsolete regarding the specified bottomTxnId.
+    /// Rebuilds the map (like Resize) to filter out garbage versions.
+    /// </summary>
+    /// <param name="bottomTxnId">The new oldest active transaction ID.</param>
+    /// <returns>The number of entries removed.</returns>
+    public int Prune(long bottomTxnId)
+    {
+        _lock.Enter();
+        try
+        {
+            var entries = _entries;
+            var randomParts = _randomParts;
+            int mask = _mask;
+            int removedCount = 0;
+
+            for (int i = 0; i < entries.Length; i++)
+            {
+                SegmentReference current = entries[i];
+                if (current.IsValid())
+                {
+                    var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    if (h != null)
+                    {
+                        // Check if candidate for removal (Old Version)
+                        if (h->TxnId <= bottomTxnId)
+                        {
+                            // It is a candidate. Check if superseded by a better old version.
+                            if (IsSuperseded(h->Id, h->TxnId, bottomTxnId, entries, randomParts, mask))
+                            {
+                                // Mark as Tombstone
+                                _store.DecrementSegmentHolderUsage(current.SegmentId);
+                                entries[i] = SegmentReference.Tombstone;
+                                randomParts[i] = RandomPart_Tombstone;
+                                _count--;
+                                _tombstoneCount++;
+                                removedCount++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return removedCount;
+        }
+        finally { _lock.Exit(); }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsSuperseded(GhostId id, long myTxnId, long bottomTxnId, SegmentReference[] entries, short[] randomParts, int mask)
+    {
+        short searchRandomPart = id.RandomPartTag;
+        int index = id.SlotComputation & mask;
+
+        while (true)
+        {
+            SegmentReference current = entries[index];
+            if (current.IsEmpty()) return false;
+
+            if (!current.IsTombstone())
+            {
+                if (randomParts[index] == searchRandomPart)
+                {
+                    var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    if (h != null && h->Id == id)
+                    {
+                        long thatTxnId = h->TxnId;
+                        // Found a version that is ALSO old (<= bottom) but strictly NEWER than me.
+                        // So 'I' am superseded.
+                        if (thatTxnId <= bottomTxnId && thatTxnId > myTxnId)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            index = (index + 1) & mask;
+        }
+    }
+
+    /// <summary>
     /// Resizes the map. Uses direct field access and publishes new MapState atomically at the end.
     /// </summary>
     private void Resize(int newCapacity)

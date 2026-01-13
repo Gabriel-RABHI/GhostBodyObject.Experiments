@@ -182,56 +182,6 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         [Fact]
         public void Handle_New_Version_Is_Old_Backfill()
         {
-            // Insert V15. Bottom = 25.
-            // Exists: 10, 20.
-            // 20 <= 25 (Best Old).
-            // 15 <= 20. 15 is Garbage immediately?
-            // Or 15 replaces 10?
-            // 10 < 20. 10 is Garbage.
-            // 15 < 20. 15 is Garbage.
-            // So if we insert 15, it should effectively be discarded or replace a garbage slot and then be discarded?
-            // "SetAndRemove" implies we SET it. 
-            // If we Set it, we might overwrite a slot.
-            // Our logic:
-            // Scan 10. <= 25. BestOld = 10.
-            // Scan 20. <= 25. 20 > 10. BestOld = 20. 10 is Garbage.
-            // Recycle 10 for V15?
-            // If we recycle 10 for V15.
-            // Map has: 15, 20.
-            // But 15 < 20. So 15 is also garbage relative to 20.
-            // But the loop doesn't check the *just inserted* value against BestOld.
-            // So 15 stays?
-            // If 15 stays, map has 15, 20.
-            // Reader at 25 sees 20.
-            // Reader at 18 sees 15.
-            // Wait. If 20 exists, and we insert 15.
-            // Is 15 valid?
-            // Yes, for history [15, 20).
-            // But we said we only keep ONE old version.
-            // If Bottom = 25.
-            // Range (-inf, 25] is the "Old" zone.
-            // We only need the version covering 25. That is 20.
-            // 15 is not needed for 25.
-            // Is it needed for [15, 20)?
-            // The contract says: "remove entries that are no longer available for the oldest transaction".
-            // Oldest transaction = Bottom = 25.
-            // So we only care about queries >= 25.
-            // Query at 25 -> Needs 20.
-            // Query at 26 -> Needs 20.
-            // No active transaction is < 25.
-            // So 15 is useless.
-            // So ideally 15 should NOT be in the map.
-            // Does our code remove it?
-            // If we insert V15.
-            // Code: Loop finds 10, 20.
-            // 10 becomes garbage. Recycled for 15.
-            // 20 becomes BestOld.
-            // Loop finishes.
-            // Result: 15, 20.
-            // 15 persists.
-            // This is a slight imperfection (we inserted garbage), but valid safe behavior.
-            // It will be cleaned up on NEXT SetAndRemove.
-            
             var store = new FakeSegmentStore();
             var map = new SegmentGhostMap<FakeSegmentStore>(store);
             var id = new GhostId(GhostIdKind.Entity, 5, 5, 5);
@@ -264,7 +214,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             // 1. Initial Insert (Set)
             var r10 = store.NewHeader(id, 10);
             // r10.Reference.SegmentId is 0 by default in FakeStore
-            store.Update(map);
+            store.Update(map); 
             
             // Usage of Segment 0 should be 1
             Assert.Equal(1, store.UsageCounts[0]);
@@ -313,6 +263,44 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             map.Remove(id, 40); // Remove V40
             // Usage -> 2
             Assert.Equal(2, store.UsageCounts[0]);
+        }
+
+        [Fact]
+        public void Verify_Prune_Method()
+        {
+            var store = new FakeSegmentStore();
+            var map = new SegmentGhostMap<FakeSegmentStore>(store);
+            var idA = new GhostId(GhostIdKind.Entity, 7, 7, 7);
+            var idB = new GhostId(GhostIdKind.Entity, 8, 8, 8);
+
+            // A: 10, 20
+            store.NewHeader(idA, 10);
+            store.NewHeader(idA, 20);
+            
+            // B: 5, 15
+            store.NewHeader(idB, 5);
+            store.NewHeader(idB, 15);
+            
+            store.Update(map);
+            
+            // Initial State: 4 items. Usage[0] = 4.
+            Assert.Equal(4, map.Count);
+            Assert.Equal(4, store.UsageCounts[0]);
+
+            // Prune with Bottom = 18.
+            // A: 20 > 18 (Keep). 10 <= 18. Best Old = 10. Kept.
+            // B: 15 <= 18. 5 <= 18. 15 > 5. Keep 15. Remove 5.
+            
+            int removed = map.Prune(18);
+            
+            Assert.Equal(1, removed);
+            Assert.Equal(3, map.Count);
+            Assert.Equal(3, store.UsageCounts[0]);
+            
+            Assert.True(map.Get(idA, 10, out _));
+            Assert.True(map.Get(idA, 20, out _));
+            Assert.True(map.Get(idB, 15, out _));
+            Assert.False(map.Get(idB, 5, out _));
         }
     }
 }
