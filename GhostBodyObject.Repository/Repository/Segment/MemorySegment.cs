@@ -67,6 +67,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public int Capacity => _capacity;
 
+        public bool IsEmpty => _offset <= sizeof(SegmentHeader);
+
         public static int AliveCount => _aliveCount;
 
         public static int FlushCount => _flushCount;

@@ -44,6 +44,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public bool Forgotten => Segment == null;
 
+        public bool IsEmpty => Segment == null || Segment.IsEmpty;
+
         public MemorySegmentHolder(MemorySegment segment, int index)
         {
             Segment = segment;

@@ -124,7 +124,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             for (int i=0;i< _segmentHolders.Length; i++)
             {
                 var holder = _segmentHolders[i];
-                if (holder != null && holder.ReferenceCount <= 0)
+                if (holder != null && holder.ReferenceCount <= 0 && !holder.IsEmpty && holder != _currentHolder)
                 {
                     _segmentHolders[i] = null;
                     _segmentPointers[i] = null;
