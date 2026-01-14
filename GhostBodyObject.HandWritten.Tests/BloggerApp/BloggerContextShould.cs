@@ -209,10 +209,10 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             var repository = new BloggerRepository();
             var sw = Stopwatch.StartNew();
             long sum = 0;
-            for (int j = 0; j < 1_000; j++)
+            for (int j = 0; j < 5_000_000; j++)
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    for (int i=0;i< 10_000; i++)
+                    for (int i=0;i< 2; i++)
                     {
                         var user = new BloggerUser()
                         {

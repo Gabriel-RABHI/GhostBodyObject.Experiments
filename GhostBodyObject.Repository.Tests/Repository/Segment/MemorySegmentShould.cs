@@ -12,7 +12,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         [Fact]
         public void CreateInMemory()
         {
-            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryRepository, 0);
+            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0);
             Assert.NotNull(segment);
             Assert.Equal(SegmentImplementationType.LOHPinnedMemory, segment.SegmentType);
             Assert.True(segment.Deletable);
@@ -24,7 +24,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         public void CreateInMemoryWithCustomCapacity()
         {
             int capacity = 2048;
-            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryRepository, 0, capacity);
+            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, capacity);
             Assert.NotNull(segment);
             Assert.Equal(capacity, segment.FreeSpace);
         }
@@ -32,13 +32,13 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         [Fact]
         public void ThrowWhenCapacityIsTooSmall()
         {
-            Assert.Throws<InvalidOperationException>(() => MemorySegment.NewInMemory(SegmentStoreMode.InMemoryRepository, 0, 100));
+            Assert.Throws<InvalidOperationException>(() => MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, 100));
         }
 
         [Fact]
         public void AllocateMemory()
         {
-            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryRepository, 0, 2048);
+            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, 2048);
             int allocSize = 128;
             
             PinnedMemory<byte> memory = segment.Allocate(allocSize);
@@ -57,7 +57,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         [Fact]
         public void WriteUnmanagedData()
         {
-            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryRepository, 0, 2048);
+            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, 2048);
             int valueToWrite = 0x12345678;
             
             int offset = segment.Write(valueToWrite);
@@ -73,7 +73,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         [Fact]
         public void PerformMultipleAllocationsAndWrites()
         {
-            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryRepository, 0, 4096);
+            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, 4096);
             
             // 1. Allocate block
             var mem1 = segment.Allocate(100);
@@ -105,7 +105,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         [Fact]
         public void ThrowOverflowExceptionOnAllocate()
         {
-            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryRepository, 0, 2048);
+            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, 2048);
             
             // Allocate almost everything
             segment.Allocate(2000);
@@ -117,7 +117,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         [Fact]
         public void ThrowOverflowExceptionOnWrite()
         {
-            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryRepository, 0, 2048);
+            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, 2048);
             
             // Allocate almost everything so sizeof(int) won't fit
             segment.Allocate(2046); // 2 bytes left
@@ -130,7 +130,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         {
             // This test is a bit theoretical as we trust GC.AllocateUninitializedArray(pinned: true)
             // but we can verify we got a pointer.
-            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryRepository, 0);
+            var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0);
             Assert.True(segment.BasePointer != null);
             
             // Do a write through the pointer to ensure it's valid access

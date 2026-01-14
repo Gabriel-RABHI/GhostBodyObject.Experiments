@@ -9,7 +9,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         [Fact]
         public void AutoResizeWhenAddingMoreSegmentsThanInitialCapacity()
         {
-            var store = new MemorySegmentStore(SegmentStoreMode.InMemoryRepository);
+            var store = new MemorySegmentStore(SegmentStoreMode.InMemoryVolatileRepository);
 
             // Add enough segments to trigger resize
             for (int i = 0; i < 1024; i++)

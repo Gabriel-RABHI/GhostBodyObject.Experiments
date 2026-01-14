@@ -42,14 +42,14 @@ namespace GhostBodyObject.Repository.Repository.Helpers
             var r = 0;
             switch (_storeMode)
             {
-                case SegmentStoreMode.InMemoryRepository:
+                case SegmentStoreMode.InMemoryVolatileRepository:
                     if (segmentCount < 16)
                         r = 8 * MB; // 16 * 8 = 128 MB
                     if (segmentCount < 64)
                         r = 32 * MB; // 32 * 24 = 768 MB
                     r = 128 * MB;
                     break;
-                case SegmentStoreMode.InMemoryLog:
+                case SegmentStoreMode.InMemoryVolatileLog:
                     r = 32 * MB;
                     break;
                 case SegmentStoreMode.PersistantRepository:

@@ -42,9 +42,11 @@ namespace GhostBodyObject.Repository.Repository.Helpers
         {
             switch (mode)
             {
-                case SegmentStoreMode.InMemoryRepository:
-                case SegmentStoreMode.InMemoryLog:
+                case SegmentStoreMode.InMemoryVolatileRepository:
+                case SegmentStoreMode.InMemoryVolatileLog:
                     return SegmentImplementationType.LOHPinnedMemory;
+                case SegmentStoreMode.InVirtualMemoryVolatileRepository:
+                case SegmentStoreMode.InVirtualMemoryVolatileLog:
                 case SegmentStoreMode.PersistantRepository:
                 case SegmentStoreMode.PersistantLog:
                     return SegmentImplementationType.ProtectedMemoryMappedFile;
@@ -58,14 +60,11 @@ namespace GhostBodyObject.Repository.Repository.Helpers
         {
             switch (mode)
             {
-                case SegmentStoreMode.InMemoryRepository:
-                case SegmentStoreMode.InMemoryLog:
-                    return false;
                 case SegmentStoreMode.PersistantRepository:
                 case SegmentStoreMode.PersistantLog:
                     return true;
                 default:
-                    throw new InvalidOperationException("Unsupported Segment Store Mode.");
+                    return false;
             }
         }
 
@@ -74,14 +73,12 @@ namespace GhostBodyObject.Repository.Repository.Helpers
         {
             switch (mode)
             {
-                case SegmentStoreMode.InMemoryRepository:
+                case SegmentStoreMode.InMemoryVolatileRepository:
+                case SegmentStoreMode.InVirtualMemoryVolatileRepository:
                 case SegmentStoreMode.PersistantRepository:
                     return true;
-                case SegmentStoreMode.InMemoryLog:
-                case SegmentStoreMode.PersistantLog:
-                    return false;
                 default:
-                    throw new InvalidOperationException("Unsupported Segment Store Mode.");
+                    return false;
             }
         }
     }

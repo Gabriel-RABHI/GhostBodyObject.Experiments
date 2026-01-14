@@ -33,10 +33,14 @@ namespace GhostBodyObject.Repository.Repository.Constants
 {
     public enum SegmentStoreMode : byte
     {
-        InMemoryRepository = 1,
-        InMemoryLog = 2,
-        // -------- Add in virtual memory volatile to makes data dumped on disk ?
-        PersistantRepository = 3,
-        PersistantLog = 4
+        // -------- LOH segment allocation
+        InMemoryVolatileRepository = 0,
+        InMemoryVolatileLog = 1,
+        // -------- In virtual memory, to permit to the process to unload large data sets
+        InVirtualMemoryVolatileRepository = 10,
+        InVirtualMemoryVolatileLog = 11,
+        // -------- On disk, with hash based txn validation
+        PersistantRepository = 20,
+        PersistantLog = 21
     }
 }

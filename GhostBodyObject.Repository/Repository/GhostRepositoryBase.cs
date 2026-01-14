@@ -83,8 +83,10 @@ namespace GhostBodyObject.Repository.Repository
                     commiter.ReadModifiedBodies((body) => modifiedBodies.Add(body));
                     foreach (var body in modifiedBodies)
                     {
-                        // reserve space int the store
+                        // Compute the space int the store
                     }
+                    // If it fit in the remaining current Segment store, reserve it
+                    // If not, write sync !
                 }
                 // 2. Write the transaction in the reserved store memory.
                 //    Concurrently, an another thread can enter the critical section to reserve Store space.
@@ -108,28 +110,22 @@ namespace GhostBodyObject.Repository.Repository
                 // -------- Single stage commit -------- //
                 lock (_locker)
                 {
-                    List<BodyBase> modifiedBodies = new List<BodyBase>();
-                    commiter.ReadModifiedBodies((body) => modifiedBodies.Add(body));
-                    if (modifiedBodies.Count > 0)
+                    var writer = new StoreTransactionWriter()
                     {
-                        var writer = new StoreTransactionWriter()
-                        {
-                            Repository = this,
-                            Store = _store,
-                            TransactionId = _transactionRange.CurrentTransactionId
-                        };
-                        writer.OpenTransaction();
-                        foreach (var body in modifiedBodies)
-                            writer.StoreGhost(body._data);
-                        writer.CloseTransaction();
-                        _transactionRange.IncrementCurrentTransactionId();
-                    }
+                        Repository = this,
+                        Store = _store,
+                        TransactionId = _transactionRange.CurrentTransactionId
+                    };
+                    writer.OpenTransaction();
+                    commiter.ReadModifiedBodies((body) => writer.StoreGhost(body._data));
+                    writer.CloseTransaction();
+                    _transactionRange.IncrementCurrentTransactionId();
                 }
             }
                 
         }
 
-        public GhostRepositoryBase(SegmentStoreMode mode = SegmentStoreMode.InMemoryRepository, string path = default)
+        public GhostRepositoryBase(SegmentStoreMode mode = SegmentStoreMode.InMemoryVolatileRepository, string path = default)
         {
             _store = new MemorySegmentStore(mode);
             _ghostIndex = new RepositoryGhostIndex<MemorySegmentStore>(_store);
