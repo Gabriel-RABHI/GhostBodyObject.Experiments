@@ -39,5 +39,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
         {
             _holders = holders;
         }
+
+        public MemorySegmentHolder[] Holders => _holders;
     }
 }

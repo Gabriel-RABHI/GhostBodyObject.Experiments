@@ -29,6 +29,7 @@
  * --------------------------------------------------------------------------
  */
 
+using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Contracts;
@@ -44,8 +45,7 @@ namespace GhostBodyObject.Repository.Repository
     public class GhostRepositoryBase
     {
         private object _locker = new object();
-
-        public delegate void TransactionCommiter(ref StoreTransactionWriter writer);
+        private ShortSpinLock _spinLocker = new ShortSpinLock();
 
         /// <summary>
         /// The underlying Memory Segment Store where Ghost data is stored.
@@ -73,61 +73,45 @@ namespace GhostBodyObject.Repository.Repository
         public void CommitTransaction<T>(T commiter, bool twoStage = false)
             where T : IModifiedBodyStream
         {
+            TransactionContext context = null;
+
             if (twoStage)
             {
-                // -------- Split this process in two steps -------- //
-                // 1. Compute the necessary space, reserve it in the store.
-                List<BodyBase> modifiedBodies = new List<BodyBase>();
                 lock (_locker)
                 {
-                    commiter.ReadModifiedBodies((body) => modifiedBodies.Add(body));
-                    foreach (var body in modifiedBodies)
+                    context = _store.ReserveTransaction(commiter, _transactionRange.CurrentTransactionId);
+                    if (context != null)
                     {
-                        // Compute the space int the store
+                        _transactionRange.IncrementCurrentTransactionId();
                     }
-                    // If it fit in the remaining current Segment store, reserve it
-                    // If not, write sync !
                 }
-                // 2. Write the transaction in the reserved store memory.
-                //    Concurrently, an another thread can enter the critical section to reserve Store space.
-                if (modifiedBodies.Count > 0)
+                
+                if (context != null)
                 {
-                    var writer = new StoreTransactionWriter()
-                    {
-                        Repository = this,
-                        Store = _store,
-                        TransactionId = _transactionRange.CurrentTransactionId
-                    };
-                    writer.OpenTransaction();
-                    foreach (var body in modifiedBodies)
-                        writer.StoreGhost(body._data);
-                    writer.CloseTransaction();
-                    _transactionRange.IncrementCurrentTransactionId();
+                    _store.WriteTransaction(context, (id, r) => {
+                        _ghostIndex.AddGhost(r);
+                    });
                 }
             }
             else
             {
-                // -------- Single stage commit -------- //
                 lock (_locker)
                 {
-                    var writer = new StoreTransactionWriter()
+                    context = _store.ReserveTransaction(commiter, _transactionRange.CurrentTransactionId);
+                    if (context != null)
                     {
-                        Repository = this,
-                        Store = _store,
-                        TransactionId = _transactionRange.CurrentTransactionId
-                    };
-                    writer.OpenTransaction();
-                    commiter.ReadModifiedBodies((body) => writer.StoreGhost(body._data));
-                    writer.CloseTransaction();
-                    _transactionRange.IncrementCurrentTransactionId();
+                        _store.WriteTransaction(context, (id, r) => {
+                            _ghostIndex.AddGhost(r);
+                        });
+                        _transactionRange.IncrementCurrentTransactionId();
+                    }
                 }
             }
-                
         }
 
         public GhostRepositoryBase(SegmentStoreMode mode = SegmentStoreMode.InMemoryVolatileRepository, string path = default)
         {
-            _store = new MemorySegmentStore(mode);
+            _store = new MemorySegmentStore(mode, path);
             _ghostIndex = new RepositoryGhostIndex<MemorySegmentStore>(_store);
         }
 
@@ -150,27 +134,4 @@ namespace GhostBodyObject.Repository.Repository
         }
     }
 
-    public struct StoreTransactionWriter
-    {
-        public GhostRepositoryBase Repository { get; init; }
-
-        public MemorySegmentStore Store { get; init; }
-
-        public long TransactionId { get; init; }
-
-        public void OpenTransaction()
-        {
-        }
-
-        public void CloseTransaction()
-        {
-        }
-
-        public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
-        {
-            var r = Store.StoreGhost(ghost, TransactionId);
-            Repository.GhostIndex.AddGhost(r);
-            return r;
-        }
-    }
 }

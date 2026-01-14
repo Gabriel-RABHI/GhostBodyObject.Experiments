@@ -68,7 +68,7 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Set(SegmentReference r, GhostHeader* h)
-        => GetShard(h->Id).Set(r, h);
+        => GetShard(h->Id).SetAndRemove(r, h, long.MaxValue);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Get(GhostId id, long maxTxnId, out SegmentReference r)

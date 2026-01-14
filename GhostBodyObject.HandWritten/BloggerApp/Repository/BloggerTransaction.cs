@@ -22,14 +22,14 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
 
         public BloggerRepository Repository => _repository;
 
-        public void Commit()
+        public void Commit(bool concurrently)
         {
             if (IsReadOnly)
                 throw new InvalidOperationException("Cannot commit a read-only transaction.");
             if (_closed)
                 throw new InvalidOperationException("Cannot commit a closed transaction.");
 
-            _repository.CommitTransaction(this);
+            _repository.CommitTransaction(this, concurrently);
         }
 
         public void Rollback()

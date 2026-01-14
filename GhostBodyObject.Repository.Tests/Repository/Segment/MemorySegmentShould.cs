@@ -17,7 +17,8 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             Assert.Equal(SegmentImplementationType.LOHPinnedMemory, segment.SegmentType);
             Assert.True(segment.Deletable);
             Assert.True(segment.BasePointer != null);
-            Assert.Equal(1024 * 1024 * 8, segment.FreeSpace); // Default capacity
+            // Capacity - sizeof(SegmentHeader) (16 bytes)
+            Assert.Equal(1024 * 1024 * 8 - 16, segment.FreeSpace);
         }
 
         [Fact]
@@ -26,7 +27,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             int capacity = 2048;
             var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, capacity);
             Assert.NotNull(segment);
-            Assert.Equal(capacity, segment.FreeSpace);
+            Assert.Equal(capacity - 16, segment.FreeSpace);
         }
 
         [Fact]
@@ -46,11 +47,11 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             Assert.Equal(allocSize, memory.Length);
             Assert.True(memory.Ptr != null);
             
-            // Check if offset advanced
-            Assert.Equal(2048 - allocSize, segment.FreeSpace);
+            // Check if offset advanced (Capacity - Header - Alloc)
+            Assert.Equal(2048 - 16 - allocSize, segment.FreeSpace);
 
             // Verify memory is within segment bounds
-            Assert.True(memory.Ptr >= segment.BasePointer);
+            Assert.True(memory.Ptr >= segment.BasePointer + 16);
             Assert.True(memory.Ptr < segment.BasePointer + 2048);
         }
 
@@ -62,8 +63,8 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             
             int offset = segment.Write(valueToWrite);
             
-            Assert.Equal(0, offset); // First write should be at offset 0
-            Assert.Equal(2048 - sizeof(int), segment.FreeSpace);
+            Assert.Equal(16, offset); // First write should be at offset 16 (after Header)
+            Assert.Equal(2048 - 16 - sizeof(int), segment.FreeSpace);
             
             // Verify data integrity
             int* pValue = (int*)(segment.BasePointer + offset);
@@ -74,31 +75,32 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         public void PerformMultipleAllocationsAndWrites()
         {
             var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, 4096);
-            
+            int header = 16;
+
             // 1. Allocate block
             var mem1 = segment.Allocate(100);
-            Assert.Equal(0, (int)(mem1.Ptr - segment.BasePointer));
+            Assert.Equal(header, (int)(mem1.Ptr - segment.BasePointer));
             
             // 2. Write int
             int val1 = 42;
             int offset1 = segment.Write(val1);
-            Assert.Equal(100, offset1);
+            Assert.Equal(header + 100, offset1);
             
             // 3. Allocate another block
             var mem2 = segment.Allocate(50);
-            Assert.Equal(100 + sizeof(int), (int)(mem2.Ptr - segment.BasePointer));
+            Assert.Equal(header + 100 + sizeof(int), (int)(mem2.Ptr - segment.BasePointer));
             
             // 4. Write long
             long val2 = 999999L;
             int offset2 = segment.Write(val2);
-            Assert.Equal(100 + sizeof(int) + 50, offset2);
+            Assert.Equal(header + 100 + sizeof(int) + 50, offset2);
 
             // Check integrity
             Assert.Equal(val1, *(int*)(segment.BasePointer + offset1));
             Assert.Equal(val2, *(long*)(segment.BasePointer + offset2));
             
             // Check total usage
-            int expectedUsed = 100 + sizeof(int) + 50 + sizeof(long);
+            int expectedUsed = header + 100 + sizeof(int) + 50 + sizeof(long);
             Assert.Equal(4096 - expectedUsed, segment.FreeSpace);
         }
 
@@ -107,8 +109,8 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
         {
             var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, 2048);
             
-            // Allocate almost everything
-            segment.Allocate(2000);
+            // Allocate almost everything (Capacity 2048 - 16 Header = 2032 available)
+            segment.Allocate(2000); // OK, 32 remaining
             
             // Try to allocate more than remaining
             Assert.Throws<OverflowException>(() => segment.Allocate(100));
@@ -120,7 +122,8 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             var segment = MemorySegment.NewInMemory(SegmentStoreMode.InMemoryVolatileRepository, 0, 2048);
             
             // Allocate almost everything so sizeof(int) won't fit
-            segment.Allocate(2046); // 2 bytes left
+            // Capacity 2048 - 16 Header = 2032 available
+            segment.Allocate(2030); // 2 bytes left
             
             Assert.Throws<OverflowException>(() => segment.Write(123));
         }

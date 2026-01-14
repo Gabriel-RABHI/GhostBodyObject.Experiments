@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <RunSettingsFilePath>C:\Users\gabri\source\repos\GhostBodyObject.Experiments\GhostBodyObject.Repository.Tests\bin\Release\net10.0\fine-code-coverage\coverage-tool-output\GhostBodyObject.Repository.Tests-fcc-mscodecoverage-generated.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,7 +1,12 @@
 ﻿using GhostBodyObject.HandWritten.Blogger;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
+using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Ghost.Constants;
+using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Repository.Segment;
 using System.Diagnostics;
+using System.IO;
 using System.Transactions;
 
 namespace GhostBodyObject.HandWritten.Tests.BloggerApp
@@ -187,7 +192,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     FirstName = "Ted",
                     LastName = "Smith"
                 };
-                BloggerContext.Transaction.Commit();
+                BloggerContext.Transaction.Commit(false);
             }
             using (BloggerContext.NewReadContext(repository))
             {
@@ -209,10 +214,10 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             var repository = new BloggerRepository();
             var sw = Stopwatch.StartNew();
             long sum = 0;
-            for (int j = 0; j < 5_000_000; j++)
+            for (int j = 0; j < 500_000; j++)
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    for (int i=0;i< 2; i++)
+                    for (int i=0;i< 20; i++)
                     {
                         var user = new BloggerUser()
                         {
@@ -223,7 +228,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         };
                         sum += user.CustomerCode;
                     }
-                    BloggerContext.Transaction.Commit();
+                    BloggerContext.Transaction.Commit(false);
                 }
             Console.WriteLine($"Write and commit users in {sw.ElapsedMilliseconds} ms");
             using (BloggerContext.NewReadContext(repository))
@@ -242,6 +247,57 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     });
                     Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
                     Assert.Equal(sum, verifySum);
+                }
+            }
+        }
+
+        [Fact]
+        public void AddAndCommitTransactionsLargeConcurrently()
+        {
+            var repository = new BloggerRepository();
+            var sw = Stopwatch.StartNew();
+
+            int threadCount = 5;
+
+            var tasks = new Task[threadCount];
+
+            for (int i = 0; i < threadCount; i++)
+            {
+                int threadId = i;
+                tasks[i] = Task.Run(() => {
+                    for (int j = 0; j < 100_000; j++)
+                        using (BloggerContext.NewWriteContext(repository))
+                        {
+                            for (int i = 0; i < 20; i++)
+                            {
+                                var user = new BloggerUser()
+                                {
+                                    Active = true,
+                                    FirstName = "John" + i,
+                                    LastName = "Doe",
+                                    CustomerCode = i + (j % 99)
+                                };
+                            }
+                            BloggerContext.Transaction.Commit(true);
+                        }
+                });
+            }
+
+            Task.WaitAll(tasks);
+            Console.WriteLine($"Write and commit users in {sw.ElapsedMilliseconds} ms");
+            using (BloggerContext.NewReadContext(repository))
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    var n = 0;
+                    sw = Stopwatch.StartNew();
+                    //Assert.True(BloggerContext.Transaction.BloggerUserCollection.Any());
+                    BloggerContext.Transaction.BloggerUserCollection.ForEachCursor(user =>
+                    {
+                        Assert.True(user.Active);
+                        n++;
+                    });
+                    Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
                 }
             }
         }
