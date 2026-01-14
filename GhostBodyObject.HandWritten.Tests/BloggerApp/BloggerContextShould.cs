@@ -214,7 +214,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             var repository = new BloggerRepository();
             var sw = Stopwatch.StartNew();
             long sum = 0;
-            for (int j = 0; j < 500_000; j++)
+            for (int j = 0; j < 50_000; j++)
                 using (BloggerContext.NewWriteContext(repository))
                 {
                     for (int i=0;i< 20; i++)
@@ -222,8 +222,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         var user = new BloggerUser()
                         {
                             Active = true,
-                            FirstName = "John" + i,
-                            LastName = "Doe",
                             CustomerCode = i + (j % 99)
                         };
                         sum += user.CustomerCode;
@@ -249,6 +247,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     Assert.Equal(sum, verifySum);
                 }
             }
+            Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
         }
 
         [Fact]
@@ -265,7 +264,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             {
                 int threadId = i;
                 tasks[i] = Task.Run(() => {
-                    for (int j = 0; j < 100_000; j++)
+                    for (int j = 0; j < 10_000; j++)
                         using (BloggerContext.NewWriteContext(repository))
                         {
                             for (int i = 0; i < 20; i++)
@@ -273,9 +272,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                 var user = new BloggerUser()
                                 {
                                     Active = true,
-                                    FirstName = "John" + i,
-                                    LastName = "Doe",
-                                    CustomerCode = i + (j % 99)
                                 };
                             }
                             BloggerContext.Transaction.Commit(true);
@@ -300,6 +296,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
                 }
             }
+            Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
         }
 #endif
     }

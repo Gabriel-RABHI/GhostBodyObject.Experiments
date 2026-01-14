@@ -40,6 +40,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
 {
     public sealed unsafe class MemorySegment : IDisposable
     {
+        private static int _aliveCount = 0;
+
         private byte[] _inMemoryData;
         private int _offset;
         private int _capacity;
@@ -58,11 +60,14 @@ namespace GhostBodyObject.Repository.Repository.Segment
         public SegmentImplementationType SegmentType { get; private set; }
 
         public byte* BasePointer => _readPtr;
+
         public byte* WritePointer => _writePtr;
 
         public bool Deletable { get; private set; }
+
         public int Capacity => _capacity;
 
+        public static int AliveCount => _aliveCount;
 
         public static MemorySegment NewInMemory(SegmentStoreMode mode, int id, int capacity = 1024 * 1024 * 8)
         {
@@ -125,6 +130,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
             // For now, assume creation:
             *_header = SegmentHeader.Create(mode, id, capacity);
             _offset = sizeof(SegmentHeader); // Advance offset past header
+
+            Interlocked.Increment(ref _aliveCount);
         }
 
         public void Dispose()
@@ -154,6 +161,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     break;
             }
             GC.SuppressFinalize(this);
+            Interlocked.Decrement(ref _aliveCount);
         }
 
         ~MemorySegment()
