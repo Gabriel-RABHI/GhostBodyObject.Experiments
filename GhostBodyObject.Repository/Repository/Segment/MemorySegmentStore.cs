@@ -42,7 +42,7 @@ using System.Runtime.CompilerServices;
 namespace GhostBodyObject.Repository.Repository.Segment
 {
 
-    public sealed unsafe class MemorySegmentStore : ISegmentStore
+    public sealed unsafe class MemorySegmentStore : ISegmentStore, IDisposable
     {
         private SegmentStoreMode _storeMode;
         private SegmentImplementationType _implementationType;
@@ -76,6 +76,11 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
             _segmentHolders = new MemorySegmentHolder[2];
             _segmentPointers = new byte*[2];
+        }
+
+        ~MemorySegmentStore()
+        {
+            Dispose();
         }
 
         public void RebuildSegmentHolders()
@@ -240,18 +245,14 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void WriteTransaction(TransactionContext ctx, Action<GhostId, SegmentReference> onGhostStored)
         {
-            if (ctx == null) return;
-
+            if (ctx == null)
+                return;
             TransactionChecksum checksum = null;
             if (_isPersistent)
-            {
                 checksum = new TransactionChecksum();
-            }
-
             try
             {
                 var startSeg = _segmentHolders[ctx.StartSegmentId].Segment;
-                
                 var txHeader = new StoreTransactionHeader
                 {
                     T = SegmentStructureType.StoreTransactionHeader,
@@ -261,33 +262,28 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     PreviousSegmentId = 0
                 };
                 startSeg.WriteAt(ctx.StartOffset, txHeader);
-                
-                if (_isPersistent) checksum.Write(txHeader);
-
+                if (_isPersistent)
+                    checksum.Write(txHeader);
                 for (int i = 0; i < ctx.Bodies.Count; i++)
                 {
                     var body = ctx.Bodies[i];
                     var loc = ctx.BodyLocations[i];
                     var segment = _segmentHolders[loc.SegmentId].Segment;
-                    
                     int ghostSize = GetSize.Of(body._data);
-                    
                     var recordHeader = new StoreTransactionRecordHeader
                     {
                         T = SegmentStructureType.StoreTransactionRecordHeader,
                         Origin = SegmentTransactionOrigin.Repository,
                         Size = (uint)ghostSize
                     };
-                    
                     segment.WriteAt(loc.Offset, recordHeader);
-                    if (_isPersistent) checksum.Write(recordHeader);
-                    
+                    if (_isPersistent)
+                        checksum.Write(recordHeader);
                     segment.WriteBytesAt(loc.Offset + sizeof(StoreTransactionRecordHeader), body._data.Ptr, ghostSize);
-                    if (_isPersistent) checksum.Write(body._data.Ptr, ghostSize);
-                    
+                    if (_isPersistent)
+                        checksum.Write(body._data.Ptr, ghostSize);
                     onGhostStored(body.Id, new SegmentReference { SegmentId = (uint)loc.SegmentId, Offset = (uint)(loc.Offset + sizeof(StoreTransactionRecordHeader)) });
                 }
-
                 var endSeg = _segmentHolders[ctx.EndSegmentId].Segment;
                 var txEnd = new StoreTransactionEnd
                 {
@@ -295,32 +291,47 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     RecCount = (uint)ctx.Bodies.Count
                 };
                 endSeg.WriteAt(ctx.EndOffset, txEnd);
-                if (_isPersistent) checksum.Write(txEnd);
-
+                if (_isPersistent)
+                    checksum.Write(txEnd);
                 if (_isPersistent)
                 {
                     ulong hash = checksum.GetHash();
                     startSeg.WriteAt(ctx.StartOffset + 24, hash);
                 }
-                
                 if (_isPersistent)
                 {
                     if (ctx.IsSplit)
                     {
                         for (int id = ctx.StartSegmentId; id <= ctx.CurrentSegmentId; id++)
                         {
-                            _segmentHolders[id].Segment.Flush();
+                            var segment = _segmentHolders[id].Segment;
+                            int start = (id == ctx.StartSegmentId) ? ctx.StartOffset : 0;
+                            
+                            if (id == ctx.CurrentSegmentId)
+                            {
+                                int end = ctx.CurrentOffset;
+                                segment.FlushRange(start, end - start);
+                            }
+                            else
+                            {
+                                int end = segment.Capacity - segment.FreeSpace;
+                                segment.FlushRange(start, end - start);
+                                
+                                // Flush Footer
+                                segment.FlushRange(segment.Capacity - 8, 8);
+                            }
                         }
                     }
                     else
                     {
-                        startSeg.Flush();
+                        startSeg.FlushRange(ctx.StartOffset, ctx.CurrentOffset - ctx.StartOffset);
                     }
                 }
             }
             finally
             {
-                if (checksum != null) checksum.Dispose();
+                if (checksum != null)
+                    checksum.Dispose();
             }
         }
 
@@ -376,6 +387,17 @@ namespace GhostBodyObject.Repository.Repository.Segment
             nextSeg.WriteAt(contOffset, continuation);
             
             ctx.CurrentOffset = contOffset + sizeof(StoreTransactionContinuation);
+        }
+
+        public void Dispose()
+        {
+            for (int i = 0; i < _segmentHolders.Length; i++)
+            {
+                if (_segmentHolders[i] != null)
+                    _segmentHolders[i] = null;
+            }
+            _segmentPointers = null;
+            GC.SuppressFinalize(this);
         }
     }
 }

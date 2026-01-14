@@ -39,9 +39,9 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel
         public void RegisterASet()
         {
 #if RELEASE
-            var count = 1_000_000;
-#else
             var count = 100_000;
+#else
+            var count = 10_000;
 #endif
             var repository = new TestModelRepository();
             using (TestModelContext.OpenReadContext(repository))

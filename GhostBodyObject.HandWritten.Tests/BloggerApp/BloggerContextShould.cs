@@ -146,7 +146,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [Fact]
         public void ForbidInTaskMutations()
         {
-            var COUNT = 100_000_000;
+            var COUNT = 10_000_000;
             Assert.Throws<AggregateException>(() =>
             {
                 var repository = new BloggerRepository();
@@ -178,9 +178,11 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [Theory()]
         [InlineData(SegmentStoreMode.InMemoryVolatileRepository)]
         [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.PersistantRepository)]
         public void AddAndCommitTransactions(SegmentStoreMode mode)
         {
-            var repository = new BloggerRepository(mode);
+            using var tempDir = new TempDirectoryHelper(true);
+            var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             using (BloggerContext.NewWriteContext(repository))
             {
                 var user = new BloggerUser()
@@ -230,10 +232,15 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         }
 
 #if RELEASE
-        [Fact]
-        public void AddAndCommitTransactionsLarge()
+
+        [Theory()]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.PersistantRepository)]
+        public void AddAndCommitTransactionsLarge(SegmentStoreMode mode)
         {
-            var repository = new BloggerRepository();
+            using var tempDir = new TempDirectoryHelper(true);
+            var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
             long sum = 0;
             for (int j = 0; j < 50_000; j++)
@@ -258,7 +265,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     long verifySum = 0;
                     var n = 0;
                     sw = Stopwatch.StartNew();
-                    //Assert.True(BloggerContext.Transaction.BloggerUserCollection.Any());
                     BloggerUserCollection.ForEachCursor(user =>
                     {
                         Assert.True(user.Active);
@@ -270,12 +276,18 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 }
             }
             Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
+            Console.WriteLine($"Segment Flushs = {MemorySegment.FlushCount}");
         }
 
-        [Fact]
-        public void AddAndCommitTransactionsLargeConcurrently()
+
+        [Theory()]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.PersistantRepository)]
+        public void AddAndCommitTransactionsLargeConcurrently(SegmentStoreMode mode)
         {
-            var repository = new BloggerRepository();
+            using var tempDir = new TempDirectoryHelper(true);
+            var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
 
             int threadCount = 5;

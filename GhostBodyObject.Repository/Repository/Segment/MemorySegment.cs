@@ -33,6 +33,7 @@ using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
+using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;
 using System.IO.MemoryMappedFiles;
 
@@ -41,6 +42,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
     public sealed unsafe class MemorySegment : IDisposable
     {
         private static int _aliveCount = 0;
+        private static int _flushCount = 0;
 
         private byte[] _inMemoryData;
         private int _offset;
@@ -66,6 +68,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
         public int Capacity => _capacity;
 
         public static int AliveCount => _aliveCount;
+
+        public static int FlushCount => _flushCount;
 
         public static MemorySegment NewInMemory(SegmentStoreMode mode, int id, int capacity = 1024 * 1024 * 8)
         {
@@ -105,7 +109,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                         if (name == null)
                             throw new ArgumentNullException(nameof(name));
                         
-                        _filePath = Path.Combine(directoryPath, $"{prefix}_{name}_{id:N5}.{(Deletable ? "txn.seg" : "log.seg")}");
+                        _filePath = Path.Combine(directoryPath, $"{prefix}_{name}_{id:D7}.{(Deletable ? "txn.seg" : "log.seg")}");
                         
                         _mmf = MemoryMappedFile.CreateFromFile(_filePath, FileMode.OpenOrCreate, null, capacity, MemoryMappedFileAccess.ReadWrite);
                         
@@ -279,11 +283,21 @@ namespace GhostBodyObject.Repository.Repository.Segment
              Buffer.MemoryCopy(source, _writePtr + offset, length, length);
         }
         
+        public void FlushRange(int offset, int length)
+        {
+            if (SegmentType == SegmentImplementationType.ProtectedMemoryMappedFile)
+            {
+                MemoryFlusher.FlushRange(_writePtr + offset, (nuint)length);
+                Interlocked.Increment(ref _flushCount);
+            }
+        }
+
         public void Flush()
         {
             if (SegmentType == SegmentImplementationType.ProtectedMemoryMappedFile)
             {
-                _writeAccessor.Flush();
+                MemoryFlusher.FlushRange(_writePtr, (nuint)_capacity);
+                Interlocked.Increment(ref _flushCount);
             }
         }
     }

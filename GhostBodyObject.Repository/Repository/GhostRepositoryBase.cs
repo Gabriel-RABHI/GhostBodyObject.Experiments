@@ -39,7 +39,7 @@ using GhostBodyObject.Repository.Repository.Transaction;
 
 namespace GhostBodyObject.Repository.Repository
 {
-    public class GhostRepositoryBase
+    public class GhostRepositoryBase : IDisposable
     {
         private object _locker = new object();
         private ShortSpinLock _spinLocker = new ShortSpinLock();
@@ -67,6 +67,11 @@ namespace GhostBodyObject.Repository.Repository
         public RepositoryGhostIndex<MemorySegmentStore> GhostIndex => _ghostIndex;
 
         public MemorySegmentStore Store => _store;
+
+        ~GhostRepositoryBase()
+        {
+            Dispose();
+        }
 
         public GhostRepositoryBase(SegmentStoreMode mode = SegmentStoreMode.InMemoryVolatileRepository, string path = default)
         {
@@ -127,6 +132,12 @@ namespace GhostBodyObject.Repository.Repository
             {
                 Store.UpdateHolders(_transactionRange.BottomTransactionId, _transactionRange.TopTransactionId);
             }
+        }
+
+        public void Dispose()
+        {
+            _store.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }
