@@ -30,15 +30,12 @@
  */
 
 using GhostBodyObject.Common.SpinLocks;
-using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Index;
 using GhostBodyObject.Repository.Repository.Segment;
-using GhostBodyObject.Repository.Repository.Structs;
 using GhostBodyObject.Repository.Repository.Transaction;
-using System.Collections.Specialized;
 
 namespace GhostBodyObject.Repository.Repository
 {
@@ -65,9 +62,17 @@ namespace GhostBodyObject.Repository.Repository
         #region PROPERTIES
         public long CurrentTransactionId => _transactionRange.CurrentTransactionId;
 
+        public long BottomTransactionId => _transactionRange.BottomTransactionId;
+
         public RepositoryGhostIndex<MemorySegmentStore> GhostIndex => _ghostIndex;
 
         public MemorySegmentStore Store => _store;
+
+        public GhostRepositoryBase(SegmentStoreMode mode = SegmentStoreMode.InMemoryVolatileRepository, string path = default)
+        {
+            _store = new MemorySegmentStore(mode, path);
+            _ghostIndex = new RepositoryGhostIndex<MemorySegmentStore>(_store);
+        }
         #endregion
 
         public void CommitTransaction<T>(T commiter, bool twoStage = false)
@@ -85,10 +90,11 @@ namespace GhostBodyObject.Repository.Repository
                         _transactionRange.IncrementCurrentTransactionId();
                     }
                 }
-                
+
                 if (context != null)
                 {
-                    _store.WriteTransaction(context, (id, r) => {
+                    _store.WriteTransaction(context, (id, r) =>
+                    {
                         _ghostIndex.AddGhost(r);
                     });
                 }
@@ -100,7 +106,8 @@ namespace GhostBodyObject.Repository.Repository
                     context = _store.ReserveTransaction(commiter, _transactionRange.CurrentTransactionId);
                     if (context != null)
                     {
-                        _store.WriteTransaction(context, (id, r) => {
+                        _store.WriteTransaction(context, (id, r) =>
+                        {
                             _ghostIndex.AddGhost(r);
                         });
                         _transactionRange.IncrementCurrentTransactionId();
@@ -109,17 +116,6 @@ namespace GhostBodyObject.Repository.Repository
             }
         }
 
-        public GhostRepositoryBase(SegmentStoreMode mode = SegmentStoreMode.InMemoryVolatileRepository, string path = default)
-        {
-            _store = new MemorySegmentStore(mode, path);
-            _ghostIndex = new RepositoryGhostIndex<MemorySegmentStore>(_store);
-        }
-
-        /// <summary>
-        /// When a transaction is opened, his _openingTxnId field is the view generation of the ghost repository.
-        /// The 
-        /// </summary>
-        /// <param name="tnx"></param>
         public void Retain(RepositoryTransactionBase tnx)
         {
             _transactionRange.IncrementTransactionViewId(tnx.OpeningTxnId);
@@ -133,5 +129,4 @@ namespace GhostBodyObject.Repository.Repository
             }
         }
     }
-
 }

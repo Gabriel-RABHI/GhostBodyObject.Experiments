@@ -30,20 +30,18 @@ namespace GhostBodyObject.HandWritten.Blogger
 
         public static IBloggerScope NewReadContext(BloggerRepository repository) => NewContext(repository, true);
 
+        public static void Commit(bool concurrently) => FastCache.Commit(concurrently);
+
+        public static void Rollback() => FastCache.Rollback();
+
         private class BloggerContextScope : IBloggerScope
         {
             private readonly BloggerTransaction _transaction;
-            private readonly BloggerRepository _repository;
             private bool _disposed;
-
-            public BloggerTransaction Transaction => _transaction;
-
-            public BloggerRepository Repository => _repository;
 
             public BloggerContextScope(BloggerTransaction transaction)
             {
                 _transaction = transaction;
-                _repository = transaction.Repository;
             }
 
             public void Dispose()

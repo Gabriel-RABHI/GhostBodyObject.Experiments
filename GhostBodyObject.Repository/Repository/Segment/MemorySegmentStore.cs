@@ -116,7 +116,15 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void UpdateHolders(long bottomTxnId, long topTxnId)
         {
-            // TODO : remove segments that are holding only ghosts from transactions older than bottomTxnId
+            for (int i=0;i< _segmentHolders.Length; i++)
+            {
+                var holder = _segmentHolders[i];
+                if (holder != null && holder.ReferenceCount <= 0)
+                {
+                    _segmentHolders[i] = null;
+                    _segmentPointers[i] = null;
+                }
+            }
         }
 
         public int CreateSegment(int capacity)

@@ -43,6 +43,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
             switch (_storeMode)
             {
                 case SegmentStoreMode.InMemoryVolatileRepository:
+                case SegmentStoreMode.InVirtualMemoryVolatileRepository:
                     if (segmentCount < 16)
                         r = 8 * MB; // 16 * 8 = 128 MB
                     if (segmentCount < 64)

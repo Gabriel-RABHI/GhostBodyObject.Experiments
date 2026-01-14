@@ -45,8 +45,6 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private byte[] _inMemoryData;
         private int _offset;
         private int _capacity;
-        private long _startTxnId = long.MaxValue;
-        private long _endTxnId = long.MinValue;
         private SegmentHeader* _header;
         
         // MMF Fields
@@ -215,8 +213,6 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public int InsertGhost(PinnedMemory<byte> data, long txnId)
         {
-            _startTxnId = Math.Min(_startTxnId, txnId);
-            _endTxnId = Math.Max(_endTxnId, txnId);
             var size = data.Length;
             if (_offset + size + 4 > _capacity)
                 throw new OverflowException();

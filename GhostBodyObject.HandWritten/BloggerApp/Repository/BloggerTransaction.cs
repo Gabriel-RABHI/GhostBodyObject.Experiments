@@ -44,6 +44,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                 return;
             if (!IsReadOnly)
                 Rollback();
+            _repository.Forget(this);
         }
 
 
@@ -57,7 +58,6 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         ~BloggerTransaction()
         {
             Close();
-            _repository.Forget(this);
         }
 
         // --------------------------------------------------------- //
@@ -181,5 +181,18 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             }
         }
         #endregion
+    }
+
+    public static class BloggerUserCollection
+    {
+        public static void ForEach(Action<BloggerUser> action)
+        {
+            BloggerContext.Transaction.BloggerUserCollection.ForEach(action);
+        }
+
+        public static void ForEachCursor(Action<BloggerUser> action)
+        {
+            BloggerContext.Transaction.BloggerUserCollection.ForEachCursor(action);
+        }
     }
 }

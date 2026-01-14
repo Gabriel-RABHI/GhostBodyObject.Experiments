@@ -4,6 +4,7 @@ using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Segment;
 using System.Diagnostics;
 using System.IO;
@@ -174,10 +175,12 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             });
         }
 
-        [Fact]
-        public void AddAndCommitTransactions()
+        [Theory()]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository)]
+        public void AddAndCommitTransactions(SegmentStoreMode mode)
         {
-            var repository = new BloggerRepository();
+            var repository = new BloggerRepository(mode);
             using (BloggerContext.NewWriteContext(repository))
             {
                 var user = new BloggerUser()
@@ -192,12 +195,12 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     FirstName = "Ted",
                     LastName = "Smith"
                 };
-                BloggerContext.Transaction.Commit(false);
+                BloggerContext.Commit(false);
             }
             using (BloggerContext.NewReadContext(repository))
             {
                 //Assert.True(BloggerContext.Transaction.BloggerUserCollection.Any());
-                BloggerContext.Transaction.BloggerUserCollection.ForEach(user =>
+                BloggerUserCollection.ForEach(user =>
                 {
                     Assert.True(user.Active);
                     Assert.True(
@@ -205,6 +208,25 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         (user.FirstName == "Ted" && user.LastName == "Smith"));
                 });
             }
+        }
+
+        [Fact]
+        public void ManageBottomTxnIdWhenTxnClosed()
+        {
+            var repository = new BloggerRepository();
+            var sw = Stopwatch.StartNew();
+            for (int j = 0; j < 1_000; j++)
+            {
+                using (BloggerContext.NewWriteContext(repository))
+                {
+                    var user = new BloggerUser()
+                    {
+                        Active = true,
+                    };
+                    BloggerContext.Commit(false);
+                }
+            }
+            Assert.Equal(1000, repository.BottomTransactionId);
         }
 
 #if RELEASE
@@ -226,7 +248,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         };
                         sum += user.CustomerCode;
                     }
-                    BloggerContext.Transaction.Commit(false);
+                    BloggerContext.Commit(false);
                 }
             Console.WriteLine($"Write and commit users in {sw.ElapsedMilliseconds} ms");
             using (BloggerContext.NewReadContext(repository))
@@ -237,7 +259,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     var n = 0;
                     sw = Stopwatch.StartNew();
                     //Assert.True(BloggerContext.Transaction.BloggerUserCollection.Any());
-                    BloggerContext.Transaction.BloggerUserCollection.ForEachCursor(user =>
+                    BloggerUserCollection.ForEachCursor(user =>
                     {
                         Assert.True(user.Active);
                         verifySum += user.CustomerCode;
@@ -274,7 +296,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                     Active = true,
                                 };
                             }
-                            BloggerContext.Transaction.Commit(true);
+                            BloggerContext.Commit(true);
                         }
                 });
             }
@@ -288,7 +310,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     var n = 0;
                     sw = Stopwatch.StartNew();
                     //Assert.True(BloggerContext.Transaction.BloggerUserCollection.Any());
-                    BloggerContext.Transaction.BloggerUserCollection.ForEachCursor(user =>
+                    BloggerUserCollection.ForEachCursor(user =>
                     {
                         Assert.True(user.Active);
                         n++;
