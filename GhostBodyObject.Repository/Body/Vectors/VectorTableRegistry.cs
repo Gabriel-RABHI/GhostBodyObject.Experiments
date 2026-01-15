@@ -159,8 +159,8 @@ namespace GhostBodyObject.Repository.Body.Vectors
             var g = body._data;
             body._vTablePtr = (nint)_versionToTable[v - 1].Standalone;
             body._data = TransientGhostMemoryAllocator.Allocate(g.Length);
-            body.Header->Status = newStatus;
             g.CopyTo(body._data);
+            body.Header->Status = newStatus;
         }
     }
 }

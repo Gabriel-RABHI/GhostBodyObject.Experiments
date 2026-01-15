@@ -55,7 +55,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public BloggerUser ToStandalone()
         {
-            using (GuardWriteScope())
+            GuardLocalScope();
             {
                 unsafe
                 {
@@ -71,7 +71,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public void Delete()
         {
-            using (GuardWriteScope())
+            GuardLocalScope();
             {
                 unsafe
                 {

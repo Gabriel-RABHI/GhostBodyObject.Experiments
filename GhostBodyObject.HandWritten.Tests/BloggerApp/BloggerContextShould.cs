@@ -232,7 +232,27 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     n++;
                 });
                 Assert.Equal(2, n);
+                n = 0;
+                BloggerUserCollection.ForEach(user =>
+                {
+                    Assert.True(user.City == "New York City");
+                    n++;
+                });
+                Assert.Equal(2, n);
+                BloggerContext.Commit(false);
             }
+            // TODO : add a Rollback test
+            using (BloggerContext.NewReadContext(repository))
+            {
+                var n = 0;
+                BloggerUserCollection.ForEach(user =>
+                {
+                    Assert.True(user.City == "New York City");
+                    n++;
+                });
+                Assert.Equal(2, n);
+            }
+            // TODO : add a Delete test
         }
 
         [Theory()]
