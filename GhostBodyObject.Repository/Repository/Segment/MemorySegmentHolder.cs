@@ -33,7 +33,7 @@ using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
-    public sealed class MemorySegmentHolder {
+    public sealed class MemorySegmentHolder : IDisposable {
         private int _referenceCount = 0;
 
         public MemorySegment Segment { get; set; }
@@ -50,6 +50,11 @@ namespace GhostBodyObject.Repository.Repository.Segment
         {
             Segment = segment;
             Index = index;
+        }
+
+        public void Dispose()
+        {
+            Segment = null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

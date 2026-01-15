@@ -391,10 +391,14 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void Dispose()
         {
+            _currentHolder = null;
             for (int i = 0; i < _segmentHolders.Length; i++)
             {
                 if (_segmentHolders[i] != null)
+                {
+                    _segmentHolders[i].Dispose();
                     _segmentHolders[i] = null;
+                }
             }
             _segmentPointers = null;
             GC.SuppressFinalize(this);

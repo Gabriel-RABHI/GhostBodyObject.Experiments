@@ -182,7 +182,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         public void AddAndCommitTransactions(SegmentStoreMode mode)
         {
             using var tempDir = new TempDirectoryHelper(true);
-            var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+            using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             using (BloggerContext.NewWriteContext(repository))
             {
                 var user = new BloggerUser()
@@ -240,7 +240,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         public void AddAndCommitTransactionsLarge(SegmentStoreMode mode)
         {
             using var tempDir = new TempDirectoryHelper(true);
-            var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+            using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
             long sum = 0;
             for (int j = 0; j < 50_000; j++)
@@ -287,7 +287,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         public void AddAndCommitTransactionsLargeConcurrently(SegmentStoreMode mode)
         {
             using var tempDir = new TempDirectoryHelper(true);
-            var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+            using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
 
             int threadCount = 5;
@@ -340,7 +340,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         public void AddAndCommitTransactionsConcurrentReadWrite(SegmentStoreMode mode)
         {
             using var tempDir = new TempDirectoryHelper(true);
-            var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+            using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
 
             int threadCount = 4;
@@ -414,7 +414,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             Task.WaitAll(tasks);
             Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
             Console.WriteLine($"Total reads = {totalReads}");
-            repository.Dispose();
         }
     }
 }
