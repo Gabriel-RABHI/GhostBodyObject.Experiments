@@ -71,6 +71,7 @@ namespace GhostBodyObject.HandWritten.Tests
             } catch
             {
                 var retry = 1;
+            _redo:
                 if (GetFiles().Length > 0)
                 {
                     Console.WriteLine("Remainning files in temp. Directory before deletion:");
@@ -79,15 +80,19 @@ namespace GhostBodyObject.HandWritten.Tests
                         Console.WriteLine(" - " + file);
                     }
                     GCCollect();
-                    Thread.Sleep(100);
+                    Thread.Sleep(500);
                     try
                     {
                         Directory.Delete(_directoryPath, true);
-                    } catch {
-                        Console.WriteLine("Retry " + retry + " failled.");
+                        Console.WriteLine("Directory deleted !");
                     }
-                    if (retry++ > 10)
-                        throw new InvalidOperationException("Could not delete temp. Directory files after multiple GC attempts.");
+                    catch
+                    {
+                        Console.WriteLine("Retry " + retry + " failled.");
+                        if (retry++ > 10)
+                            throw new InvalidOperationException("Could not delete temp. Directory files after multiple GC attempts.");
+                        goto _redo;
+                    }
                 }
             }
             

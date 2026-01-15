@@ -349,14 +349,23 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 
             var tasks = new Task[threadCount * 2];
 
+            var nTxn = 50_000;
+            var nObjTxn = 500; // Set to 500 for large, 100M entries test
+            if (true) // Set to true for quicker test
+                nObjTxn = 20;
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
                 tasks[i] = Task.Run(() => {
-                    for (int j = 0; j < 50_000; j++)
+                    for (int j = 0; j < nTxn; j++)
                         using (BloggerContext.NewWriteContext(repository))
                         {
-                            for (int i = 0; i < 20; i++)
+                            if (j % (nTxn / 10) == 0)
+                            {
+                                //Thread.Sleep(5000);
+                                Console.WriteLine($"Writer {threadId} at {j} / 50000");
+                            }
+                            for (int i = 0; i < nObjTxn; i++)
                             {
                                 var user = new BloggerUser()
                                 {
@@ -377,7 +386,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     var retries = 0;
                     var lastCount = 0;
                     var countCount = 0;
-                    while (totalRetrieved < threadCount * 50_000 * 20)
+                    while (totalRetrieved < threadCount * nTxn * nObjTxn)
                     {
                         retries++;
                         using (BloggerContext.NewReadContext(repository))
@@ -405,6 +414,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             Task.WaitAll(tasks);
             Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
             Console.WriteLine($"Total reads = {totalReads}");
+            repository.Dispose();
         }
     }
 }
