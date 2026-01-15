@@ -33,7 +33,9 @@ using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
-    public sealed class MemorySegmentHolder : IDisposable {
+    public sealed class MemorySegmentHolder : IDisposable
+    {
+        private long _usedMemoryVolume = 0;
         private int _referenceCount = 0;
 
         public MemorySegment Segment { get; set; }
@@ -41,6 +43,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
         public int Index { get; set; }
 
         public int ReferenceCount => _referenceCount;
+
+        public long UsedMemoryVolume => _usedMemoryVolume;
 
         public bool Forgotten => Segment == null;
 
@@ -58,12 +62,17 @@ namespace GhostBodyObject.Repository.Repository.Segment
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void IncrementReferenceCount()
-            => Interlocked.Increment(ref _referenceCount);
-
+        public void IncrementUsage(long size)
+        {
+            Interlocked.Increment(ref _referenceCount);
+            Interlocked.Add(ref _usedMemoryVolume, size);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool DecrementReferenceCount()
-            => Interlocked.Decrement(ref _referenceCount) == 0;
+        public bool DecrementUsage(long size)
+        {
+            Interlocked.Add(ref _usedMemoryVolume, -size);
+            return Interlocked.Decrement(ref _referenceCount) == 0;
+        }
     }
 }

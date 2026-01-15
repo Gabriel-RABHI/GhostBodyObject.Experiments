@@ -40,8 +40,8 @@ namespace GhostBodyObject.Repository.Repository.Contracts
 
         SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId);
 
-        void IncrementSegmentHolderUsage(uint segmentId);
+        void IncrementSegmentHolderUsage(SegmentReference reference);
 
-        void DecrementSegmentHolderUsage(uint segmentId);
+        void DecrementSegmentHolderUsage(SegmentReference reference);
     }
 }

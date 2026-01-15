@@ -103,12 +103,12 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             }
 
 
-            public void IncrementSegmentHolderUsage(uint segmentId)
+            public void IncrementSegmentHolderUsage(SegmentReference segmentId)
             {
                 Interlocked.Increment(ref _usageCount);
             }
 
-            public void DecrementSegmentHolderUsage(uint segmentId)
+            public void DecrementSegmentHolderUsage(SegmentReference segmentId)
             {
                 Interlocked.Decrement(ref _usageCount);
             }
@@ -156,12 +156,12 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 throw new NotImplementedException();
             }
 
-            public void IncrementSegmentHolderUsage(uint segmentId)
+            public void IncrementSegmentHolderUsage(SegmentReference segmentId)
             {
                 Interlocked.Increment(ref _usageCount);
             }
 
-            public void DecrementSegmentHolderUsage(uint segmentId)
+            public void DecrementSegmentHolderUsage(SegmentReference segmentId)
             {
                 Interlocked.Decrement(ref _usageCount);
             }

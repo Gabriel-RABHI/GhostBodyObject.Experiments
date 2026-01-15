@@ -349,10 +349,15 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 
             var tasks = new Task[threadCount * 2];
 
+            // -------- 100M entries test
             var nTxn = 50_000;
-            var nObjTxn = 500; // Set to 500 for large, 100M entries test
-            if (true) // Set to true for quicker test
-                nObjTxn = 20;
+            var nObjTxn = 500; 
+            if (true)
+            {
+                // -------- 4M entries test - faster test
+                nTxn = 2_500;
+                nObjTxn = 400;
+            }
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
@@ -363,7 +368,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                             if (j % (nTxn / 10) == 0)
                             {
                                 //Thread.Sleep(5000);
-                                Console.WriteLine($"Writer {threadId} at {j} / 50000");
+                                Console.WriteLine($"Writer {threadId} at {j} / {nTxn}");
                             }
                             for (int i = 0; i < nObjTxn; i++)
                             {
@@ -372,7 +377,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                     Active = true,
                                 };
                             }
-                            BloggerContext.Commit(true);
+                            BloggerContext.Commit(false);
                         }
                     Interlocked.Decrement(ref totalWriters);
                 });

@@ -29,6 +29,8 @@
  * --------------------------------------------------------------------------
  */
 
+using System.IO;
+using System.Runtime.CompilerServices;
 using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
@@ -36,8 +38,6 @@ using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;
-using System.IO;
-using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
@@ -54,7 +54,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private byte*[] _segmentPointers;
         private int _lastSegmentId = 0;
         private int _segmentCount = 0;
-        
+
         // MMF Configuration
         private string _directoryPath;
         private string _prefix = "store";
@@ -95,15 +95,21 @@ namespace GhostBodyObject.Repository.Repository.Segment
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void IncrementSegmentHolderUsage(uint segmentId)
+        public void IncrementSegmentHolderUsage(SegmentReference reference)
         {
-            _segmentHolders[segmentId].IncrementReferenceCount();
+            var ghostH = ToGhostHeaderPointer(reference);
+            var recordH = (StoreTransactionRecordHeader*)((byte*)ghostH - sizeof(StoreTransactionRecordHeader));
+            long size = recordH->Size + sizeof(StoreTransactionRecordHeader);
+            _segmentHolders[reference.SegmentId].IncrementUsage(size);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DecrementSegmentHolderUsage(uint segmentId)
+        public void DecrementSegmentHolderUsage(SegmentReference reference)
         {
-            if (_segmentHolders[segmentId].DecrementReferenceCount())
+            var ghostH = ToGhostHeaderPointer(reference);
+            var recordH = (StoreTransactionRecordHeader*)((byte*)ghostH - sizeof(StoreTransactionRecordHeader));
+            long size = recordH->Size + sizeof(StoreTransactionRecordHeader);
+            if (_segmentHolders[reference.SegmentId].DecrementUsage(size))
             {
                 RebuildSegmentHolders();
             }
@@ -121,7 +127,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void UpdateHolders(long bottomTxnId, long topTxnId)
         {
-            for (int i=0;i< _segmentHolders.Length; i++)
+            for (int i = 0; i < _segmentHolders.Length; i++)
             {
                 var holder = _segmentHolders[i];
                 if (holder != null && holder.ReferenceCount <= 0 && !holder.IsEmpty && holder != _currentHolder)
@@ -178,7 +184,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
         {
             var h = ToGhostHeaderPointer(reference);
             var b = (int*)h;
-            return new PinnedMemory<byte>(_segmentHolders[reference.SegmentId], h, *(b-1));
+            return new PinnedMemory<byte>(_segmentHolders[reference.SegmentId], h, *(b - 1));
         }
 
         public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
@@ -220,12 +226,12 @@ namespace GhostBodyObject.Repository.Repository.Segment
                 var body = bodies[i];
                 int ghostSize = GetSize.Of(body._data);
                 int recordSize = GetSize.Of8Aligned<StoreTransactionRecordHeader>(ghostSize);
-                
+
                 if (!CheckFit(ctx.CurrentSegmentId, recordSize))
                 {
                     HandleSegmentJump(ctx);
                 }
-                
+
                 ctx.BodyLocations[i] = (ctx.CurrentSegmentId, ctx.CurrentOffset);
                 ReserveSpace(ctx, recordSize);
             }
@@ -234,12 +240,12 @@ namespace GhostBodyObject.Repository.Repository.Segment
             int endSize = sizeof(StoreTransactionEnd);
             if (!CheckFit(ctx.CurrentSegmentId, endSize))
             {
-                 HandleSegmentJump(ctx);
+                HandleSegmentJump(ctx);
             }
             ctx.EndSegmentId = ctx.CurrentSegmentId;
             ctx.EndOffset = ctx.CurrentOffset;
             ReserveSpace(ctx, endSize);
-            
+
             return ctx;
         }
 
@@ -306,7 +312,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                         {
                             var segment = _segmentHolders[id].Segment;
                             int start = (id == ctx.StartSegmentId) ? ctx.StartOffset : 0;
-                            
+
                             if (id == ctx.CurrentSegmentId)
                             {
                                 int end = ctx.CurrentOffset;
@@ -316,7 +322,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                             {
                                 int end = segment.Capacity - segment.FreeSpace;
                                 segment.FlushRange(start, end - start);
-                                
+
                                 // Flush Footer
                                 segment.FlushRange(segment.Capacity - 8, 8);
                             }
@@ -342,22 +348,22 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         private void ReserveSpace(TransactionContext ctx, int size)
         {
-             _segmentHolders[ctx.CurrentSegmentId].Segment.Reserve(size);
-             ctx.CurrentOffset += size;
+            _segmentHolders[ctx.CurrentSegmentId].Segment.Reserve(size);
+            ctx.CurrentOffset += size;
         }
 
         private void HandleSegmentJump(TransactionContext ctx)
         {
             var currentSeg = _segmentHolders[ctx.CurrentSegmentId].Segment;
-            
+
             var jump = new StoreTransactionSegmentJump
             {
                 T = SegmentStructureType.StoreTransactionSegmentJump,
             };
-            
+
             int jumpOffset = currentSeg.Reserve(sizeof(StoreTransactionSegmentJump));
             currentSeg.WriteAt(jumpOffset, jump);
-            
+
             var sealEnd = new SealedSegmentEnd
             {
                 T = SegmentStructureType.SealedSegmentEnd,
@@ -376,7 +382,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             CreateSegment(SegmentSizeComputation.GetNextSegmentSize(_storeMode, _segmentCount));
             ctx.CurrentSegmentId++;
             ctx.IsSplit = true;
-            
+
             var nextSeg = _segmentHolders[ctx.CurrentSegmentId].Segment;
             var continuation = new StoreTransactionContinuation
             {
@@ -385,7 +391,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             };
             int contOffset = nextSeg.Reserve(sizeof(StoreTransactionContinuation));
             nextSeg.WriteAt(contOffset, continuation);
-            
+
             ctx.CurrentOffset = contOffset + sizeof(StoreTransactionContinuation);
         }
 

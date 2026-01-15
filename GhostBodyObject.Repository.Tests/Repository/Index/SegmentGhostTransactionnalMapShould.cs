@@ -124,18 +124,18 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
 
             public Dictionary<uint, int> UsageCounts = new();
 
-            public void IncrementSegmentHolderUsage(uint segmentId)
+            public void IncrementSegmentHolderUsage(SegmentReference reference)
             {
-                if (!UsageCounts.ContainsKey(segmentId))
-                    UsageCounts[segmentId] = 0;
-                UsageCounts[segmentId]++;
+                if (!UsageCounts.ContainsKey(reference.SegmentId))
+                    UsageCounts[reference.SegmentId] = 0;
+                UsageCounts[reference.SegmentId]++;
             }
 
-            public void DecrementSegmentHolderUsage(uint segmentId)
+            public void DecrementSegmentHolderUsage(SegmentReference reference)
             {
-                if (!UsageCounts.ContainsKey(segmentId))
-                    UsageCounts[segmentId] = 0;
-                UsageCounts[segmentId]--;
+                if (!UsageCounts.ContainsKey(reference.SegmentId))
+                    UsageCounts[reference.SegmentId] = 0;
+                UsageCounts[reference.SegmentId]--;
             }
         }
 
