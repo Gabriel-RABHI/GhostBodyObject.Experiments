@@ -29,6 +29,8 @@
  * --------------------------------------------------------------------------
  */
 
+#define SAFE
+
 using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Segment
@@ -64,15 +66,26 @@ namespace GhostBodyObject.Repository.Repository.Segment
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void IncrementUsage(long size)
         {
+#if SAFE
             Interlocked.Increment(ref _referenceCount);
             Interlocked.Add(ref _usedMemoryVolume, size);
+#else
+            _referenceCount++;
+            _usedMemoryVolume += size;
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool DecrementUsage(long size)
         {
+#if SAFE
             Interlocked.Add(ref _usedMemoryVolume, -size);
             return Interlocked.Decrement(ref _referenceCount) == 0;
+#else
+            _referenceCount--;
+            _usedMemoryVolume -= size;
+            return _referenceCount <= 0;
+#endif
         }
     }
 }

@@ -277,12 +277,13 @@ namespace GhostBodyObject.Repository.Repository.Segment
             *(T*)(_writePtr + offset) = value;
         }
         
-        public void WriteBytesAt(int offset, byte* source, int length)
+        public byte* WriteBytesAt(int offset, byte* source, int length)
         {
              if (offset + length > _capacity)
                 throw new ArgumentOutOfRangeException(nameof(offset));
              
              Buffer.MemoryCopy(source, _writePtr + offset, length, length);
+             return _writePtr + offset;
         }
         
         public void FlushRange(int offset, int length)

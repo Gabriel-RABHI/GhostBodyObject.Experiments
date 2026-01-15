@@ -72,6 +72,8 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             // 4. Ghost Data at offset 48 + 8 = 56. Length 128.
             GhostHeader* gHeader = (GhostHeader*)(ptr + 56);
             Assert.Equal(ghostId, gHeader->Id);
+            Assert.Equal(100, gHeader->TxnId);
+            Assert.Equal(GhostStatus.Mapped, gHeader->Status);
             
             // 5. TransactionEnd at offset 56 + 128 = 184.
             StoreTransactionEnd* txEnd = (StoreTransactionEnd*)(ptr + 184);

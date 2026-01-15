@@ -2,14 +2,17 @@
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.HandWritten.Entities.Arrays;
 using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Index;
 using GhostBodyObject.Repository.Repository.Segment;
+using GhostBodyObject.Repository.Repository.Structs;
 using GhostBodyObject.Repository.Repository.Transaction;
 using GhostBodyObject.Repository.Repository.Transaction.Collections;
 using GhostBodyObject.Repository.Repository.Transaction.Index;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace GhostBodyObject.HandWritten.Blogger.Repository
 {
@@ -129,25 +132,100 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                     {
                         if (map != null)
                         {
-                            foreach (var segmentReference in map.GhostMap)
+                            if (_txn._bloggerUserMap.Count == 0)
                             {
-                                var ghost = _txn.Repository.Store.ToGhostHeaderPointer(segmentReference);
-                                var body = _txn._bloggerUserMap.Get(ghost->Id, out var exist);
-                                if (exist)
+                                var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
+                                while (enumerator.MoveNext())
                                 {
-                                    action(body);
-                                }
-                                else
-                                {
-                                    body = new BloggerUser(_txn.Repository.Store.ToGhost(segmentReference), true, true);
+                                    var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
+                                    var body = new BloggerUser(ghost, true, true);
+                                    _txn._bloggerUserMap.Set(body);
                                     action(body);
                                 }
                             }
+                            else
+                            {
+                                var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
+                                while (enumerator.MoveNext())
+                                {
+                                    var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
+                                    var body = _txn._bloggerUserMap.Get(ghost.As<GhostHeader>()->Id, out var exist);
+                                    if (exist)
+                                    {
+                                        if (body.Status != GhostStatus.MappedDeleted)
+                                            action(body);
+                                    }
+                                    else
+                                    {
+                                        if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
+                                        {
+                                            body = new BloggerUser(ghost, true, true);
+                                            _txn._bloggerUserMap.Set(body);
+                                            action(body);
+                                        }
+                                    }
+                                }
+                            }
+                        } else
+                        {
+                            // -------- No Map of this type -------- //
                         }
                     }
                     else
                     {
-
+                        if (map != null)
+                        {
+                            if (_txn._bloggerUserMap.Count == 0)
+                            {
+                                var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
+                                while (enumerator.MoveNext())
+                                {
+                                    var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
+                                    var body = new BloggerUser(ghost, true, true);
+                                    _txn._bloggerUserMap.Set(body);
+                                    action(body);
+                                }
+                            }
+                            else
+                            {
+                                var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
+                                while (enumerator.MoveNext())
+                                {
+                                    var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
+                                    var body = _txn._bloggerUserMap.Get(ghost.As<GhostHeader>()->Id, out var exist);
+                                    if (exist)
+                                    {
+                                        if (body.Status != GhostStatus.MappedDeleted)
+                                            action(body);
+                                    }
+                                    else
+                                    {
+                                        if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
+                                        {
+                                            body = new BloggerUser(ghost, true, true);
+                                            _txn._bloggerUserMap.Set(body);
+                                            action(body);
+                                        }
+                                    }
+                                }
+                            }
+                            foreach (var id in _txn._bloggerUserMap.InsertedIds)
+                            {
+                                var body = _txn._bloggerUserMap.Get(id, out var exist);
+                                if (exist)
+                                {
+                                    action(body);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (_txn._bloggerUserMap.Count != 0)
+                            {
+                                foreach (var body in _txn._bloggerUserMap)
+                                    action(body);
+                            }
+                        }
                     }
                 }
             }

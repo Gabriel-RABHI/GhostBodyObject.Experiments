@@ -197,11 +197,20 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     FirstName = "Ted",
                     LastName = "Smith"
                 };
+                var n = 0;
+                BloggerUserCollection.ForEach(user =>
+                {
+                    Assert.True(user.Active);
+                    Assert.True(
+                        (user.FirstName == "John" && user.LastName == "Doe") ||
+                        (user.FirstName == "Ted" && user.LastName == "Smith"));
+                    n++;
+                });
+                Assert.Equal(2, n);
                 BloggerContext.Commit(false);
             }
             using (BloggerContext.NewReadContext(repository))
             {
-                //Assert.True(BloggerContext.Transaction.BloggerUserCollection.Any());
                 BloggerUserCollection.ForEach(user =>
                 {
                     Assert.True(user.Active);
@@ -209,6 +218,69 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         (user.FirstName == "John" && user.LastName == "Doe") ||
                         (user.FirstName == "Ted" && user.LastName == "Smith"));
                 });
+            }
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var n = 0;
+                BloggerUserCollection.ForEach(user =>
+                {
+                    Assert.True(user.Active);
+                    Assert.True(
+                        (user.FirstName == "John" && user.LastName == "Doe") ||
+                        (user.FirstName == "Ted" && user.LastName == "Smith"));
+                    user.City = "New York City";
+                    n++;
+                });
+                Assert.Equal(2, n);
+            }
+        }
+
+        [Theory()]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.PersistantRepository)]
+        public void AddAndCommitTransactionsAndModify(SegmentStoreMode mode)
+        {
+            using var tempDir = new TempDirectoryHelper(true);
+            using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var user = new BloggerUser()
+                {
+                    Active = true,
+                    FirstName = "John",
+                    LastName = "Doe"
+                };
+                user = new BloggerUser()
+                {
+                    Active = true,
+                    FirstName = "Ted",
+                    LastName = "Smith"
+                };
+                var n = 0;
+                BloggerUserCollection.ForEach(user =>
+                {
+                    Assert.True(user.Active);
+                    Assert.True(
+                        (user.FirstName == "John" && user.LastName == "Doe") ||
+                        (user.FirstName == "Ted" && user.LastName == "Smith"));
+                    n++;
+                });
+                Assert.Equal(2, n);
+                BloggerContext.Commit(false);
+            }
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var n = 0;
+                BloggerUserCollection.ForEach(user =>
+                {
+                    Assert.True(user.Active);
+                    Assert.True(
+                        (user.FirstName == "John" && user.LastName == "Doe") ||
+                        (user.FirstName == "Ted" && user.LastName == "Smith"));
+                    user.City = "New York City";
+                });
+                Assert.Equal(2, n);
             }
         }
 

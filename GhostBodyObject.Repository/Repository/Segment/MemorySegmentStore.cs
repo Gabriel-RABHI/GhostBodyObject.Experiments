@@ -33,6 +33,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Contracts;
@@ -285,7 +286,10 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     segment.WriteAt(loc.Offset, recordHeader);
                     if (_isPersistent)
                         checksum.Write(recordHeader);
-                    segment.WriteBytesAt(loc.Offset + sizeof(StoreTransactionRecordHeader), body._data.Ptr, ghostSize);
+                    var ghostDataPtr = segment.WriteBytesAt(loc.Offset + sizeof(StoreTransactionRecordHeader), body._data.Ptr, ghostSize);
+                    var h = (GhostHeader*)ghostDataPtr;
+                    h->TxnId = ctx.TransactionId;
+                    h->Status = GhostStatus.Mapped;
                     if (_isPersistent)
                         checksum.Write(body._data.Ptr, ghostSize);
                     onGhostStored(body.Id, new SegmentReference { SegmentId = (uint)loc.SegmentId, Offset = (uint)(loc.Offset + sizeof(StoreTransactionRecordHeader)) });
