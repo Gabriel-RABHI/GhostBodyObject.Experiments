@@ -405,6 +405,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         (user.FirstName == "John" && user.LastName == "Doe") ||
                         (user.FirstName == "Ted" && user.LastName == "Smith"));
                     user.City = "New York City";
+                    n++;
                 });
                 Assert.Equal(2, n);
             }

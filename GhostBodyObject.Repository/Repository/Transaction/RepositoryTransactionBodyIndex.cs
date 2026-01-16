@@ -280,9 +280,11 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                 if (map != null)
                 {
                     _ghostEnumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
+                    System.Console.WriteLine($"[DEBUG] Map found. TxnId={_txn.OpeningTxnId}. Count={map.GhostMap.Count}");
                 }
                 else
                 {
+                    System.Console.WriteLine($"[DEBUG] Map NOT found. Type={TBody.GetTypeIdentifier()}");
                     _ghostEnumerator = default;
                     _state = _isReadOnly ? 2 : 1; // Skip GhostMap if no index
                     if (_state == 1)
