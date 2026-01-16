@@ -29,6 +29,7 @@
  * --------------------------------------------------------------------------
  */
 
+using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Segment;
 
@@ -42,12 +43,15 @@ namespace GhostBodyObject.Repository.Repository.Transaction
         private MemorySegmentStoreHolders _holders;
         protected RepositoryTransactionBodyIndex _bodyIndex;
 
+        public volatile bool IsBusy;
+
         public RepositoryTransactionBase(GhostRepositoryBase repository, bool isReadOnly, ushort maxTypeIdentifier)
         {
             _repository = repository;
             _isReadOnly = isReadOnly;
             _holders = repository.Store.GetHolders();
             _openingTxnId = repository.CurrentTransactionId;
+            _bodyIndex = new RepositoryTransactionBodyIndex(this, 1024);
         }
 
         public GhostRepositoryBase Repository => _repository;
@@ -58,9 +62,28 @@ namespace GhostBodyObject.Repository.Repository.Transaction
 
         public long OpeningTxnId => _openingTxnId;
 
-
         public RepositoryTransactionBodyIndex BodyIndex => _bodyIndex;
 
-        public volatile bool IsBusy;
+        public void RegisterBody<TBody>(TBody body)
+            where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
+        {
+            var map = _bodyIndex.GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
+            if (body.Inserted)
+                map.InsertedIds.Add(body.Id);
+            if (body.MappedDeleted || body.MappedModified)
+                map.MappedMutedIds.Add(body.Id);
+            map.Set(body);
+        }
+
+        public void RemoveBody<TBody>(TBody body)
+            where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
+        {
+            var map = _bodyIndex.GetBodyMap<TBody>(TBody.GetTypeIdentifier());
+            if (map != null)
+            {
+                map.Remove(body.Id);
+                map.InsertedIds.Remove(body.Id);
+            }
+        }
     }
 }

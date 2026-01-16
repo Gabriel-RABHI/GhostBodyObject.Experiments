@@ -15,7 +15,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
     // 4. The Customer Entity (User Code)
     // ---------------------------------------------------------
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
-    public sealed partial class BloggerUser : BloggerBodyBase, IHasTypeIdentifier
+    public sealed partial class BloggerUser : BloggerBodyBase, IHasTypeIdentifier, IBodyFactory<BloggerUser>
     {
         public static GhostTypeCombo GetTypeIdentifier() => new GhostTypeCombo(GhostIdKind.Entity, 100);
 
@@ -97,6 +97,9 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                 }
             }
         }
+
+        public static BloggerUser Create(PinnedMemory<byte> ghost, bool mapped = true, bool register = true)
+            => new BloggerUser(ghost, mapped, register);
 
         public unsafe DateTime BirthDate
 
