@@ -73,7 +73,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
     {
         public static void ForEach(Action<BloggerUser> action)
         {
-            var enumerator = BloggerContext.Transaction.BodyIndex.GetEnumerator<BloggerUser>();
+            var enumerator = BloggerContext.Transaction.Users.Instances().GetEnumerator();
             while (enumerator.MoveNext())
             {
                 action(enumerator.Current);
