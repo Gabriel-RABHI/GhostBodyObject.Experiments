@@ -1,10 +1,11 @@
-﻿using GhostBodyObject.HandWritten.TestModel;
-using GhostBodyObject.HandWritten.TestModel.Arrays;
-using GhostBodyObject.HandWritten.TestModel.Repository;
+﻿using GhostBodyObject.HandWritten.Entities;
+using GhostBodyObject.HandWritten.Entities.Arrays;
+using GhostBodyObject.HandWritten.Entities.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using System.Text;
+using System.Linq;
 
-namespace GhostBodyObject.HandWritten.Tests.BloggerApp
+namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
 {
     public class ArraysAsStringsAndSpansLargeShould
     {
@@ -21,6 +22,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (TestModelContext.OpenReadContext(repository))
             {
                 var body = new ArraysAsStringsAndSpansLarge();
+
+                //Assert.Equal(1, body.Transaction.ArraysAsStringsAndSpansLargeCollection.Count);
 
                 Assert.Equal(default(DateTime), body.OneDateTime);
                 Assert.Equal(0, body.OneInt);

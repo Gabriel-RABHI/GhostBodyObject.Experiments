@@ -1,4 +1,35 @@
-﻿using GhostBodyObject.Common.Utilities;
+﻿/*
+ * Copyright (c) 2026 Gabriel RABHI / DOT-BEES
+ *
+ * This file is part of Ghost-Body-Object (GBO).
+ *
+ * Ghost-Body-Object (GBO) is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Ghost-Body-Object (GBO) is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * --------------------------------------------------------------------------
+ *
+ * COMMERICIAL LICENSING:
+ *
+ * If you wish to use this software in a proprietary (closed-source) application,
+ * you must purchase a Commercial License from Gabriel RABHI / DOT-BEES.
+ *
+ * For licensing inquiries, please contact: <mailto:gabriel.rabhi@gmail.com>
+ * or visit: <https://www.ghost-body-object.com>
+ *
+ * --------------------------------------------------------------------------
+ */
+
+using GhostBodyObject.Common.Utilities;
 using GhostBodyObject.Repository.Ghost.Constants;
 using System;
 using System.Collections.Generic;
@@ -53,14 +84,17 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         [FieldOffset(14)]
         public readonly short ShardComputation;
 
-        [FieldOffset(0)]
+        [FieldOffset(6)]
         private readonly GhostTypeCombo _typeCombo;
 
         // ---------------------------------------------------------
         // Constants & Masks
         // ---------------------------------------------------------
-        private const int KindShift = 61;
-        private const int TypeShift = 48;
+        // ---------------------------------------------------------
+        // Constants & Masks
+        // ---------------------------------------------------------
+        private const int KindShift = 48; // Was 61
+        private const int TypeShift = 51; // Was 48
         private const ulong TimestampMask = 0x0000_FFFF_FFFF_FFFF;
         private const ulong TypeMask = 0x1FFF; // 13 bits
         private const ulong KindMask = 0x7;    // 3 bits
@@ -114,7 +148,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         public GhostIdKind Kind
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (GhostIdKind)(_header >> KindShift);
+            get => (GhostIdKind)((_header >> KindShift) & KindMask);
         }
 
         public ushort TypeIdentifier

@@ -1,8 +1,8 @@
 ﻿using GhostBodyObject.Repository.Repository;
 
-namespace GhostBodyObject.HandWritten.TestModel.Repository
+namespace GhostBodyObject.HandWritten.Entities.Repository
 {
-    public class TestModelRepository : GhostRepository
+    public class TestModelRepository : GhostRepositoryBase
     {
     }
 }

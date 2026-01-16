@@ -20,5 +20,8 @@
     <Project Path="GhostBodyObject.HandWritten.Tests/GhostBodyObject.HandWritten.Tests.csproj" Id="94f66966-6710-4c9a-9042-3ff6d509c947" />
     <Project Path="GhostBodyObject.HandWritten/GhostBodyObject.HandWritten.csproj" Id="3f3a0224-21dc-4137-b264-5b511594252a" />
   </Folder>
+  <Folder Name="/8-FullStack/">
+    <Project Path="BlazorApp.GhostBodyObject.Tests/BlazorApp.GhostBodyObject.Tests.csproj" Id="e5ab1a35-f18d-4a37-b74d-fec970a9670a" />
+  </Folder>
   <Project Path="GhostBodyObject.Experiments/GhostBodyObject.Experiments.csproj" />
 </Solution>

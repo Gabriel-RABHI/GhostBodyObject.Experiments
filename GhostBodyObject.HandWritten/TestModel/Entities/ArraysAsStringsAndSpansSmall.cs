@@ -1,6 +1,6 @@
 ﻿using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Experiments.BabyBody;
-using GhostBodyObject.HandWritten.TestModel.Repository;
+using GhostBodyObject.HandWritten.Entities.Repository;
 using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Body.Vectors;
@@ -10,7 +10,7 @@ using GhostBodyObject.Repository.Ghost.Values;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace GhostBodyObject.HandWritten.TestModel.Arrays
+namespace GhostBodyObject.HandWritten.Entities.Arrays
 {
     // ---------------------------------------------------------
     // The ArraysAsStringsAndSpansSmall Entity (Uses ArrayMapSmallEntry)
@@ -34,6 +34,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
             unsafe
             {
                 VectorTableRegistry<TestModelRepository, ArraysAsStringsAndSpansSmall>.BuildStandaloneVersion(ModelVersion, this);
+                Transaction.RegisterBody(this);
             }
         }
 
@@ -45,6 +46,7 @@ namespace GhostBodyObject.HandWritten.TestModel.Arrays
                     VectorTableRegistry<TestModelRepository, ArraysAsStringsAndSpansSmall>.BuildMappedVersion(ghost, this, Transaction.IsReadOnly);
                 else
                     VectorTableRegistry<TestModelRepository, ArraysAsStringsAndSpansSmall>.BuildStandaloneVersion(ghost, this);
+                Transaction.RegisterBody(this);
             }
         }
 

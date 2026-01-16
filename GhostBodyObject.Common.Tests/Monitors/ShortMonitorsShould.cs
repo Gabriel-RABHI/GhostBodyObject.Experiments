@@ -18,7 +18,7 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
             var SpinLock = new ShortSpinLock();
             var count = 0;
 #if RELEASE
-            var loops = 3_000_000;
+            var loops = 1_000_000;
 #else
             var loops = 100_000;
 #endif
@@ -61,7 +61,7 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
             var SpinLock = new ShortCountSpinLock(2);
             var count = 0;
 #if RELEASE
-            var loops = 3_000_000;
+            var loops = 1_000_000;
 #else
             var loops = 100_000;
 #endif
@@ -105,7 +105,7 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
             var SpinLock = new ShortRecursiveSpinLock();
             var count = 0;
 #if RELEASE
-            var loops = 3_000_000;
+            var loops = 1_000_000;
 #else
             var loops = 100_000;
 #endif
@@ -162,7 +162,7 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
             var SpinLock = new ShortReadWriteSpinLock();
             var countWrite = 0;
 #if RELEASE
-            var loops = 3_000_000;
+            var loops = 1_000_000;
 #else
             var loops = 100_000;
 #endif

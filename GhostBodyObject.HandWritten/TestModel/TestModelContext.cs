@@ -1,7 +1,7 @@
-﻿using GhostBodyObject.HandWritten.TestModel.Contracts;
-using GhostBodyObject.HandWritten.TestModel.Repository;
+﻿using GhostBodyObject.HandWritten.Entities.Contracts;
+using GhostBodyObject.HandWritten.Entities.Repository;
 
-namespace GhostBodyObject.HandWritten.TestModel
+namespace GhostBodyObject.HandWritten.Entities
 {
     public static class TestModelContext
     {

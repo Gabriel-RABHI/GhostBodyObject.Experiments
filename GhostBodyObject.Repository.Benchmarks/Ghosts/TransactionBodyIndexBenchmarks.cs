@@ -19,7 +19,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_Set_Insertion()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var index = new TransactionBodyMap<BloggerUser>();
 
@@ -51,7 +51,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_GetRef_Lookup()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var index = new TransactionBodyMap<BloggerUser>();
 
@@ -86,7 +86,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_Remove()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var index = new TransactionBodyMap<BloggerUser>();
 
@@ -123,7 +123,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_Enumeration()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var index = new TransactionBodyMap<BloggerUser>();
 
@@ -158,7 +158,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_RawArrayEnumeration()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var index = new TransactionBodyMap<BloggerUser>();
 
@@ -196,7 +196,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_SetUpdate()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var index = new TransactionBodyMap<BloggerUser>();
 
@@ -229,7 +229,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_MixedOperations()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var index = new TransactionBodyMap<BloggerUser>();
 
@@ -276,7 +276,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_CompareWithDictionary()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 // Prepare users
                 var users = new BloggerUser[SMALL_COUNT];
@@ -327,7 +327,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         public void Benchmark_Clear()
         {
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 const int iterations = 100;
 

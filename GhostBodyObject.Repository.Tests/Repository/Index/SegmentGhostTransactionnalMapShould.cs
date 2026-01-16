@@ -116,6 +116,27 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                     }
                 }
             }
+
+            public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Dictionary<uint, int> UsageCounts = new();
+
+            public void IncrementSegmentHolderUsage(SegmentReference reference)
+            {
+                if (!UsageCounts.ContainsKey(reference.SegmentId))
+                    UsageCounts[reference.SegmentId] = 0;
+                UsageCounts[reference.SegmentId]++;
+            }
+
+            public void DecrementSegmentHolderUsage(SegmentReference reference)
+            {
+                if (!UsageCounts.ContainsKey(reference.SegmentId))
+                    UsageCounts[reference.SegmentId] = 0;
+                UsageCounts[reference.SegmentId]--;
+            }
         }
 
         // ---------------------------------------------------------

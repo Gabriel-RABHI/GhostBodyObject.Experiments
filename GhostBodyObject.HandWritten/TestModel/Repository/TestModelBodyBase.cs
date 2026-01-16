@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace GhostBodyObject.HandWritten.TestModel.Repository
+namespace GhostBodyObject.HandWritten.Entities.Repository
 {
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 42)]
     public abstract class TestModelBodyBase : BodyBase

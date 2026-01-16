@@ -1,6 +1,6 @@
-﻿using GhostBodyObject.HandWritten.TestModel.Repository;
+﻿using GhostBodyObject.HandWritten.Entities.Repository;
 
-namespace GhostBodyObject.HandWritten.TestModel.Contracts
+namespace GhostBodyObject.HandWritten.Entities.Contracts
 {
     public interface ITestModelScope : IDisposable
     {

@@ -8,38 +8,40 @@ namespace GhostBodyObject.HandWritten.Blogger
         private static readonly AsyncLocal<BloggerTransaction?> _currentToken = new AsyncLocal<BloggerTransaction?>(OnContextChanged);
 
         [ThreadStatic]
-        private static BloggerTransaction? FastCache;
+        private static BloggerTransaction? _fastCache;
 
-        public static BloggerTransaction? Transaction => FastCache;
+        public static BloggerTransaction? Transaction => _fastCache;
 
         private static void OnContextChanged(AsyncLocalValueChangedArgs<BloggerTransaction?> args)
-            => FastCache = args.CurrentValue;
+            => _fastCache = args.CurrentValue;
 
-        public static IBloggerScope OpenReadContext(BloggerRepository repository, bool readOnly = false)
+        private static IBloggerScope NewContext(BloggerRepository repository, bool readOnly = false)
         {
-            if (FastCache != null)
+            if (_fastCache != null)
             {
                 throw new InvalidOperationException("Cannot nest contexts.");
             }
-            var newToken = new BloggerTransaction(repository);
+            var newToken = new BloggerTransaction(repository, readOnly);
             _currentToken.Value = newToken;
             return new BloggerContextScope(newToken);
         }
 
+        public static IBloggerScope NewWriteContext(BloggerRepository repository) => NewContext(repository, false);
+
+        public static IBloggerScope NewReadContext(BloggerRepository repository) => NewContext(repository, true);
+
+        public static void Commit(bool concurrently = false) => _fastCache.Commit(concurrently);
+
+        public static void Rollback() => _fastCache.Rollback();
+
         private class BloggerContextScope : IBloggerScope
         {
             private readonly BloggerTransaction _transaction;
-            private readonly BloggerRepository _repository;
             private bool _disposed;
-
-            public BloggerTransaction Transaction => _transaction;
-
-            public BloggerRepository Repository => _repository;
 
             public BloggerContextScope(BloggerTransaction transaction)
             {
                 _transaction = transaction;
-                _repository = transaction.Repository;
             }
 
             public void Dispose()

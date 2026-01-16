@@ -3,6 +3,7 @@ using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Body.Vectors;
+using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,8 +15,10 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
     // 4. The Customer Entity (User Code)
     // ---------------------------------------------------------
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
-    public sealed partial class BloggerUser : BloggerBodyBase
+    public sealed partial class BloggerUser : BloggerBodyBase, IHasTypeIdentifier, IBodyFactory<BloggerUser>
     {
+        public static GhostTypeCombo GetTypeIdentifier() => new GhostTypeCombo(GhostIdKind.Entity, 100);
+
         public const int ModelVersion = 1;
 
         public PinnedMemory<byte> Ghost => _data;
@@ -34,10 +37,11 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             unsafe
             {
                 VectorTableRegistry<BloggerRepository, BloggerUser>.BuildStandaloneVersion(ModelVersion, this);
+                Transaction.RegisterBody(this);
             }
         }
 
-        public BloggerUser(PinnedMemory<byte> ghost, bool mapped = true)
+        public BloggerUser(PinnedMemory<byte> ghost, bool mapped = true, bool register = true) : base(ghost)
         {
             unsafe
             {
@@ -45,8 +49,57 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
                     VectorTableRegistry<BloggerRepository, BloggerUser>.BuildMappedVersion(ghost, this, Transaction.IsReadOnly);
                 else
                     VectorTableRegistry<BloggerRepository, BloggerUser>.BuildStandaloneVersion(ghost, this);
+                if (register)
+                    Transaction.RegisterBody(this);
             }
         }
+
+        public BloggerUser ToStandalone()
+        {
+            GuardLocalScope();
+            {
+                unsafe
+                {
+                    VectorTableRegistry<BloggerRepository, BloggerUser>.MappedToStandaloneVersion(this, GhostStatus.MappedModified);
+                    Transaction.RegisterBody(this);
+                }
+            }
+            return this;
+        }
+
+        // TODO : change vPtr is version missmatch
+        public void SwapGhost(PinnedMemory<byte> ghost) => _data = ghost;
+
+        public void Delete()
+        {
+            GuardLocalScope();
+            {
+                unsafe
+                {
+                    if (_vTable->Std.ReadOnly)
+                        throw new InvalidOperationException("Cannot delete a body in a read-only transaction.");
+                    var h = Header;
+                    switch (h->Status)
+                    {
+                        case GhostStatus.Inserted:
+                            Transaction.RemoveBody(this);
+                            break;
+                        case GhostStatus.Mapped:
+                            VectorTableRegistry<BloggerRepository, BloggerUser>.MappedToStandaloneVersion(this, GhostStatus.MappedDeleted);
+                            Transaction.RegisterBody(this);
+                            break;
+                        case GhostStatus.MappedModified:
+                            h->Status = GhostStatus.MappedDeleted;
+                            break;
+                        case GhostStatus.MappedDeleted:
+                            break;
+                    }
+                }
+            }
+        }
+
+        public static BloggerUser Create(PinnedMemory<byte> ghost, bool mapped = true, bool register = true)
+            => new BloggerUser(ghost, mapped, register);
 
         public unsafe DateTime BirthDate
 

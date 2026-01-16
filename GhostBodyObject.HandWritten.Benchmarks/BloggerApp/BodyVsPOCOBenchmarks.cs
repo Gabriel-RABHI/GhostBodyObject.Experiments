@@ -57,7 +57,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             BenchmarkResult r1 = null;
             var users = new List<BloggerUser>();
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 for (int i = 0; i < COUNT; i++)
                 {
@@ -136,7 +136,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             WriteComment("The array retain 32 objects at any time, prevent the stack alloc.");
             WriteComment("The single assignation create a standalone Ghost memory block.");
 
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var array = new BloggerUser[32];
                 r1 = RunMonitoredAction(() =>
@@ -146,6 +146,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                         {
                             var user = new BloggerUser();
                             array[i% 32] = user;
+                            user.Delete();
                         }
                 })
                 .PrintToConsole($"Create {COUNT * 100:N0} initial BloggerUser")
@@ -154,7 +155,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                 WriteComment($"{(array.Count(o => o.FirstName.Length > 0))}");
             }
 
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var array = new BloggerUser[32];
                 r2 = RunMonitoredAction(() =>
@@ -165,6 +166,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                             var user = new BloggerUser();
                             user.FirstName = "Ted is in the wild.";
                             array[i % 32] = user;
+                            user.Delete();
                         }
                 })
                 .PrintToConsole($"Create {COUNT * 100:N0} BloggerUser with 1 string assigned")
@@ -173,7 +175,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                 WriteComment($"{(array.Count(o => o.FirstName.Length > 0))}");
             }
 
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 var userSrc = new BloggerUser();
                 var ghost = userSrc.Ghost;
@@ -185,6 +187,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                         {
                             var user = new BloggerUser(ghost, false);
                             array[i % 32] = user;
+                            user.Delete();
                         }
                 })
                 .PrintToConsole($"Create {COUNT * 100:N0} BloggerUser from existing Ghost")
@@ -219,7 +222,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             BenchmarkResult r1 = null;
             var users = new List<BloggerUser>();
             var repository = new BloggerRepository();
-            using (BloggerContext.OpenReadContext(repository))
+            using (BloggerContext.NewWriteContext(repository))
             {
                 for (int i = 0; i < COUNT; i++)
                 {

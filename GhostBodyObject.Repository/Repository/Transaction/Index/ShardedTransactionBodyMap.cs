@@ -1,5 +1,38 @@
+/*
+ * Copyright (c) 2026 Gabriel RABHI / DOT-BEES
+ *
+ * This file is part of Ghost-Body-Object (GBO).
+ *
+ * Ghost-Body-Object (GBO) is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Ghost-Body-Object (GBO) is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * --------------------------------------------------------------------------
+ *
+ * COMMERICIAL LICENSING:
+ *
+ * If you wish to use this software in a proprietary (closed-source) application,
+ * you must purchase a Commercial License from Gabriel RABHI / DOT-BEES.
+ *
+ * For licensing inquiries, please contact: <mailto:gabriel.rabhi@gmail.com>
+ * or visit: <https://www.ghost-body-object.com>
+ *
+ * --------------------------------------------------------------------------
+ */
+
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Repository.Contracts;
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Transaction.Index
@@ -9,13 +42,16 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
     /// Distributes entries across multiple <see cref="TransactionBodyMap{TBody}"/> shards
     /// to reduce contention and improve cache locality in concurrent scenarios.
     /// </summary>
-    public unsafe sealed class ShardedTransactionBodyMap<TBody>
+    public unsafe sealed class ShardedTransactionBodyMap<TBody> : IEnumerable<TBody>, IModifiedBodyStream
         where TBody : BodyBase
     {
         // Default shard count of 8 - power of 2 for fast masking
         private const int DefaultShardCount = 8;
         private readonly int _shardCount;
         private readonly int _shardMask;
+
+        private List<GhostId> _inserted;
+        private List<GhostId> _mappedMuted;
 
         private readonly TransactionBodyMap<TBody>[] _shards;
 
@@ -39,12 +75,29 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             }
         }
 
+        public List<GhostId> InsertedIds
+            => _inserted == null ? (_inserted = new List<GhostId>()) : _inserted;
+
+        public List<GhostId> MappedMutedIds
+            => _mappedMuted == null ? (_mappedMuted = new List<GhostId>()) : _mappedMuted;
+
+        
+        public void ReadModifiedBodies(Action<BodyBase> reader)
+        {
+            if (_inserted != null)
+                foreach (var id in _inserted)
+                    reader(Get(id, out var exist));
+            if (_mappedMuted != null)
+                foreach (var id in _mappedMuted)
+                    reader(Get(id, out var exist));
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private TransactionBodyMap<TBody> GetShard(GhostId id) 
+        private TransactionBodyMap<TBody> GetShard(GhostId id)
             => _shards[id.ShardComputation & _shardMask];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private TransactionBodyMap<TBody> GetShard(short shardComputation) 
+        private TransactionBodyMap<TBody> GetShard(short shardComputation)
             => _shards[shardComputation & _shardMask];
 
         // --- CRUD OPERATIONS ---
@@ -60,7 +113,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         /// Retrieves the entry with the specified Id from the appropriate shard.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TBody GetRef(GhostId id, out bool exists)
+        public TBody Get(GhostId id, out bool exists)
             => GetShard(id).GetRef(id, out exists);
 
         /// <summary>
@@ -120,10 +173,14 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ShardedEnumerator GetEnumerator() => new ShardedEnumerator(_shards);
 
+        IEnumerator<TBody> IEnumerable<TBody>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
         /// <summary>
         /// Allocation-free enumerator struct that iterates across all shards.
         /// </summary>
-        public struct ShardedEnumerator
+        public struct ShardedEnumerator : IEnumerator<TBody>
         {
             private readonly TransactionBodyMap<TBody>[] _shards;
             private int _shardIndex;
@@ -140,13 +197,13 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool MoveNext()
             {
-                if (_currentEnum.MoveNext()) 
+                if (_currentEnum.MoveNext())
                     return true;
 
                 while (++_shardIndex < _shards.Length)
                 {
                     _currentEnum = _shards[_shardIndex].GetEnumerator();
-                    if (_currentEnum.MoveNext()) 
+                    if (_currentEnum.MoveNext())
                         return true;
                 }
                 return false;
@@ -157,6 +214,16 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _currentEnum.Current;
             }
+
+            object IEnumerator.Current => Current;
+
+            public void Reset()
+            {
+                _shardIndex = 0;
+                _currentEnum = _shards.Length > 0 ? _shards[0].GetEnumerator() : default;
+            }
+
+            public void Dispose() { }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
