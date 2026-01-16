@@ -67,12 +67,6 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         {
             _bodyIndex.ReadModifiedBodies(reader);
         }
-
-        // --------------------------------------------------------- //
-        // The Entities
-        // --------------------------------------------------------- //
-        #region
-        #endregion
     }
 
     public static class BloggerUserCollection
