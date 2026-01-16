@@ -30,7 +30,7 @@ namespace GhostBodyObject.HandWritten.Blogger
 
         public static IBloggerScope NewReadContext(BloggerRepository repository) => NewContext(repository, true);
 
-        public static void Commit(bool concurrently) => FastCache.Commit(concurrently);
+        public static void Commit(bool concurrently = false) => FastCache.Commit(concurrently);
 
         public static void Rollback() => FastCache.Rollback();
 

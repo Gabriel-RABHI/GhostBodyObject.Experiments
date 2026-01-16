@@ -138,9 +138,12 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                                 while (enumerator.MoveNext())
                                 {
                                     var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
-                                    var body = new BloggerUser(ghost, true, true);
-                                    _txn._bloggerUserMap.Set(body);
-                                    action(body);
+                                    if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
+                                    {
+                                        var body = new BloggerUser(ghost, true, true);
+                                        _txn._bloggerUserMap.Set(body);
+                                        action(body);
+                                    }
                                 }
                             }
                             else
@@ -181,9 +184,12 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                                 while (enumerator.MoveNext())
                                 {
                                     var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
-                                    var body = new BloggerUser(ghost, true, true);
-                                    _txn._bloggerUserMap.Set(body);
-                                    action(body);
+                                    if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
+                                    {
+                                        var body = new BloggerUser(ghost, true, true);
+                                        _txn._bloggerUserMap.Set(body);
+                                        action(body);
+                                    }
                                 }
                             }
                             else
@@ -248,6 +254,14 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
                                 else
                                     body.SwapGhost(ghost);
                                 action(body);
+                                // !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-! //
+                                // CAUTIONS
+                                // If the status of the Ghost changed during the action,
+                                // the body must be added to the transaction map, and a new
+                                // cursor body must be created.
+                                //
+                                // This ensure that a body modified during the action is correctly
+                                // handled.
                             }
                         }
                     }

@@ -176,13 +176,19 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         }
 
         [Theory()]
-        [InlineData(SegmentStoreMode.InMemoryVolatileRepository)]
-        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository)]
-        [InlineData(SegmentStoreMode.PersistantRepository)]
-        public void AddAndCommitTransactions(SegmentStoreMode mode)
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository, false)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository, false)]
+        [InlineData(SegmentStoreMode.PersistantRepository, false)]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository, true)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository, true)]
+        [InlineData(SegmentStoreMode.PersistantRepository, true)]
+        public void AddAndCommitTransactions(SegmentStoreMode mode, bool cursor)
         {
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+            Action<Action<BloggerUser>> forEach = cursor  ? ((a) => BloggerUserCollection.ForEachCursor(a)) : ((a) => BloggerUserCollection.ForEach(a));
+            // ================================================================ //
+            // -------- Mutations
             using (BloggerContext.NewWriteContext(repository))
             {
                 var user = new BloggerUser()
@@ -198,7 +204,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     LastName = "Smith"
                 };
                 var n = 0;
-                BloggerUserCollection.ForEach(user =>
+                forEach(user =>
                 {
                     Assert.True(user.Active);
                     Assert.True(
@@ -209,9 +215,10 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 Assert.Equal(2, n);
                 BloggerContext.Commit(false);
             }
+            // -------- Validate
             using (BloggerContext.NewReadContext(repository))
             {
-                BloggerUserCollection.ForEach(user =>
+                forEach(user =>
                 {
                     Assert.True(user.Active);
                     Assert.True(
@@ -219,6 +226,18 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         (user.FirstName == "Ted" && user.LastName == "Smith"));
                 });
             }
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                forEach(user =>
+                {
+                    Assert.True(user.Active);
+                    Assert.True(
+                        (user.FirstName == "John" && user.LastName == "Doe") ||
+                        (user.FirstName == "Ted" && user.LastName == "Smith"));
+                });
+            }
+            // ================================================================ //
+            // -------- Mutations
             using (BloggerContext.NewWriteContext(repository))
             {
                 var n = 0;
@@ -233,7 +252,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 });
                 Assert.Equal(2, n);
                 n = 0;
-                BloggerUserCollection.ForEach(user =>
+                forEach(user =>
                 {
                     Assert.True(user.City == "New York City");
                     n++;
@@ -241,18 +260,105 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 Assert.Equal(2, n);
                 BloggerContext.Commit(false);
             }
-            // TODO : add a Rollback test
+            // -------- Validate
             using (BloggerContext.NewReadContext(repository))
             {
                 var n = 0;
-                BloggerUserCollection.ForEach(user =>
+                forEach(user =>
                 {
                     Assert.True(user.City == "New York City");
                     n++;
                 });
                 Assert.Equal(2, n);
             }
-            // TODO : add a Delete test
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var n = 0;
+                forEach(user =>
+                {
+                    Assert.True(user.City == "New York City");
+                    n++;
+                });
+                Assert.Equal(2, n);
+            }
+            // ================================================================ //
+            // -------- Mutations
+            // Rollback test
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var n = 0;
+                forEach(user =>
+                {
+                    user.City = "Paris";
+                    n++;
+                });
+                Assert.Equal(2, n);
+                BloggerContext.Rollback();
+            }
+            // -------- Validate
+            using (BloggerContext.NewReadContext(repository))
+            {
+                var n = 0;
+                forEach(user =>
+                {
+                    Assert.True(user.City == "New York City");
+                    n++;
+                });
+                Assert.Equal(2, n);
+            }
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var n = 0;
+                forEach(user =>
+                {
+                    Assert.True(user.City == "New York City");
+                    n++;
+                });
+                Assert.Equal(2, n);
+            }
+            // ================================================================ //
+            // -------- Mutations
+            // Delete test
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var n = 0;
+                forEach(user =>
+                {
+                    if (user.FirstName == "John")
+                        user.Delete();
+                    n++;
+                });
+                Assert.Equal(2, n);
+                n = 0;
+                forEach(user =>
+                {
+                    Assert.True(user.FirstName == "Ted");
+                    n++;
+                });
+                Assert.Equal(1, n);
+                BloggerContext.Commit();
+            }
+            // -------- Validate
+            using (BloggerContext.NewReadContext(repository))
+            {
+                var n = 0;
+                forEach(user =>
+                {
+                    Assert.True(user.FirstName == "Ted");
+                    n++;
+                });
+                Assert.Equal(1, n);
+            }
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var n = 0;
+                forEach(user =>
+                {
+                    Assert.True(user.FirstName == "Ted");
+                    n++;
+                });
+                Assert.Equal(1, n);
+            }
         }
 
         [Theory()]

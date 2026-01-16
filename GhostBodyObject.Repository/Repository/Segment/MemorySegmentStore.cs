@@ -289,7 +289,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     var ghostDataPtr = segment.WriteBytesAt(loc.Offset + sizeof(StoreTransactionRecordHeader), body._data.Ptr, ghostSize);
                     var h = (GhostHeader*)ghostDataPtr;
                     h->TxnId = ctx.TransactionId;
-                    h->Status = GhostStatus.Mapped;
+                    h->Status = body.Status == GhostStatus.MappedDeleted ? GhostStatus.Tombstone : GhostStatus.Mapped;
                     if (_isPersistent)
                         checksum.Write(body._data.Ptr, ghostSize);
                     onGhostStored(body.Id, new SegmentReference { SegmentId = (uint)loc.SegmentId, Offset = (uint)(loc.Offset + sizeof(StoreTransactionRecordHeader)) });
