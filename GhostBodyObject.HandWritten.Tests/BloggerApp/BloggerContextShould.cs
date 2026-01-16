@@ -186,7 +186,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         {
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
-            Action<Action<BloggerUser>> forEach = cursor  ? ((a) => BloggerUserCollection.ForEachCursor(a)) : ((a) => BloggerUserCollection.ForEach(a));
+
+            Action<Action<BloggerUser>> forEach = cursor  ? ((a) => BloggerCollections.BloggerUsers.Scan(a)) : ((a) => BloggerCollections.BloggerUsers.ForEach(a));
             // ================================================================ //
             // -------- Mutations
             using (BloggerContext.NewWriteContext(repository))
@@ -240,8 +241,23 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             // -------- Mutations
             using (BloggerContext.NewWriteContext(repository))
             {
+                // -------- Cursor aggregation work
+                var names = BloggerCollections.BloggerUsers.Cursor.Select(u => u.FirstName.ToString()).ToList();
+                Assert.Equal(1, names.Count(name => name == "John"));
+                Assert.Equal(1, names.Count(name => name == "Ted"));
+
+                // -------- Cursor sellect fails
+                var users = BloggerCollections.BloggerUsers.Cursor.Select(u => u).ToList();
+                Assert.Equal(0, users.Count(u => u.FirstName == "John"));
+                Assert.Equal(2, users.Count(u => u.FirstName == "Ted"));
+
+                // -------- Cursor sellect work
+                users = BloggerCollections.BloggerUsers.Instances.Select(u => u).ToList();
+                Assert.Equal(0, users.Count(u => u.FirstName == "John"));
+                Assert.Equal(2, users.Count(u => u.FirstName == "Ted"));
+
                 var n = 0;
-                BloggerUserCollection.ForEach(user =>
+                BloggerCollections.BloggerUsers.Scan(user =>
                 {
                     Assert.True(user.Active);
                     Assert.True(
@@ -251,6 +267,11 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     n++;
                 });
                 Assert.Equal(2, n);
+
+                var list = BloggerCollections.BloggerUsers.Cursor.Where(u => u.City == "New York City").ToList();
+                Assert.Equal(1, list.Count(u => u.FirstName == "John"));
+                Assert.Equal(1, list.Count(u => u.FirstName == "Ted"));
+
                 n = 0;
                 forEach(user =>
                 {
@@ -269,6 +290,11 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     Assert.True(user.City == "New York City");
                     n++;
                 });
+
+                var list = BloggerCollections.BloggerUsers.Where(u => u.City == "New York City").ToList();
+                Assert.Equal(1, list.Where(u => u.FirstName == "John").Count());
+                Assert.Equal(1, list.Where(u => u.FirstName == "Ted").Count());
+
                 Assert.Equal(2, n);
             }
             using (BloggerContext.NewWriteContext(repository))
@@ -384,7 +410,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     LastName = "Smith"
                 };
                 var n = 0;
-                BloggerUserCollection.ForEach(user =>
+                BloggerCollections.BloggerUsers.ForEach(user =>
                 {
                     Assert.True(user.Active);
                     Assert.True(
@@ -398,7 +424,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewWriteContext(repository))
             {
                 var n = 0;
-                BloggerUserCollection.ForEach(user =>
+                BloggerCollections.BloggerUsers.ForEach(user =>
                 {
                     Assert.True(user.Active);
                     Assert.True(
@@ -464,7 +490,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     long verifySum = 0;
                     var n = 0;
                     sw = Stopwatch.StartNew();
-                    BloggerUserCollection.ForEachCursor(user =>
+                    BloggerCollections.BloggerUsers.Scan(user =>
                     {
                         Assert.True(user.Active);
                         verifySum += user.CustomerCode;
@@ -520,7 +546,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 {
                     var n = 0;
                     sw = Stopwatch.StartNew();
-                    BloggerUserCollection.ForEachCursor(user =>
+                    BloggerCollections.BloggerUsers.Scan(user =>
                     {
                         Assert.True(user.Active);
                         n++;
@@ -541,7 +567,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [InlineData(SegmentStoreMode.PersistantRepository, true)]
         public void AddAndCommitTransactionsConcurrentReadWrite(SegmentStoreMode mode, bool cursor)
         {
-            Action<Action<BloggerUser>> forEach = cursor ? ((a) => BloggerUserCollection.ForEachCursor(a)) : ((a) => BloggerUserCollection.ForEach(a));
+            Action<Action<BloggerUser>> forEach = cursor ? ((a) => BloggerCollections.BloggerUsers.Scan(a)) : ((a) => BloggerCollections.BloggerUsers.ForEach(a));
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();

@@ -67,26 +67,12 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         {
             _bodyIndex.ReadModifiedBodies(reader);
         }
+
+        public BodyCollection<BloggerUser> Users => new BodyCollection<BloggerUser>(_bodyIndex);
     }
 
-    public static class BloggerUserCollection
+    public static class BloggerCollections
     {
-        public static void ForEach(Action<BloggerUser> action)
-        {
-            var enumerator = BloggerContext.Transaction.Users.Instances().GetEnumerator();
-            while (enumerator.MoveNext())
-            {
-                action(enumerator.Current);
-            }
-        }
-
-        public static void ForEachCursor(Action<BloggerUser> action)
-        {
-            var enumerator = BloggerContext.Transaction.BodyIndex.GetEnumerator<BloggerUser>(true);
-            while (enumerator.MoveNext())
-            {
-                action(enumerator.Current);
-            }
-        }
+        public static BodyCollection<BloggerUser> BloggerUsers => BloggerContext.Transaction.Users;
     }
 }
