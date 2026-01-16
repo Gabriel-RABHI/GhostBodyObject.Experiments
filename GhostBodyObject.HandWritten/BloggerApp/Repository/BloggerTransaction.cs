@@ -20,8 +20,6 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
     {
         private BloggerRepository _repository;
         private bool _closed;
-        private int _mapIndex = 0;
-        private int _indexInMap = 0;
 
         public BloggerRepository Repository => _repository;
 
@@ -51,7 +49,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         }
 
 
-        public BloggerTransaction(BloggerRepository repository, bool readOnly = false) : base(repository, readOnly)
+        public BloggerTransaction(BloggerRepository repository, bool readOnly = false) : base(repository, readOnly, 101)
         {
             _repository = repository;
             _bloggerUserMap = new ShardedTransactionBodyMap<BloggerUser>();
@@ -68,7 +66,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         // --------------------------------------------------------- //
         public void ReadModifiedBodies(Action<BodyBase> reader)
         {
-            _bloggerUserMap.ReadModifiedBodies(reader);
+            _bodyIndex.ReadModifiedBodies(reader);
         }
 
         // --------------------------------------------------------- //
@@ -127,7 +125,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             {
                 unsafe
                 {
-                    var map = _txn.Repository.GhostIndex.GetIndex(BloggerUser.TypeCombo, false);
+                    var map = _txn.Repository.GhostIndex.GetIndex(BloggerUser.GetTypeIdentifier(), false);
                     if (_txn.IsReadOnly)
                     {
                         if (map != null)
@@ -240,7 +238,7 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
             {
                 unsafe
                 {
-                    var map = _txn.Repository.GhostIndex.GetIndex(BloggerUser.TypeCombo, false);
+                    var map = _txn.Repository.GhostIndex.GetIndex(BloggerUser.GetTypeIdentifier(), false);
                     if (_txn.IsReadOnly)
                     {
                         if (map != null)

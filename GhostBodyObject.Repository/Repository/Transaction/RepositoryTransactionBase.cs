@@ -30,7 +30,6 @@
  */
 
 using GhostBodyObject.Repository.Ghost.Structs;
-using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Segment;
 
 namespace GhostBodyObject.Repository.Repository.Transaction
@@ -41,14 +40,17 @@ namespace GhostBodyObject.Repository.Repository.Transaction
         private readonly bool _isReadOnly;
         private long _openingTxnId;
         private MemorySegmentStoreHolders _holders;
+        protected RepositoryTransactionBodyIndex _bodyIndex;
 
-        public RepositoryTransactionBase(GhostRepositoryBase repository, bool isReadOnly)
+        public RepositoryTransactionBase(GhostRepositoryBase repository, bool isReadOnly, ushort maxTypeIdentifier)
         {
             _repository = repository;
             _isReadOnly = isReadOnly;
             _holders = repository.Store.GetHolders();
             _openingTxnId = repository.CurrentTransactionId;
         }
+
+        public GhostRepositoryBase Repository => _repository;
 
         public bool IsReadOnly => _isReadOnly;
 

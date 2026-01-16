@@ -9,7 +9,7 @@ namespace GhostBodyObject.HandWritten.Entities.Repository
     {
         public TestModelRepository Repository { get; }
 
-        public TestModelTransaction(TestModelRepository repository, bool readOnly = false) : base(repository, readOnly)
+        public TestModelTransaction(TestModelRepository repository, bool readOnly = false) : base(repository, readOnly, 4096)
         {
             Repository = repository;
 

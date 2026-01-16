@@ -15,9 +15,10 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
     // 4. The Customer Entity (User Code)
     // ---------------------------------------------------------
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 40)]
-    public sealed partial class BloggerUser : BloggerBodyBase
+    public sealed partial class BloggerUser : BloggerBodyBase, IHasTypeIdentifier
     {
-        public static GhostTypeCombo TypeCombo => new GhostTypeCombo(GhostIdKind.Entity, 100);
+        public static GhostTypeCombo GetTypeIdentifier() => new GhostTypeCombo(GhostIdKind.Entity, 100);
+
         public const int ModelVersion = 1;
 
         public PinnedMemory<byte> Ghost => _data;

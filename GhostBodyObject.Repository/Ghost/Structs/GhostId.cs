@@ -90,8 +90,11 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         // ---------------------------------------------------------
         // Constants & Masks
         // ---------------------------------------------------------
-        private const int KindShift = 61;
-        private const int TypeShift = 48;
+        // ---------------------------------------------------------
+        // Constants & Masks
+        // ---------------------------------------------------------
+        private const int KindShift = 48; // Was 61
+        private const int TypeShift = 51; // Was 48
         private const ulong TimestampMask = 0x0000_FFFF_FFFF_FFFF;
         private const ulong TypeMask = 0x1FFF; // 13 bits
         private const ulong KindMask = 0x7;    // 3 bits
@@ -145,7 +148,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         public GhostIdKind Kind
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (GhostIdKind)(_header >> KindShift);
+            get => (GhostIdKind)((_header >> KindShift) & KindMask);
         }
 
         public ushort TypeIdentifier

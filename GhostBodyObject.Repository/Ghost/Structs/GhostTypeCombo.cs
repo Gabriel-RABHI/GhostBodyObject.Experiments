@@ -39,14 +39,14 @@ namespace GhostBodyObject.Repository.Ghost.Structs
     /// <summary>
     /// A 16-bit value that combines Kind (3 bits) and TypeIdentifier (13 bits).
     /// This struct wraps a ushort and provides zero-cost accessors for the sub-fields.
-    /// Layout: [Kind:3b | TypeIdentifier:13b] (big-endian bit order within the ushort)
+    /// Layout: [TypeIdentifier:13b | Kind:3b] (big-endian bit order within the ushort)
     /// </summary>
     [StructLayout(LayoutKind.Explicit, Size = 2)]
     public readonly struct GhostTypeCombo : IEquatable<GhostTypeCombo>
     {
-        private const int KindShift = 13;
-        private const ushort TypeMask = 0x1FFF; // 13 bits
+        private const int TypeShift = 3;
         private const ushort KindMask = 0x7;    // 3 bits
+        private const ushort TypeMask = 0x1FFF; // 13 bits
 
         [FieldOffset(0)]
         private readonly ushort _value;
@@ -61,21 +61,21 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         }
 
         /// <summary>
-        /// Gets the Kind (3 bits, bits 13-15).
+        /// Gets the Kind (3 bits, bits 0-2).
         /// </summary>
         public GhostIdKind Kind
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (GhostIdKind)((_value >> KindShift) & KindMask);
+            get => (GhostIdKind)(_value & KindMask);
         }
 
         /// <summary>
-        /// Gets the TypeIdentifier (13 bits, bits 0-12).
+        /// Gets the TypeIdentifier (13 bits, bits 3-15).
         /// </summary>
         public ushort TypeIdentifier
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (ushort)(_value & TypeMask);
+            get => (ushort)((_value >> TypeShift) & TypeMask);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         {
             ushort k = (ushort)((ushort)kind & KindMask);
             ushort t = (ushort)(typeIdentifier & TypeMask);
-            _value = (ushort)((k << KindShift) | t);
+            _value = (ushort)((t << TypeShift) | k);
         }
 
         /// <summary>

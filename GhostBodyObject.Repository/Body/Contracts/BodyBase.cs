@@ -38,13 +38,14 @@ using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Repository.Body.Contracts
 {
+
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 24)]
     public unsafe abstract class BodyBase
     {
         // -----------------------------------------------------------------
         // Small Array Limits Constants
         // -----------------------------------------------------------------
-        
+
         /// <summary>
         /// Maximum array offset for small arrays (ushort max = 65535).
         /// </summary>

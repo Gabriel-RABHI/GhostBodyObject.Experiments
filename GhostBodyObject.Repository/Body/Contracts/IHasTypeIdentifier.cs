@@ -29,10 +29,17 @@
  * --------------------------------------------------------------------------
  */
 
-namespace GhostBodyObject.Repository.Repository.Contracts
-{
-    public unsafe interface IBodyFactory
-    {
+using GhostBodyObject.Repository.Ghost.Structs;
 
+namespace GhostBodyObject.Repository.Body.Contracts
+{
+    public interface IHasTypeIdentifier
+    {
+        static abstract GhostTypeCombo GetTypeIdentifier();
+    }
+
+    public interface IBodyFactory<T> where T : BodyBase
+    {
+        static abstract T Create(PinnedMemory<byte> ghost, bool mapped = true, bool register = true);
     }
 }
