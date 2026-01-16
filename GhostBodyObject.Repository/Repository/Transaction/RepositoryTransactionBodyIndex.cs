@@ -285,6 +285,13 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                 {
                     _ghostEnumerator = default;
                     _state = _isReadOnly ? 2 : 1; // Skip GhostMap if no index
+                    if (_state == 1)
+                    {
+                        if (_hasBodyMap)
+                            _insertedIdsEnumerator = _bodyMap.InsertedIds.GetEnumerator();
+                        else
+                            _state = 2;
+                    }
                 }
 
                 if (!_isReadOnly && _hasBodyMap)
