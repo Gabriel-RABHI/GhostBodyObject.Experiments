@@ -8,16 +8,16 @@ namespace GhostBodyObject.HandWritten.Blogger
         private static readonly AsyncLocal<BloggerTransaction?> _currentToken = new AsyncLocal<BloggerTransaction?>(OnContextChanged);
 
         [ThreadStatic]
-        private static BloggerTransaction? FastCache;
+        private static BloggerTransaction? _fastCache;
 
-        public static BloggerTransaction? Transaction => FastCache;
+        public static BloggerTransaction? Transaction => _fastCache;
 
         private static void OnContextChanged(AsyncLocalValueChangedArgs<BloggerTransaction?> args)
-            => FastCache = args.CurrentValue;
+            => _fastCache = args.CurrentValue;
 
         private static IBloggerScope NewContext(BloggerRepository repository, bool readOnly = false)
         {
-            if (FastCache != null)
+            if (_fastCache != null)
             {
                 throw new InvalidOperationException("Cannot nest contexts.");
             }
@@ -30,9 +30,9 @@ namespace GhostBodyObject.HandWritten.Blogger
 
         public static IBloggerScope NewReadContext(BloggerRepository repository) => NewContext(repository, true);
 
-        public static void Commit(bool concurrently = false) => FastCache.Commit(concurrently);
+        public static void Commit(bool concurrently = false) => _fastCache.Commit(concurrently);
 
-        public static void Rollback() => FastCache.Rollback();
+        public static void Rollback() => _fastCache.Rollback();
 
         private class BloggerContextScope : IBloggerScope
         {

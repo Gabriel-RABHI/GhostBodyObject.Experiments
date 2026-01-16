@@ -58,6 +58,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction
 
         public long OpeningTxnId => _openingTxnId;
 
+
+        public RepositoryTransactionBodyIndex BodyIndex => _bodyIndex;
+
         public volatile bool IsBusy;
     }
 }
