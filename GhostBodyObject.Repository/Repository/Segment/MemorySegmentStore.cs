@@ -75,8 +75,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
             _isCompactable = mode.IsCompactable();
             _directoryPath = directoryPath ?? Directory.GetCurrentDirectory();
 
-            _segmentHolders = new MemorySegmentHolder[2];
-            _segmentPointers = new byte*[2];
+            _segmentHolders = new MemorySegmentHolder[1024];
+            _segmentPointers = new byte*[1024];
         }
 
         ~MemorySegmentStore()
@@ -176,6 +176,35 @@ namespace GhostBodyObject.Repository.Repository.Segment
             return segmentId;
         }
 
+#if DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
+        {
+            if (_segmentPointers[reference.SegmentId] == null)
+                throw new NullReferenceException($"The pointer {reference.SegmentId} do not exists.");
+            if (_segmentHolders[reference.SegmentId] == null)
+                throw new NullReferenceException($"The segment {reference.SegmentId} do not exists.");
+            if (reference.Offset > _segmentHolders[reference.SegmentId].Segment.Capacity)
+                throw new OverflowException($"The offset is superior to segment size.");
+
+            return (GhostHeader*)(_segmentPointers[reference.SegmentId] + reference.Offset);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public PinnedMemory<byte> ToGhost(SegmentReference reference)
+        {
+            if (_segmentPointers[reference.SegmentId] == null)
+                throw new NullReferenceException($"The pointer {reference.SegmentId} do not exists.");
+            if (_segmentHolders[reference.SegmentId] == null)
+                throw new NullReferenceException($"The segment {reference.SegmentId} do not exists.");
+            if (reference.Offset > _segmentHolders[reference.SegmentId].Segment.Capacity)
+                throw new OverflowException($"The offset is superior to segment size.");
+
+            var h = ToGhostHeaderPointer(reference);
+            var b = (int*)h;
+            return new PinnedMemory<byte>(_segmentHolders[reference.SegmentId], h, *(b - 1));
+        }
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
             => (GhostHeader*)(_segmentPointers[reference.SegmentId] + reference.Offset);
@@ -187,6 +216,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             var b = (int*)h;
             return new PinnedMemory<byte>(_segmentHolders[reference.SegmentId], h, *(b - 1));
         }
+#endif
 
         public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
         {

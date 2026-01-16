@@ -556,6 +556,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             }
             Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
         }
+
 #endif
 
         [Theory()]
@@ -630,6 +631,102 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                             forEach(user =>
                             {
                                 Assert.True(user.Active);
+                                n++;
+                            });
+                            Interlocked.Add(ref totalReads, n);
+                            totalRetrieved = n;
+                            if (n != lastCount)
+                            {
+                                lastCount = n;
+                                countCount++;
+                            }
+                            //Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
+                        }
+                    }
+                    Console.WriteLine($"Retreived {totalRetrieved} objects after {retries} retry with {countCount} seen lenghts !");
+                });
+            }
+            Task.WaitAll(tasks);
+            Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
+            Console.WriteLine($"Total reads = {totalReads}");
+        }
+
+
+
+        [Theory()]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository, false)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository, false)]
+        [InlineData(SegmentStoreMode.PersistantRepository, false)]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository, true)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository, true)]
+        [InlineData(SegmentStoreMode.PersistantRepository, true)]
+        public void AddAndMutateSameObjectWithConcurrentReadWrite(SegmentStoreMode mode, bool cursor)
+        {
+            Action<Action<BloggerUser>> forEach = cursor ? ((a) => BloggerCollections.BloggerUsers.Scan(a)) : ((a) => BloggerCollections.BloggerUsers.ForEach(a));
+            using var tempDir = new TempDirectoryHelper(true);
+            using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+            var sw = Stopwatch.StartNew();
+
+            int threadCount = 4;
+            long totalReads = 0;
+            long totalWriters = threadCount;
+
+            var tasks = new Task[threadCount * 2];
+
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var user = new BloggerUser()
+                {
+                    Active = true,
+                };
+                BloggerContext.Commit(false);
+            }
+
+            // -------- 100M entries test
+            var nTxn = 100_000;
+            if (false)
+            {
+                // -------- 4M entries test - faster test
+                nTxn = 10_000;
+            }
+            for (int i = 0; i < threadCount; i++)
+            {
+                int threadId = i;
+                tasks[i] = Task.Run(() => {
+                    for (int j = 0; j < nTxn; j++)
+                        using (BloggerContext.NewWriteContext(repository))
+                        {
+                            BloggerCollections.BloggerUsers.Scan(user =>
+                            {
+                                user.CustomerCode++;
+                                user.FirstName = $"FirstName-{j}";
+                                user.LastName = $"LastName-{j}";
+                                user.Country = $"Country-{j}";
+                                user.CompanyName = $"CompanyName-{j}";
+                            });
+                            BloggerContext.Commit(false);
+                        }
+                    Interlocked.Decrement(ref totalWriters);
+                });
+            }
+
+            for (int i = 0; i < threadCount; i++)
+            {
+                int threadId = i;
+                tasks[i + threadCount] = Task.Run(() => {
+                    var totalRetrieved = 0;
+                    var retries = 0;
+                    var lastCount = 0;
+                    var countCount = 0;
+                    while (totalWriters > 0)
+                    {
+                        retries++;
+                        using (BloggerContext.NewReadContext(repository))
+                        {
+                            var n = 0;
+                            sw = Stopwatch.StartNew();
+                            forEach(user =>
+                            {
                                 n++;
                             });
                             Interlocked.Add(ref totalReads, n);
