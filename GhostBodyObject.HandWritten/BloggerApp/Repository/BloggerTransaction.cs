@@ -1,4 +1,5 @@
-﻿using GhostBodyObject.HandWritten.BloggerApp.Entities.Post;
+﻿using System.Runtime.InteropServices.JavaScript;
+using GhostBodyObject.HandWritten.BloggerApp.Entities.Post;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.HandWritten.Entities.Arrays;
 using GhostBodyObject.Repository.Body.Contracts;
@@ -12,7 +13,6 @@ using GhostBodyObject.Repository.Repository.Structs;
 using GhostBodyObject.Repository.Repository.Transaction;
 using GhostBodyObject.Repository.Repository.Transaction.Collections;
 using GhostBodyObject.Repository.Repository.Transaction.Index;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace GhostBodyObject.HandWritten.Blogger.Repository
 {
@@ -88,18 +88,10 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
 
         public static void ForEachCursor(Action<BloggerUser> action)
         {
-            var enumerator = BloggerContext.Transaction.BodyIndex.GetEnumerator<BloggerUser>();
+            var enumerator = BloggerContext.Transaction.BodyIndex.GetEnumerator<BloggerUser>(true);
             while (enumerator.MoveNext())
             {
                 action(enumerator.Current);
-                // !-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-! //
-                // CAUTIONS
-                // If the status of the Ghost changed during the action,
-                // the body must be added to the transaction map, and a new
-                // cursor body must be created.
-                //
-                // This ensure that a body modified during the action is correctly
-                // handled.
             }
         }
     }

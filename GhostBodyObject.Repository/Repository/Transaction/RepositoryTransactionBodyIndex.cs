@@ -79,175 +79,10 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             }
         }
 
-        public void ForEach<TBody>(Action<TBody> action)
+        public Enumerator<TBody> GetEnumerator<TBody>(bool useCursor = false)
             where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
         {
-            unsafe
-            {
-                var map = _txn.Repository.GhostIndex.GetIndex(TBody.GetTypeIdentifier(), false);
-                var bodyMap = GetBodyMap<TBody>(TBody.GetTypeIdentifier());
-                if (_txn.IsReadOnly)
-                {
-                    if (map != null)
-                    {
-                        if (bodyMap != null)
-                        {
-                            if (bodyMap.Count == 0)
-                            {
-                                var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
-                                while (enumerator.MoveNext())
-                                {
-                                    var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
-                                    if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
-                                    {
-                                        var body = TBody.Create(ghost, true, true);
-                                        if (bodyMap == null)
-                                            bodyMap = GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
-                                        bodyMap.Set(body);
-                                        action(body);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
-                                while (enumerator.MoveNext())
-                                {
-                                    var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
-                                    var body = bodyMap.Get(ghost.As<GhostHeader>()->Id, out var exist);
-                                    if (exist)
-                                    {
-                                        if (body.Status != GhostStatus.MappedDeleted)
-                                            action(body);
-                                    }
-                                    else
-                                    {
-                                        if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
-                                        {
-                                            body = TBody.Create(ghost, true, true);
-                                            bodyMap.Set(body);
-                                            action(body);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
-                            while (enumerator.MoveNext())
-                            {
-                                var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
-                                if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
-                                {
-                                    var body = TBody.Create(ghost, true, true);
-                                    if (bodyMap == null)
-                                        bodyMap = GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
-                                    bodyMap.Set(body);
-                                    action(body);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // -------- No Map of this type -------- //
-                        // Because the transaction is read-only, there is no body map to consider.
-                    }
-                }
-                else
-                {
-                    if (map != null)
-                    {
-                        if (bodyMap != null)
-                        {
-                            if (bodyMap.Count == 0)
-                            {
-                                var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
-                                while (enumerator.MoveNext())
-                                {
-                                    var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
-                                    if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
-                                    {
-                                        var body = TBody.Create(ghost, true, true);
-                                        if (bodyMap == null)
-                                            bodyMap = GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
-                                        bodyMap.Set(body);
-                                        action(body);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
-                                while (enumerator.MoveNext())
-                                {
-                                    var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
-                                    var body = bodyMap.Get(ghost.As<GhostHeader>()->Id, out var exist);
-                                    if (exist)
-                                    {
-                                        if (body.Status != GhostStatus.MappedDeleted)
-                                            action(body);
-                                    }
-                                    else
-                                    {
-                                        if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
-                                        {
-                                            body = TBody.Create(ghost, true, true);
-                                            bodyMap.Set(body);
-                                            action(body);
-                                        }
-                                    }
-                                }
-                            }
-                            foreach (var id in bodyMap.InsertedIds)
-                            {
-                                var body = bodyMap.Get(id, out var exist);
-                                if (exist && body.Status != GhostStatus.MappedDeleted)
-                                {
-                                    action(body);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            var enumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
-                            while (enumerator.MoveNext())
-                            {
-                                var ghost = _txn.Repository.Store.ToGhost(enumerator.Current);
-                                if (ghost.As<GhostHeader>()->Status != GhostStatus.Tombstone)
-                                {
-                                    var body = TBody.Create(ghost, true, true);
-                                    if (bodyMap == null)
-                                        bodyMap = GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
-                                    bodyMap.Set(body);
-                                    action(body);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (bodyMap != null)
-                        {
-                            foreach (var id in bodyMap.InsertedIds)
-                            {
-                                var body = bodyMap.Get(id, out var exist);
-                                if (exist && body.Status != GhostStatus.MappedDeleted)
-                                {
-                                    action(body);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        public Enumerator<TBody> GetEnumerator<TBody>()
-            where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
-        {
-            return new Enumerator<TBody>(this);
+            return new Enumerator<TBody>(this, useCursor);
         }
 
         public struct Enumerator<TBody> : IEnumerator<TBody>
@@ -263,8 +98,11 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             private bool _isReadOnly;
             private bool _hasBodyMap;
             private bool _isBodyMapEmpty;
+            private bool _useCursor;
+            private TBody _cursorBody;
+            private GhostStatus _cursorStatus;
 
-            internal Enumerator(RepositoryTransactionBodyIndex parent)
+            internal Enumerator(RepositoryTransactionBodyIndex parent, bool useCursor)
             {
                 _parent = parent;
                 _txn = parent._txn;
@@ -273,18 +111,20 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                 _hasBodyMap = _bodyMap != null;
                 _isBodyMapEmpty = _hasBodyMap && _bodyMap.Count == 0;
                 _current = null;
+
                 _state = 0;
                 _insertedIdsEnumerator = default;
+                _useCursor = useCursor;
+                _cursorBody = null;
+                _cursorStatus = default;
 
                 var map = _txn.Repository.GhostIndex.GetIndex(TBody.GetTypeIdentifier(), false);
                 if (map != null)
                 {
                     _ghostEnumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
-                    System.Console.WriteLine($"[DEBUG] Map found. TxnId={_txn.OpeningTxnId}. Count={map.GhostMap.Count}");
                 }
                 else
                 {
-                    System.Console.WriteLine($"[DEBUG] Map NOT found. Type={TBody.GetTypeIdentifier()}");
                     _ghostEnumerator = default;
                     _state = _isReadOnly ? 2 : 1; // Skip GhostMap if no index
                     if (_state == 1)
@@ -300,17 +140,12 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                 {
                     // Prepare secondary enumerator for later, but do not start it yet.
                 }
-                else if (!_isReadOnly && !_hasBodyMap)
-                {
-                    // If no body map, we surely don't have inserted ids.
-                    // But we might be in a state where we just iterate ghosts.
-                }
             }
 
             public bool MoveNext()
             {
-                if (_state == 2) return false;
-
+                if (_state == 2)
+                    return false;
                 unsafe
                 {
                     if (_state == 0)
@@ -324,101 +159,91 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                             if (header->Status == GhostStatus.Tombstone)
                                 continue;
 
-                            if (_isReadOnly)
+                            // -------- Check if the body is already in the map (modified/inserted/read) --------
+                            // If it is in the map, we MUST yield the map instance to preserve object identity.
+                            if (_hasBodyMap)
                             {
-                                if (_hasBodyMap)
+                                if (!_isBodyMapEmpty)
                                 {
-                                    if (_isBodyMapEmpty)
+                                    var body = _bodyMap.Get(header->Id, out var exist);
+                                    if (exist)
                                     {
-                                        // Case: ReadOnly + BodyMap Empty -> Just yield created bodies
-                                        _current = TBody.Create(ghost, true, true);
-                                        _bodyMap.Set(_current);
-                                        return true;
-                                    }
-                                    else
-                                    {
-                                        // Case: ReadOnly + BodyMap Not Empty -> Check existence
-                                        var body = _bodyMap.Get(header->Id, out var exist);
-                                        if (exist)
+                                        if (body.Status != GhostStatus.MappedDeleted)
                                         {
-                                            if (body.Status != GhostStatus.MappedDeleted)
-                                            {
-                                                _current = body;
-                                                return true;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            _current = TBody.Create(ghost, true, true);
-                                            _bodyMap.Set(_current);
+                                            _current = body;
                                             return true;
                                         }
+                                        continue; // Deleted in map, skip
                                     }
-                                }
-                                else
-                                {
-                                    // Case: ReadOnly + No BodyMap -> Create, init map, set, yield
-                                    _current = TBody.Create(ghost, true, true);
-                                    // Lazy initialization of BodyMap inside iteration might be tricky with struct fields, 
-                                    // but GetOrCreateBodyMap modifies the parent array, so next time _parent.GetBodyMap will return it.
-                                    // However, our local _bodyMap field will be null.
-                                    // We need to re-fetch or use parent.
-
-                                    var bodyMap = _parent.GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
-                                    // Update our local state if we just created it
-                                    if (!_hasBodyMap)
-                                    {
-                                        // We can't easily update readonly struct field _bodyMap if we made it readonly.
-                                        // But actually we can make it not readonly or just use a local var.
-                                        // Let's assume we proceed.
-                                        bodyMap.Set(_current);
-                                    }
-                                    else
-                                    {
-                                        _bodyMap.Set(_current);
-                                    }
-
-                                    return true;
                                 }
                             }
-                            else // ReadWrite
+                            // Note: If no body map or not found, proceed to yield ghost.
+
+                            // -------- Cursor Mode Logic --------
+                            if (_useCursor)
                             {
-                                if (_hasBodyMap)
+                                // If we have a cursor body, check if it was modified (detached)
+                                if (_cursorBody != null)
                                 {
-                                    if (_isBodyMapEmpty)
+                                    if (_cursorBody.Status != _cursorStatus)
                                     {
-                                        _current = TBody.Create(ghost, true, true);
-                                        _bodyMap.Set(_current);
-                                        return true;
+                                        // Status changed: The user modified the body. It is now "detached".
+                                        // We drop our reference to it (creating a new cursor for this iteration)
+                                        // so that we don't overwrite the user's modified object.
+                                        _cursorBody = null;
                                     }
-                                    else
-                                    {
-                                        var body = _bodyMap.Get(header->Id, out var exist);
-                                        if (exist)
-                                        {
-                                            if (body.Status != GhostStatus.MappedDeleted)
-                                            {
-                                                _current = body;
-                                                return true;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            _current = TBody.Create(ghost, true, true);
-                                            _bodyMap.Set(_current);
-                                            return true;
-                                        }
-                                    }
+                                }
+
+                                if (_cursorBody == null)
+                                {
+                                    _cursorBody = TBody.Create(ghost, true, true);
                                 }
                                 else
                                 {
-                                    // ReadWrite + No BodyMap
-                                    _current = TBody.Create(ghost, true, true);
+                                    _cursorBody.SwapGhost(ghost);
+                                    // Status is implicitly updated by swapping data.
+                                }
+
+                                // Memorize status for next iteration check
+                                _cursorStatus = _cursorBody.Status;
+                                _current = _cursorBody;
+                                // Important: We do NOT add cursor body to _bodyMap.
+                                return true;
+                            }
+
+                            // -------- Standard Mode (Allocation per item) --------
+                            // If we are here, we are not using cursor, and it wasn't in the map.
+
+                            _current = TBody.Create(ghost, true, true);
+
+                            if (!_isReadOnly)
+                            {
+                                // In ReadWrite, we must add to map?
+                                // Original logic added to map.
+                                if (_bodyMap == null)
+                                {
                                     var bodyMap = _parent.GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
                                     bodyMap.Set(_current);
-                                    return true;
+                                }
+                                else
+                                {
+                                    _bodyMap.Set(_current);
                                 }
                             }
+                            else
+                            {
+                                // In ReadOnly
+                                if (_bodyMap == null)
+                                {
+                                    var bodyMap = _parent.GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
+                                    bodyMap.Set(_current);
+                                }
+                                else
+                                {
+                                    _bodyMap.Set(_current);
+                                }
+                            }
+                            return true;
                         }
 
                         // Finished GhostMap
@@ -451,9 +276,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                         {
                             var id = _insertedIdsEnumerator.Current;
                             // Need to fetch from map again to get the object
-                            var currentBodyMap = _parent.GetBodyMap<TBody>(TBody.GetTypeIdentifier()); // Should act. exist
+                            var currentBodyMap = _parent.GetBodyMap<TBody>(TBody.GetTypeIdentifier());
                             var body = currentBodyMap.Get(id, out var exist);
-                            if (exist && body.Status != GhostStatus.MappedDeleted)
+                            if (exist && (body.Status != GhostStatus.MappedDeleted))
                             {
                                 _current = body;
                                 return true;

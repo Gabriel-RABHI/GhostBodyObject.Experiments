@@ -110,6 +110,8 @@ namespace GhostBodyObject.Repository.Body.Contracts
             }
         }
 
+        public void SwapGhost(PinnedMemory<byte> ghost) => _data = ghost;
+
         public GhostHeader* Header
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

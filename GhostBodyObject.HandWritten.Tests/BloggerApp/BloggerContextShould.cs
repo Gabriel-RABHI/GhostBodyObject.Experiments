@@ -533,11 +533,15 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 #endif
 
         [Theory()]
-        [InlineData(SegmentStoreMode.InMemoryVolatileRepository)]
-        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository)]
-        [InlineData(SegmentStoreMode.PersistantRepository)]
-        public void AddAndCommitTransactionsConcurrentReadWrite(SegmentStoreMode mode)
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository, false)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository, false)]
+        [InlineData(SegmentStoreMode.PersistantRepository, false)]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository, true)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository, true)]
+        [InlineData(SegmentStoreMode.PersistantRepository, true)]
+        public void AddAndCommitTransactionsConcurrentReadWrite(SegmentStoreMode mode, bool cursor)
         {
+            Action<Action<BloggerUser>> forEach = cursor ? ((a) => BloggerUserCollection.ForEachCursor(a)) : ((a) => BloggerUserCollection.ForEach(a));
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
@@ -597,7 +601,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         {
                             var n = 0;
                             sw = Stopwatch.StartNew();
-                            BloggerUserCollection.ForEachCursor(user =>
+                            forEach(user =>
                             {
                                 Assert.True(user.Active);
                                 n++;
