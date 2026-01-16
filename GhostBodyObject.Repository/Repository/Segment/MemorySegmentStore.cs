@@ -87,12 +87,20 @@ namespace GhostBodyObject.Repository.Repository.Segment
         public void RebuildSegmentHolders()
         {
             var newHolders = new MemorySegmentHolder[_segmentHolders.Length];
+            var newPointers = new byte*[_segmentPointers.Length];
             for (int i = 0; i < _segmentHolders.Length; i++)
             {
-                if (_segmentHolders[i] != null && _segmentHolders[i].ReferenceCount > 0)
-                    newHolders[i] = _segmentHolders[i];
+                if (_segmentHolders[i] != null)
+                {
+                    if (_segmentHolders[i].ReferenceCount > 0)
+                    {
+                        newHolders[i] = _segmentHolders[i];
+                        newPointers[i] = _segmentPointers[i];
+                    }
+                } 
             }
             _segmentHolders = newHolders;
+            _segmentPointers = newPointers;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -128,15 +136,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void UpdateHolders(long bottomTxnId, long topTxnId)
         {
-            for (int i = 0; i < _segmentHolders.Length; i++)
-            {
-                var holder = _segmentHolders[i];
-                if (holder != null && holder.ReferenceCount <= 0 && !holder.IsEmpty && holder != _currentHolder)
-                {
-                    _segmentHolders[i] = null;
-                    _segmentPointers[i] = null;
-                }
-            }
+            // -------- Signal the GC it must clean up because a Txn that change bottom txn id with closed
         }
 
         public int CreateSegment(int capacity)
@@ -250,6 +250,10 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
             // Reserve Transaction Header
             int headerSize = GetSize.Of8Aligned<StoreTransactionHeader>();
+            if (!CheckFit(ctx.CurrentSegmentId, headerSize))
+            {
+                HandleSegmentJump(ctx);
+            }
             ReserveSpace(ctx, headerSize);
 
             for (int i = 0; i < bodies.Count; i++)
@@ -377,7 +381,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         private bool CheckFit(int segmentId, int size)
         {
-            return _segmentHolders[segmentId].Segment.FreeSpace >= (size + 16);
+            return _segmentHolders[segmentId].Segment.FreeSpace >= (size + 24);
         }
 
         private void ReserveSpace(TransactionContext ctx, int size)
