@@ -1,4 +1,7 @@
-﻿using GhostBodyObject.HandWritten.Blogger;
+﻿using System.Diagnostics;
+using System.IO;
+using System.Transactions;
+using GhostBodyObject.HandWritten.Blogger;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.Repository.Body.Contracts;
@@ -6,9 +9,6 @@ using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Segment;
-using System.Diagnostics;
-using System.IO;
-using System.Transactions;
 
 namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 {
@@ -187,7 +187,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
 
-            Action<Action<BloggerUser>> forEach = cursor  ? ((a) => BloggerCollections.BloggerUsers.Scan(a)) : ((a) => BloggerCollections.BloggerUsers.ForEach(a));
+            Action<Action<BloggerUser>> forEach = cursor ? ((a) => BloggerCollections.BloggerUsers.Scan(a)) : ((a) => BloggerCollections.BloggerUsers.ForEach(a));
             // ================================================================ //
             // -------- Mutations
             using (BloggerContext.NewWriteContext(repository))
@@ -581,7 +581,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 
             // -------- 100M entries test
             var nTxn = 50_000;
-            var nObjTxn = 500; 
+            var nObjTxn = 500;
             if (true)
             {
                 // -------- 4M entries test - faster test
@@ -591,7 +591,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
-                tasks[i] = Task.Run(() => {
+                tasks[i] = Task.Run(() =>
+                {
                     for (int j = 0; j < nTxn; j++)
                         using (BloggerContext.NewWriteContext(repository))
                         {
@@ -616,7 +617,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
-                tasks[i + threadCount] = Task.Run(() => {
+                tasks[i + threadCount] = Task.Run(() =>
+                {
                     var totalRetrieved = 0;
                     var retries = 0;
                     var lastCount = 0;
@@ -651,6 +653,70 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             Console.WriteLine($"Total reads = {totalReads}");
         }
 
+        [Fact]
+        public void AddAndMutateSameObjectSingleThread()
+        {
+            using var tempDir = new TempDirectoryHelper(true);
+            using var repository = new BloggerRepository(SegmentStoreMode.PersistantRepository, tempDir.DirectoryPath);
+
+            var nTxn = 100_000;
+            var objCount = 1000;
+            for (int i = 0; i < objCount; i++)
+                using (BloggerContext.NewWriteContext(repository))
+                {
+                    var user = new BloggerUser()
+                    {
+                        FirstName = "John" + i,
+                        Active = true,
+                    };
+                    BloggerContext.Commit(false);
+                }
+
+            var mutationCount = 0;
+            var totalMutationCount = 0;
+            var sw = Stopwatch.StartNew();
+
+            for (int j = 0; j < nTxn; j++)
+            {
+                using (BloggerContext.NewWriteContext(repository))
+                {
+                    BloggerCollections.BloggerUsers.Scan(user =>
+                    {
+                        user.CustomerCode++;
+                        user.FirstName = $"FirstName-{j}";
+                        user.LastName = $"LastName-{j}";
+                        user.Country = $"Country-{j}";
+                        user.CompanyName = $"CompanyName-{j}";
+                        mutationCount++;
+                        totalMutationCount++;
+                    });
+                    BloggerContext.Commit(false);
+                }
+                if (j> 0 && j % (nTxn / 10) == 0)
+                {
+                    Console.WriteLine($"Mutate {j} / {nTxn} -> mutation Count = {mutationCount} / Total = {totalMutationCount}");
+                    Console.WriteLine($"Per second = {mutationCount / (sw.ElapsedMilliseconds / 1000)}");
+                    using (BloggerContext.NewWriteContext(repository))
+                    {
+                        Assert.Equal(objCount, BloggerCollections.BloggerUsers.Instances.Count());
+                    }
+                    for (int i = 0; i < 3; i++)
+                    {
+                        Thread.Sleep(1000);
+                        tempDir.GCCollect();
+                        Console.WriteLine($"GC.Collect #" + i);
+                    }
+                    mutationCount = 0;
+                    sw = Stopwatch.StartNew();
+                }
+            }
+            for (int i = 0; i < 5; i++)
+            {
+                Thread.Sleep(1000);
+                tempDir.GCCollect();
+                Console.WriteLine($"Final GC.Collect #" + i);
+            }
+        }
 
 
         [Theory()]
@@ -692,28 +758,41 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
-                tasks[i] = Task.Run(() => {
-                    for (int j = 0; j < nTxn; j++)
-                        using (BloggerContext.NewWriteContext(repository))
-                        {
-                            BloggerCollections.BloggerUsers.Scan(user =>
+                tasks[i] = Task.Run(() =>
+                {
+                    try
+                    {
+                        for (int j = 0; j < nTxn; j++)
+                            using (BloggerContext.NewWriteContext(repository))
                             {
-                                user.CustomerCode++;
-                                user.FirstName = $"FirstName-{j}";
-                                user.LastName = $"LastName-{j}";
-                                user.Country = $"Country-{j}";
-                                user.CompanyName = $"CompanyName-{j}";
-                            });
-                            BloggerContext.Commit(false);
-                        }
-                    Interlocked.Decrement(ref totalWriters);
+                                BloggerCollections.BloggerUsers.Scan(user =>
+                                {
+                                    user.CustomerCode++;
+                                    user.FirstName = $"FirstName-{j}";
+                                    user.LastName = $"LastName-{j}";
+                                    user.Country = $"Country-{j}";
+                                    user.CompanyName = $"CompanyName-{j}";
+                                });
+                                BloggerContext.Commit(false);
+                            }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Writer failed: {ex}");
+                        throw;
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref totalWriters);
+                    }
                 });
             }
 
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
-                tasks[i + threadCount] = Task.Run(() => {
+                tasks[i + threadCount] = Task.Run(() =>
+                {
                     var totalRetrieved = 0;
                     var retries = 0;
                     var lastCount = 0;
