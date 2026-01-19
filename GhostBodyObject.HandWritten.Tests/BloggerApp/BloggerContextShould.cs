@@ -515,7 +515,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
 
-            int threadCount = 5;
+            int threadCount = 8;
 
             var tasks = new Task[threadCount];
 
@@ -523,10 +523,10 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             {
                 int threadId = i;
                 tasks[i] = Task.Run(() => {
-                    for (int j = 0; j < 10_000; j++)
+                    for (int j = 0; j < 200; j++)
                         using (BloggerContext.NewWriteContext(repository))
                         {
-                            for (int i = 0; i < 20; i++)
+                            for (int i = 0; i < 2000; i++)
                             {
                                 var user = new BloggerUser()
                                 {
@@ -554,6 +554,54 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
                 }
             }
+            Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
+        }
+
+        [Theory()]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository)]
+        [InlineData(SegmentStoreMode.PersistantRepository)]
+        public void ConcurrentEnumerations(SegmentStoreMode mode)
+        {
+            using var tempDir = new TempDirectoryHelper(true);
+            using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+
+            for (int j = 0; j < 1000; j++)
+                using (BloggerContext.NewWriteContext(repository))
+                {
+                    for (int i = 0; i < 1_000; i++)
+                    {
+                        var user = new BloggerUser()
+                        {
+                            Active = true,
+                        };
+                    }
+                    BloggerContext.Commit(true);
+                }
+
+            int threadCount = 8;
+
+            var tasks = new Task[threadCount];
+
+            var sw = Stopwatch.StartNew();
+            for (int i = 0; i < threadCount; i++)
+            {
+                int threadId = i;
+                tasks[i] = Task.Run(() => {
+                    long sum = 0;
+                    for (int j = 0; j < 50; j++)
+                        using (BloggerContext.NewReadContext(repository))
+                        {
+                            foreach (var user in BloggerCollections.BloggerUsers.Cursor)
+                            {
+                                sum += user.CustomerCode;
+                            }
+                        }
+                });
+            }
+
+            Task.WaitAll(tasks);
+            Console.WriteLine($"Read {(50 * threadCount * 1_000_000)} users in {sw.ElapsedMilliseconds} ms");
             Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
         }
 
@@ -608,7 +656,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                     Active = true,
                                 };
                             }
-                            BloggerContext.Commit(false);
+                            BloggerContext.Commit(true);
                         }
                     Interlocked.Decrement(ref totalWriters);
                 });
@@ -629,7 +677,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         using (BloggerContext.NewReadContext(repository))
                         {
                             var n = 0;
-                            sw = Stopwatch.StartNew();
                             forEach(user =>
                             {
                                 Assert.True(user.Active);
@@ -649,6 +696,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 });
             }
             Task.WaitAll(tasks);
+            Console.WriteLine($"Delay = {sw.ElapsedMilliseconds}");
             Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
             Console.WriteLine($"Total reads = {totalReads}");
         }

@@ -28,6 +28,7 @@
  *
  * --------------------------------------------------------------------------
  */
+#define NATIVE_LOCK
 
 using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Ghost.Structs;
@@ -116,7 +117,10 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     private int _capacity;
     private int _resizeThreshold;
 
+#if NATIVE_LOCK
+#else
     private ShortSpinLock _lock;
+#endif
 
     public int Count => _count;
 
@@ -236,8 +240,12 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     /// </summary>
     public void SetAndRemove(SegmentReference r, GhostHeader* h, long bottomTxnId)
     {
+#if NATIVE_LOCK
+        lock (this)
+#else
         _lock.Enter();
         try
+#endif
         {
             // Check if we need to resize based on OCCUPIED slots (Live + Graves)
             if (_occupied >= _resizeThreshold)
@@ -280,7 +288,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
 
             // Slot calculation uses specific bit-range
             int index = newId.SlotComputation & mask;
-            
+
             // Track the "best" version found so far that is <= bottomTxnId.
             // Any other version found <= bottomTxnId is strictly inferior and can be removed/recycled.
             int bestOldSlotIndex = -1;
@@ -307,411 +315,440 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                             _count++;
                             _tombstoneCount--;
                             _store.IncrementSegmentHolderUsage(r);
-                                }
-                                else
-                                {
-                                    entries[index] = r;
-                                    randomParts[index] = newRandomPart;
-                                    _count++;
-                                    _occupied++;
-                                    _store.IncrementSegmentHolderUsage(r);
-                                }
-                            }
-                            return;
                         }
-
-                        // 2. Found Tombstone?
-                        if (current.IsTombstone())
-                        {
-                            if (firstTombstoneIndex == -1) firstTombstoneIndex = index;
-                        }
-                        // 3. Exact duplicate reference?
-                        else if (current.Value == r.Value)
-                        {
-                            insertionPending = false;
-                        }
-                        // 4. GhostId Match?
-                        else if (currentRandomPart == newRandomPart)
-                        {
-                            var existingHeader = (GhostHeader*)_store.ToGhostHeaderPointer(current);
-                            if (existingHeader != null && existingHeader->Id == newId)
-                            {
-                                long currentTxnId = existingHeader->TxnId;
-
-                                if (currentTxnId == newTxnId)
-                                {
-                                    // Logical duplicate (same ID, same Version) -> Update logic.
-                                    _store.DecrementSegmentHolderUsage(current);
-                                    entries[index] = r;
-                                    _store.IncrementSegmentHolderUsage(r);
-                                    insertionPending = false;
-                                }
-
-                                if (currentTxnId <= bottomTxnId)
-                                {
-                                    // This is a candidate for the "single allowed old version".
-                                    
-                                    if (bestOldSlotIndex == -1)
-                                    {
-                                        // First candidate found.
-                                        bestOldSlotIndex = index;
-                                        bestOldTxnId = currentTxnId;
-                                    }
-                                    else
-                                    {
-                                        // Compare with current best.
-                                        int garbageIndex;
-                                        if (currentTxnId > bestOldTxnId)
-                                        {
-                                            // Current is better. Previous best is garbage.
-                                            garbageIndex = bestOldSlotIndex;
-                                            
-                                            // Update best to current
-                                            bestOldSlotIndex = index;
-                                            bestOldTxnId = currentTxnId;
-                                        }
-                                        else
-                                        {
-                                            // Previous best is better (or equal). Current is garbage.
-                                            garbageIndex = index;
-                                        }
-
-                                        // Dispose of the garbage slot
-                                        var garbageRef = entries[garbageIndex];
-                                        if (insertionPending)
-                                        {
-                                            // Recycle for the new insertion
-                                            _store.DecrementSegmentHolderUsage(garbageRef);
-                                            entries[garbageIndex] = r;
-                                            randomParts[garbageIndex] = newRandomPart;
-                                            _store.IncrementSegmentHolderUsage(r);
-                                            insertionPending = false;
-                                            // Count unchanged (1 replace 1)
-                                        }
-                                        else
-                                        {
-                                            // Mark as tombstone
-                                            _store.DecrementSegmentHolderUsage(garbageRef);
-                                            entries[garbageIndex] = SegmentReference.Tombstone;
-                                            randomParts[garbageIndex] = RandomPart_Tombstone;
-                                            _count--;
-                                            _tombstoneCount++;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        index = (index + 1) & mask;
-                    }
-                }
-                finally { _lock.Exit(); }
-            }
-        
-            /// <summary>
-            /// Adds or Updates the entry using Tombstone-aware probing.
-            /// Uses direct field access for lower overhead (protected by lock).
-            /// </summary>
-            public void Set(SegmentReference r, GhostHeader* h)
-            {
-                _lock.Enter();
-                try
-                {
-                    // Check if we need to resize based on OCCUPIED slots (Live + Graves)
-                    if (_occupied >= _resizeThreshold)
-                    {
-                        int newCapacity;
-
-                        // Case 1: Very few live items? Shrink.
-                        if (_count < _capacity / 4)
-                        {
-                            newCapacity = _capacity / 2;
-                        }
-                        // Case 2: Lots of live items? Grow.
-                        else if (_count > _capacity / 2)
-                        {
-                            newCapacity = _capacity * 2;
-                        }
-                        // Case 3: Moderate live items (25% - 50%). Cleanup only.
                         else
                         {
-                            newCapacity = _capacity;
-                        }
-
-                        // Safety clamp
-                        if (newCapacity < InitialCapacity) newCapacity = InitialCapacity;
-
-                        Resize(newCapacity);
-                    }
-
-                    // Direct field access - we're under lock
-                    var entries = _entries;
-                    var randomParts = _randomParts;
-                    int mask = _mask;
-
-                    if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
-                        throw new InvalidOperationException();
-
-                    GhostId newId = h->Id;
-                    short newRandomPart = newId.RandomPartTag;
-                    long newTxnId = h->TxnId;
-
-                    // Slot calculation uses specific bit-range
-                    int index = newId.SlotComputation & mask;
-                    int firstTombstoneIndex = -1;
-
-                    while (true)
-                    {
-                        SegmentReference current = entries[index];
-                        short currentRandomPart = randomParts[index];
-
-                        // 1. Found Empty Slot?
-                        if (current.IsEmpty())
-                        {
-                            // If we passed a tombstone earlier, recycle it!
-                            if (firstTombstoneIndex != -1)
-                            {
-                                entries[firstTombstoneIndex] = r;
-                                randomParts[firstTombstoneIndex] = newRandomPart;
-                                _count++;
-                                _tombstoneCount--;
-                                _store.IncrementSegmentHolderUsage(r);
-                                return;
-                            }
-
-                            // No tombstone found, insert here.
                             entries[index] = r;
                             randomParts[index] = newRandomPart;
                             _count++;
                             _occupied++;
                             _store.IncrementSegmentHolderUsage(r);
-                            return;
                         }
-
-                        // 2. Found Tombstone?
-                        if (current.IsTombstone())
-                        {
-                            if (firstTombstoneIndex == -1) firstTombstoneIndex = index;
-                        }
-                        // 3. Found Duplicate? (Same exact reference)
-                        else if (current.Value == r.Value)
-                        {
-                            return;
-                        }
-                        // 4. Check for logical duplicate (same Id + TxnId but different reference)
-                        // Fast filter: compare cached random part first
-                        else if (currentRandomPart == newRandomPart)
-                        {
-                            var existingHeader = (GhostHeader*)_store.ToGhostHeaderPointer(current);
-                            if (existingHeader != null && existingHeader->Id == newId && existingHeader->TxnId == newTxnId)
-                            {
-                                // Logical duplicate found - update the reference
-                                _store.DecrementSegmentHolderUsage(current);
-                                entries[index] = r;
-                                _store.IncrementSegmentHolderUsage(r);
-                                // randomParts[index] unchanged (same Id)
-                                return;
-                            }
-                        }
-
-                        index = (index + 1) & mask;
                     }
+                    return;
                 }
-                finally { _lock.Exit(); }
-            }
 
-            /// <summary>
-            /// Finds the entry. Tombstones are treated as "keep looking".
-            /// Uses MapState snapshot for lock-free thread safety.
-            /// </summary>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool Get(GhostId id, long maxTxnId, out SegmentReference r)
-            {
-            _redo:
-                // Capture atomic snapshot for lock-free read
-                var state = _state;
-                var entries = state.Entries;
-                var randomParts = state.RandomParts;
-                int mask = state.Mask;
-
-                if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
-                    throw new InvalidOperationException();
-
-                short searchRandomPart = id.RandomPartTag;
-                int index = id.SlotComputation & mask;
-                int bestIndex = -1;
-                long bestTxnFound = long.MinValue;
-
-                while (true)
+                // 2. Found Tombstone?
+                if (current.IsTombstone())
                 {
-                    SegmentReference current = entries[index];
-
-                    // --- STOP AT EMPTY ---
-                    if (current.IsEmpty())
+                    if (firstTombstoneIndex == -1) firstTombstoneIndex = index;
+                }
+                // 3. Exact duplicate reference?
+                else if (current.Value == r.Value)
+                {
+                    insertionPending = false;
+                }
+                // 4. GhostId Match?
+                else if (currentRandomPart == newRandomPart)
+                {
+                    var existingHeader = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    if (existingHeader != null && existingHeader->Id == newId)
                     {
-                        // Validate snapshot before returning
-                        if (state != _state)
-                            goto _redo;
+                        long currentTxnId = existingHeader->TxnId;
 
-                        if (bestIndex != -1)
+                        if (currentTxnId == newTxnId)
                         {
-                            r = entries[bestIndex];
-                            return true;
+                            // Logical duplicate (same ID, same Version) -> Update logic.
+                            _store.DecrementSegmentHolderUsage(current);
+                            entries[index] = r;
+                            _store.IncrementSegmentHolderUsage(r);
+                            insertionPending = false;
                         }
 
-                        r = default;
-                        return false;
-                    }
-
-                    // --- SKIP TOMBSTONES ---
-                    if (!current.IsTombstone())
-                    {
-                        // Fast filter: compare cached random part first (2 bytes, excellent cache density)
-                        short cachedRandomPart = randomParts[index];
-                        if (cachedRandomPart == searchRandomPart)
+                        if (currentTxnId <= bottomTxnId)
                         {
-                            // Random parts match - now do the expensive pointer dereference
-                            var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                            // This is a candidate for the "single allowed old version".
 
-                            // Full ID verification to handle collisions (~1 in 65,536)
-                            if (h != null && h->Id == id)
+                            if (bestOldSlotIndex == -1)
                             {
-                                long txnId = h->TxnId;
-                                if (txnId <= maxTxnId)
+                                // First candidate found.
+                                bestOldSlotIndex = index;
+                                bestOldTxnId = currentTxnId;
+                            }
+                            else
+                            {
+                                // Compare with current best.
+                                int garbageIndex;
+                                if (currentTxnId > bestOldTxnId)
                                 {
-                                    // Exact Match Optimization
-                                    if (txnId == maxTxnId)
-                                    {
-                                        r = current;
-                                        if (state != _state)
-                                            goto _redo;
-                                        return true;
-                                    }
+                                    // Current is better. Previous best is garbage.
+                                    garbageIndex = bestOldSlotIndex;
 
-                                    // Keep track of best candidate
-                                    if (txnId > bestTxnFound)
-                                    {
-                                        bestTxnFound = txnId;
-                                        bestIndex = index;
-                                    }
+                                    // Update best to current
+                                    bestOldSlotIndex = index;
+                                    bestOldTxnId = currentTxnId;
                                 }
-                            }
-                        }
-                    }
-
-                    index = (index + 1) & mask;
-                }
-            }
-
-            /// <summary>
-            /// Removes an entry by marking it as a Tombstone.
-            /// Uses direct field access for lower overhead (protected by lock).
-            /// </summary>
-            public bool Remove(GhostId id, long txnId)
-            {
-                _lock.Enter();
-                try
-                {
-                    // Direct field access - we're under lock
-                    var entries = _entries;
-                    var randomParts = _randomParts;
-                    int mask = _mask;
-
-                    if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
-                        throw new InvalidOperationException();
-
-                    short searchRandomPart = id.RandomPartTag;
-                    int index = id.SlotComputation & mask;
-
-                    while (true)
-                    {
-                        SegmentReference current = entries[index];
-
-                        if (current.IsEmpty())
-                            return false;
-
-                        if (!current.IsTombstone())
-                        {
-                            // Fast filter: compare cached random part first
-                            if (randomParts[index] == searchRandomPart)
-                            {
-                                var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
-                                if (h != null && h->Id == id && h->TxnId == txnId)
+                                else
                                 {
-                                    // Mark as Tombstone
-                                    _store.DecrementSegmentHolderUsage(current);
-                                    entries[index] = SegmentReference.Tombstone;
-                                    randomParts[index] = RandomPart_Tombstone;
+                                    // Previous best is better (or equal). Current is garbage.
+                                    garbageIndex = index;
+                                }
+
+                                // Dispose of the garbage slot
+                                var garbageRef = entries[garbageIndex];
+                                if (insertionPending)
+                                {
+                                    // Recycle for the new insertion
+                                    _store.DecrementSegmentHolderUsage(garbageRef);
+                                    entries[garbageIndex] = r;
+                                    randomParts[garbageIndex] = newRandomPart;
+                                    _store.IncrementSegmentHolderUsage(r);
+                                    insertionPending = false;
+                                    // Count unchanged (1 replace 1)
+                                }
+                                else
+                                {
+                                    // Mark as tombstone
+                                    _store.DecrementSegmentHolderUsage(garbageRef);
+                                    entries[garbageIndex] = SegmentReference.Tombstone;
+                                    randomParts[garbageIndex] = RandomPart_Tombstone;
                                     _count--;
                                     _tombstoneCount++;
-
-                                    // Garbage Collection trigger
-                                    if (_tombstoneCount > (_capacity >> 1) + (_capacity >> 2))
-                                    {
-                                        int newCapacity = _capacity;
-                                        if (_count < (_capacity >> 2))
-                                            newCapacity = _capacity >> 1;
-
-                                        Resize(Math.Max(newCapacity, InitialCapacity));
-                                    }
-
-                                    return true;
                                 }
                             }
                         }
-                        index = (index + 1) & mask;
                     }
                 }
-                finally { _lock.Exit(); }
-            }
 
-            /// <summary>
-            /// Removes all entries that are obsolete regarding the specified bottomTxnId.
-            /// Rebuilds the map (like Resize) to filter out garbage versions.
-            /// </summary>
-            /// <param name="bottomTxnId">The new oldest active transaction ID.</param>
-            /// <returns>The number of entries removed.</returns>
-            public int Prune(long bottomTxnId)
+                index = (index + 1) & mask;
+            }
+        }
+        #if !NATIVE_LOCK
+        finally
+        {
+            _lock.Exit();
+        }
+        #endif
+    }
+
+    /// <summary>
+    /// Adds or Updates the entry using Tombstone-aware probing.
+    /// Uses direct field access for lower overhead (protected by lock).
+    /// </summary>
+    public void Set(SegmentReference r, GhostHeader* h)
+    {
+#if NATIVE_LOCK
+        lock (this)
+#else
+        _lock.Enter();
+        try
+#endif
+        {
+            // Check if we need to resize based on OCCUPIED slots (Live + Graves)
+            if (_occupied >= _resizeThreshold)
             {
-                _lock.Enter();
-                try
-                {
-                    var entries = _entries;
-                    var randomParts = _randomParts;
-                    int mask = _mask;
-                    int removedCount = 0;
+                int newCapacity;
 
-                    for (int i = 0; i < entries.Length; i++)
+                // Case 1: Very few live items? Shrink.
+                if (_count < _capacity / 4)
+                {
+                    newCapacity = _capacity / 2;
+                }
+                // Case 2: Lots of live items? Grow.
+                else if (_count > _capacity / 2)
+                {
+                    newCapacity = _capacity * 2;
+                }
+                // Case 3: Moderate live items (25% - 50%). Cleanup only.
+                else
+                {
+                    newCapacity = _capacity;
+                }
+
+                // Safety clamp
+                if (newCapacity < InitialCapacity) newCapacity = InitialCapacity;
+
+                Resize(newCapacity);
+            }
+
+            // Direct field access - we're under lock
+            var entries = _entries;
+            var randomParts = _randomParts;
+            int mask = _mask;
+
+            if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+                throw new InvalidOperationException();
+
+            GhostId newId = h->Id;
+            short newRandomPart = newId.RandomPartTag;
+            long newTxnId = h->TxnId;
+
+            // Slot calculation uses specific bit-range
+            int index = newId.SlotComputation & mask;
+            int firstTombstoneIndex = -1;
+
+            while (true)
+            {
+                SegmentReference current = entries[index];
+                short currentRandomPart = randomParts[index];
+
+                // 1. Found Empty Slot?
+                if (current.IsEmpty())
+                {
+                    // If we passed a tombstone earlier, recycle it!
+                    if (firstTombstoneIndex != -1)
                     {
-                        SegmentReference current = entries[i];
-                        if (current.IsValid())
+                        entries[firstTombstoneIndex] = r;
+                        randomParts[firstTombstoneIndex] = newRandomPart;
+                        _count++;
+                        _tombstoneCount--;
+                        _store.IncrementSegmentHolderUsage(r);
+                        return;
+                    }
+
+                    // No tombstone found, insert here.
+                    entries[index] = r;
+                    randomParts[index] = newRandomPart;
+                    _count++;
+                    _occupied++;
+                    _store.IncrementSegmentHolderUsage(r);
+                    return;
+                }
+
+                // 2. Found Tombstone?
+                if (current.IsTombstone())
+                {
+                    if (firstTombstoneIndex == -1) firstTombstoneIndex = index;
+                }
+                // 3. Found Duplicate? (Same exact reference)
+                else if (current.Value == r.Value)
+                {
+                    return;
+                }
+                // 4. Check for logical duplicate (same Id + TxnId but different reference)
+                // Fast filter: compare cached random part first
+                else if (currentRandomPart == newRandomPart)
+                {
+                    var existingHeader = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    if (existingHeader != null && existingHeader->Id == newId && existingHeader->TxnId == newTxnId)
+                    {
+                        // Logical duplicate found - update the reference
+                        _store.DecrementSegmentHolderUsage(current);
+                        entries[index] = r;
+                        _store.IncrementSegmentHolderUsage(r);
+                        // randomParts[index] unchanged (same Id)
+                        return;
+                    }
+                }
+
+                index = (index + 1) & mask;
+            }
+        }
+        #if !NATIVE_LOCK
+        finally {
+            _lock.Exit();
+        }
+        #endif
+    }
+
+    /// <summary>
+    /// Finds the entry. Tombstones are treated as "keep looking".
+    /// Uses MapState snapshot for lock-free thread safety.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool Get(GhostId id, long maxTxnId, out SegmentReference r)
+    {
+    _redo:
+        // Capture atomic snapshot for lock-free read
+        var state = _state;
+        var entries = state.Entries;
+        var randomParts = state.RandomParts;
+        int mask = state.Mask;
+
+        if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+            throw new InvalidOperationException();
+
+        short searchRandomPart = id.RandomPartTag;
+        int index = id.SlotComputation & mask;
+        int bestIndex = -1;
+        long bestTxnFound = long.MinValue;
+
+        while (true)
+        {
+            SegmentReference current = entries[index];
+
+            // --- STOP AT EMPTY ---
+            if (current.IsEmpty())
+            {
+                // Validate snapshot before returning
+                if (state != _state)
+                    goto _redo;
+
+                if (bestIndex != -1)
+                {
+                    r = entries[bestIndex];
+                    return true;
+                }
+
+                r = default;
+                return false;
+            }
+
+            // --- SKIP TOMBSTONES ---
+            if (!current.IsTombstone())
+            {
+                // Fast filter: compare cached random part first (2 bytes, excellent cache density)
+                short cachedRandomPart = randomParts[index];
+                if (cachedRandomPart == searchRandomPart)
+                {
+                    // Random parts match - now do the expensive pointer dereference
+                    var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+
+                    // Full ID verification to handle collisions (~1 in 65,536)
+                    if (h != null && h->Id == id)
+                    {
+                        long txnId = h->TxnId;
+                        if (txnId <= maxTxnId)
                         {
-                            var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
-                            if (h != null)
+                            // Exact Match Optimization
+                            if (txnId == maxTxnId)
                             {
-                                // Check if candidate for removal (Old Version)
-                                if (h->TxnId <= bottomTxnId)
-                                {
-                                    // It is a candidate. Check if superseded by a better old version.
-                                    if (IsSuperseded(h->Id, h->TxnId, bottomTxnId, entries, randomParts, mask))
-                                    {
-                                        // Mark as Tombstone
-                                        _store.DecrementSegmentHolderUsage(current);
-                                        entries[i] = SegmentReference.Tombstone;
-                                        randomParts[i] = RandomPart_Tombstone;
-                                        _count--;
-                                        _tombstoneCount++;
-                                        removedCount++;
-                                    }
-                                }
+                                r = current;
+                                if (state != _state)
+                                    goto _redo;
+                                return true;
+                            }
+
+                            // Keep track of best candidate
+                            if (txnId > bestTxnFound)
+                            {
+                                bestTxnFound = txnId;
+                                bestIndex = index;
                             }
                         }
                     }
-
-                    return removedCount;
                 }
-                finally { _lock.Exit(); }
             }
+
+            index = (index + 1) & mask;
+        }
+    }
+
+    /// <summary>
+    /// Removes an entry by marking it as a Tombstone.
+    /// Uses direct field access for lower overhead (protected by lock).
+    /// </summary>
+    public bool Remove(GhostId id, long txnId)
+    {
+#if NATIVE_LOCK
+        lock (this)
+#else
+        _lock.Enter();
+        try
+#endif
+        {
+            // Direct field access - we're under lock
+            var entries = _entries;
+            var randomParts = _randomParts;
+            int mask = _mask;
+
+            if (mask >= entries.Length || mask >= randomParts.Length || entries.Length != randomParts.Length)
+                throw new InvalidOperationException();
+
+            short searchRandomPart = id.RandomPartTag;
+            int index = id.SlotComputation & mask;
+
+            while (true)
+            {
+                SegmentReference current = entries[index];
+
+                if (current.IsEmpty())
+                    return false;
+
+                if (!current.IsTombstone())
+                {
+                    // Fast filter: compare cached random part first
+                    if (randomParts[index] == searchRandomPart)
+                    {
+                        var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                        if (h != null && h->Id == id && h->TxnId == txnId)
+                        {
+                            // Mark as Tombstone
+                            _store.DecrementSegmentHolderUsage(current);
+                            entries[index] = SegmentReference.Tombstone;
+                            randomParts[index] = RandomPart_Tombstone;
+                            _count--;
+                            _tombstoneCount++;
+
+                            // Garbage Collection trigger
+                            if (_tombstoneCount > (_capacity >> 1) + (_capacity >> 2))
+                            {
+                                int newCapacity = _capacity;
+                                if (_count < (_capacity >> 2))
+                                    newCapacity = _capacity >> 1;
+
+                                Resize(Math.Max(newCapacity, InitialCapacity));
+                            }
+
+                            return true;
+                        }
+                    }
+                }
+                index = (index + 1) & mask;
+            }
+        }
+        #if !NATIVE_LOCK
+        finally {
+            _lock.Exit();
+        }
+        #endif
+    }
+
+    /// <summary>
+    /// Removes all entries that are obsolete regarding the specified bottomTxnId.
+    /// Rebuilds the map (like Resize) to filter out garbage versions.
+    /// </summary>
+    /// <param name="bottomTxnId">The new oldest active transaction ID.</param>
+    /// <returns>The number of entries removed.</returns>
+    public int Prune(long bottomTxnId)
+    {
+#if NATIVE_LOCK
+        lock (this)
+#else
+        _lock.Enter();
+        try
+#endif
+        {
+            var entries = _entries;
+            var randomParts = _randomParts;
+            int mask = _mask;
+            int removedCount = 0;
+
+            for (int i = 0; i < entries.Length; i++)
+            {
+                SegmentReference current = entries[i];
+                if (current.IsValid())
+                {
+                    var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    if (h != null)
+                    {
+                        // Check if candidate for removal (Old Version)
+                        if (h->TxnId <= bottomTxnId)
+                        {
+                            // It is a candidate. Check if superseded by a better old version.
+                            if (IsSuperseded(h->Id, h->TxnId, bottomTxnId, entries, randomParts, mask))
+                            {
+                                // Mark as Tombstone
+                                _store.DecrementSegmentHolderUsage(current);
+                                entries[i] = SegmentReference.Tombstone;
+                                randomParts[i] = RandomPart_Tombstone;
+                                _count--;
+                                _tombstoneCount++;
+                                removedCount++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return removedCount;
+        }
+#if !NATIVE_LOCK
+        finally {
+            _lock.Exit();
+        }
+#endif
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsSuperseded(GhostId id, long myTxnId, long bottomTxnId, SegmentReference[] entries, short[] randomParts, int mask)
