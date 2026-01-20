@@ -88,7 +88,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                 return null;
             }
             
-            public SegmentReference StoreGhost(PinnedMemory<byte> ghost)
+            public SegmentReference StoreGhost(long bottomTxnId, PinnedMemory<byte> ghost)
             {
                 throw new NotImplementedException();
             }
@@ -136,6 +136,16 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                 if (!UsageCounts.ContainsKey(reference.SegmentId))
                     UsageCounts[reference.SegmentId] = 0;
                 UsageCounts[reference.SegmentId]--;
+            }
+
+            public SegmentReference StoreGhost(long bottomTxnId, PinnedMemory<byte> ghost, long txnId)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool WriteTransaction<T>(T commiter, long txnId, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream
+            {
+                throw new NotImplementedException();
             }
         }
 

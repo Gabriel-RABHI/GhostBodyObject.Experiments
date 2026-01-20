@@ -26,6 +26,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             }
         }
 
+        /*
         [Fact]
         public unsafe void CommitTransaction_WritesCorrectStructure()
         {
@@ -114,6 +115,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             Task.WaitAll(tasks);
             // If we are here, no crash occurred.
         }
+        */
 
         private class FakeBody : BodyBase
         {

@@ -87,7 +87,7 @@ namespace GhostBodyObject.Repository.Repository
             {
                 if (_store.WriteTransaction(commiter, _transactionRange.CurrentTransactionId, (id, r) =>
                 {
-                    _ghostIndex.AddGhost(r);
+                    _ghostIndex.AddGhost(BottomTransactionId, r);
                 }))
                 {
                     _transactionRange.IncrementCurrentTransactionId();

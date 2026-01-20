@@ -65,5 +65,11 @@ namespace GhostBodyObject.Repository.Repository.Structs
         // Helper to check if the slot has valid data (neither empty nor dead)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() => Value != 0 && Value != ulong.MaxValue;
+
+        public override string ToString()
+        {
+            return Value == 0 ? "-" : $"{SegmentId} -> {Offset}";
+        }
+    
     }
 }

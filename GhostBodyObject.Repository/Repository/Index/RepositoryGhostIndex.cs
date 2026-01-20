@@ -51,13 +51,13 @@ namespace GhostBodyObject.Repository.Repository.Index
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddGhost(SegmentReference r)
+        public void AddGhost(long bottomTxnId, SegmentReference r)
         {
             var h = (GhostHeader*)_store.ToGhostHeaderPointer(r);
             if (h != null)
             {
                 var map = GetIndex(h->Id.TypeCombo, true);
-                map.AddGhost(r, h);
+                map.AddGhost(bottomTxnId, r, h);
             }
             else throw new InvalidOperationException("Cannot index a missing ghost.");
         }
@@ -129,9 +129,9 @@ namespace GhostBodyObject.Repository.Repository.Index
         public ShardedSegmentGhostMap<TSegmentStore> GhostMap => _map;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddGhost(SegmentReference r, GhostHeader* h)
+        public void AddGhost(long bottomTxnId, SegmentReference r, GhostHeader* h)
         {
-            _map.Set(r, h);
+            _map.Set(bottomTxnId, r, h);
             _maxTxnId = Math.Max(_maxTxnId, h->TxnId);
         }
 

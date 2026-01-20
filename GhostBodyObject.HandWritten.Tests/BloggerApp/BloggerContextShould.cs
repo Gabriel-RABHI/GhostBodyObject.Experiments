@@ -20,7 +20,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             SegmentSizeComputation.SmallSegmentsMode = true;
         }
 
-        public bool SmallMode {
+        public bool SmallMode
+        {
             get => SegmentSizeComputation.SmallSegmentsMode;
             set => SegmentSizeComputation.SmallSegmentsMode = value;
         }
@@ -906,6 +907,65 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             Task.WaitAll(tasks);
             Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
             Console.WriteLine($"Total reads = {totalReads}");
+        }
+
+
+        [Fact()]
+        public void AddAndMutateSameObjectUsingOneThread()
+        {
+            SegmentStoreMode mode = SegmentStoreMode.PersistantRepository;
+            var cursor = true;
+            Action<Action<BloggerUser>> forEach = cursor ? ((a) => BloggerCollections.BloggerUsers.Scan(a)) : ((a) => BloggerCollections.BloggerUsers.ForEach(a));
+            using var tempDir = new TempDirectoryHelper(true);
+            using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+            var sw = Stopwatch.StartNew();
+
+            int writethreadCount = 1;
+
+            var tasks = new Task[writethreadCount];
+
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                var user = new BloggerUser()
+                {
+                    Active = true,
+                };
+                BloggerContext.Commit(false);
+            }
+
+            // -------- 100M entries test
+            var nTxn = 100_000;
+            if (false)
+            {
+                // -------- 4M entries test - faster test
+                nTxn = 10_000;
+            }
+            if (SmallMode)
+                nTxn = 1_000_000;
+            try
+            {
+                for (int j = 0; j < nTxn; j++)
+                    using (BloggerContext.NewWriteContext(repository))
+                    {
+                        if (BloggerCollections.BloggerUsers.Instances.Count() == 0)
+                            throw new InvalidOperationException("No object to mutate !");
+                        BloggerCollections.BloggerUsers.Scan(user =>
+                        {
+                            user.CustomerCode++;
+                            user.FirstName = $"FirstName-{j}";
+                            user.LastName = $"LastName-{j}";
+                            user.Country = $"Country-{j}";
+                            user.CompanyName = $"CompanyName-{j}";
+                        });
+                        BloggerContext.Commit(false);
+                    }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Writer failed: {ex}");
+                throw;
+            }
+            Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
         }
     }
 }
