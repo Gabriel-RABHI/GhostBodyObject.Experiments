@@ -143,6 +143,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
         public void UpdateHolders(long bottomTxnId, long topTxnId)
         {
             // -------- Signal the GC it must clean up because a Txn that change bottom txn id with closed
+            RebuildSegmentHolders();
         }
 
         public int CreateSegment(int capacity)
@@ -406,7 +407,6 @@ namespace GhostBodyObject.Repository.Repository.Segment
             {
                 if (checksum != null)
                     checksum.Dispose();
-                RebuildSegmentHolders();
             }
         }
 
