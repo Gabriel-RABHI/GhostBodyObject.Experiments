@@ -64,6 +64,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction
 
         public RepositoryTransactionBodyIndex BodyIndex => _bodyIndex;
 
+        public MemorySegmentStoreHolders Holders => _holders;
+
         public void RegisterBody<TBody>(TBody body)
             where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
         {

@@ -50,14 +50,14 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
 
     private readonly SegmentGhostMap<TSegmentStore>[] _shards;
 
-    public ShardedSegmentGhostMap(TSegmentStore store, int totalCapacity = 1024)
+    public ShardedSegmentGhostMap(int totalCapacity = 1024)
     {
         _shards = new SegmentGhostMap<TSegmentStore>[ShardCount];
         int capPerShard = Math.Max(16, totalCapacity / ShardCount);
 
         for (int i = 0; i < ShardCount; i++)
         {
-            _shards[i] = new SegmentGhostMap<TSegmentStore>(store, capPerShard);
+            _shards[i] = new SegmentGhostMap<TSegmentStore>(capPerShard);
         }
     }
     
@@ -67,16 +67,16 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
     // --- CRUD OPERATIONS ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Set(SegmentReference r, GhostHeader* h)
-        => GetShard(h->Id).SetAndRemove(r, h, long.MaxValue);
+    public void Set(TSegmentStore store, SegmentReference r, GhostHeader* h)
+        => GetShard(h->Id).SetAndRemove(store, r, h, long.MaxValue);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Get(GhostId id, long maxTxnId, out SegmentReference r)
-        => GetShard(id).Get(id, maxTxnId, out r);
+    public bool Get(TSegmentStore store, GhostId id, long maxTxnId, out SegmentReference r)
+        => GetShard(id).Get(store, id, maxTxnId, out r);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Remove(GhostId id, long txnId)
-        => GetShard(id).Remove(id, txnId);
+    public bool Remove(TSegmentStore store, GhostId id, long txnId)
+        => GetShard(id).Remove(store, id, txnId);
 
     public int Count
     {
@@ -111,8 +111,8 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
     /// <summary>
     /// Yields ONLY the latest version of each key visible at maxTxnId.
     /// </summary>
-    public ShardedDeduplicatedEnumerator GetDeduplicatedEnumerator(long maxTxnId)
-        => new ShardedDeduplicatedEnumerator(_shards, maxTxnId);
+    public ShardedDeduplicatedEnumerator GetDeduplicatedEnumerator(TSegmentStore store, long maxTxnId)
+        => new ShardedDeduplicatedEnumerator(store, _shards, maxTxnId);
 
     // --- STRUCT ENUMERATORS (Flattened Loops) ---
 
@@ -156,14 +156,16 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
         private readonly long _maxTxnId;
         private int _shardIndex;
         private SegmentGhostMap<TSegmentStore>.DeduplicatedEnumerator _currentEnum;
+        private TSegmentStore _store;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ShardedDeduplicatedEnumerator(SegmentGhostMap<TSegmentStore>[] shards, long maxTxnId)
+        internal ShardedDeduplicatedEnumerator(TSegmentStore store, SegmentGhostMap<TSegmentStore>[] shards, long maxTxnId)
         {
+            _store = store;
             _shards = shards;
             _maxTxnId = maxTxnId;
             _shardIndex = 0;
-            _currentEnum = shards[0].GetDeduplicatedEnumerator(maxTxnId);
+            _currentEnum = shards[0].GetDeduplicatedEnumerator(_store, maxTxnId);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -173,7 +175,7 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
 
             while (++_shardIndex < _shards.Length)
             {
-                _currentEnum = _shards[_shardIndex].GetDeduplicatedEnumerator(_maxTxnId);
+                _currentEnum = _shards[_shardIndex].GetDeduplicatedEnumerator(_store, _maxTxnId);
                 if (_currentEnum.MoveNext()) return true;
             }
             return false;

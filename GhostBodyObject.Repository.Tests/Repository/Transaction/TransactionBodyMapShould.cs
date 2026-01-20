@@ -47,7 +47,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                 var id = user.Header->Id;
 
                 index.Set(user);
-                var retrieved = index.GetRef(id, out bool exists);
+                var retrieved = index.Get(id, out bool exists);
 
                 Assert.True(exists);
                 Assert.Same(user, retrieved);
@@ -66,7 +66,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
 
                 // Create a different ID that doesn't exist
                 var otherId = GhostId.NewId(GhostIdKind.Entity, 1);
-                var retrieved = index.GetRef(otherId, out bool exists);
+                var retrieved = index.Get(otherId, out bool exists);
 
                 Assert.False(exists);
                 Assert.Null(retrieved);
@@ -95,7 +95,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
 
                 // Count should remain 1
                 Assert.Equal(1, index.Count);
-                var retrieved = index.GetRef(id, out bool exists);
+                var retrieved = index.Get(id, out bool exists);
                 Assert.True(exists);
                 Assert.Same(user2, retrieved);
             }
@@ -124,7 +124,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                 // Verify all can be retrieved
                 for (int i = 0; i < count; i++)
                 {
-                    var retrieved = index.GetRef(ids[i], out bool exists);
+                    var retrieved = index.Get(ids[i], out bool exists);
                     Assert.True(exists);
                     Assert.Same(users[i], retrieved);
                 }
@@ -148,7 +148,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
 
                 Assert.True(removed);
                 Assert.Equal(0, index.Count);
-                var retrieved = index.GetRef(id, out bool exists);
+                var retrieved = index.Get(id, out bool exists);
                 Assert.False(exists);
             }
         }
@@ -203,7 +203,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                 // Verify removed entries are gone and others remain
                 for (int i = 0; i < count; i++)
                 {
-                    var retrieved = index.GetRef(ids[i], out bool exists);
+                    var retrieved = index.Get(ids[i], out bool exists);
                     if (i % 2 == 0)
                     {
                         Assert.False(exists);
@@ -245,7 +245,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                 // All entries should still be retrievable
                 for (int i = 0; i < count; i++)
                 {
-                    var retrieved = index.GetRef(ids[i], out bool exists);
+                    var retrieved = index.Get(ids[i], out bool exists);
                     Assert.True(exists);
                     Assert.Same(users[i], retrieved);
                 }
@@ -286,7 +286,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                 // Remaining entries should still be retrievable
                 for (int i = count - 5; i < count; i++)
                 {
-                    var retrieved = index.GetRef(ids[i], out bool exists);
+                    var retrieved = index.Get(ids[i], out bool exists);
                     Assert.True(exists);
                     Assert.Same(users[i], retrieved);
                 }
@@ -388,7 +388,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                 // Verify all entries are gone
                 for (int i = 0; i < count; i++)
                 {
-                    var retrieved = index.GetRef(ids[i], out bool exists);
+                    var retrieved = index.Get(ids[i], out bool exists);
                     Assert.False(exists);
                 }
             }
@@ -418,7 +418,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                 // All entries should be retrievable despite collisions
                 for (int i = 0; i < count; i++)
                 {
-                    var retrieved = index.GetRef(ids[i], out bool exists);
+                    var retrieved = index.Get(ids[i], out bool exists);
                     Assert.True(exists, $"Entry at index {i} should exist");
                     Assert.Same(users[i], retrieved);
                 }
@@ -457,7 +457,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                 // Remaining entries should still be retrievable
                 for (int i = 0; i < count; i++)
                 {
-                    var retrieved = index.GetRef(ids[i], out bool exists);
+                    var retrieved = index.Get(ids[i], out bool exists);
                     if (Array.IndexOf(removeIndices, i) >= 0)
                     {
                         Assert.False(exists);

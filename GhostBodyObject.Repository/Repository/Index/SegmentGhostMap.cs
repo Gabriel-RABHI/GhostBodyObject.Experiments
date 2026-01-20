@@ -29,8 +29,8 @@
  * --------------------------------------------------------------------------
  */
 #define NATIVE_LOCK
+#undef STATE_CHECK
 
-using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Structs;
@@ -72,6 +72,7 @@ using System.Runtime.CompilerServices;
 /// should be aware that enumerators operate on a snapshot and do not reflect subsequent changes.
 /// </para>
 /// </remarks>
+
 public sealed unsafe class SegmentGhostMap<TSegmentStore>
    where TSegmentStore : ISegmentStore
 {
@@ -100,8 +101,6 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
         }
     }
 
-    private readonly TSegmentStore _store;
-
     // Direct field access for mutators (under lock) - lower overhead
     private SegmentReference[] _entries;
     private short[] _randomParts;
@@ -126,9 +125,8 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
 
     public int Capacity => _capacity;
 
-    public SegmentGhostMap(TSegmentStore store, int initialCapacity = InitialCapacity)
+    public SegmentGhostMap(int initialCapacity = InitialCapacity)
     {
-        _store = store;
         if (initialCapacity < InitialCapacity) initialCapacity = InitialCapacity;
         _capacity = PowerOf2(initialCapacity);
         _mask = _capacity - 1;
@@ -238,7 +236,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     /// We find an empty slot, we stop.
     /// 
     /// </summary>
-    public void SetAndRemove(SegmentReference r, GhostHeader* h, long bottomTxnId)
+    public void SetAndRemove(TSegmentStore _store, SegmentReference r, GhostHeader* h, long bottomTxnId)
     {
 #if NATIVE_LOCK
         lock (this)
@@ -271,7 +269,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 // Safety clamp
                 if (newCapacity < InitialCapacity) newCapacity = InitialCapacity;
 
-                Resize(newCapacity);
+                Resize(_store, newCapacity);
             }
 
             // Direct field access - we're under lock
@@ -413,19 +411,19 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 index = (index + 1) & mask;
             }
         }
-        #if !NATIVE_LOCK
+#if !NATIVE_LOCK
         finally
         {
             _lock.Exit();
         }
-        #endif
+#endif
     }
 
     /// <summary>
     /// Adds or Updates the entry using Tombstone-aware probing.
     /// Uses direct field access for lower overhead (protected by lock).
     /// </summary>
-    public void Set(SegmentReference r, GhostHeader* h)
+    public void Set(TSegmentStore _store, SegmentReference r, GhostHeader* h)
     {
 #if NATIVE_LOCK
         lock (this)
@@ -458,7 +456,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 // Safety clamp
                 if (newCapacity < InitialCapacity) newCapacity = InitialCapacity;
 
-                Resize(newCapacity);
+                Resize(_store, newCapacity);
             }
 
             // Direct field access - we're under lock
@@ -534,11 +532,11 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 index = (index + 1) & mask;
             }
         }
-        #if !NATIVE_LOCK
+#if !NATIVE_LOCK
         finally {
             _lock.Exit();
         }
-        #endif
+#endif
     }
 
     /// <summary>
@@ -546,7 +544,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     /// Uses MapState snapshot for lock-free thread safety.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Get(GhostId id, long maxTxnId, out SegmentReference r)
+    public bool Get(TSegmentStore _store, GhostId id, long maxTxnId, out SegmentReference r)
     {
     _redo:
         // Capture atomic snapshot for lock-free read
@@ -571,8 +569,10 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             if (current.IsEmpty())
             {
                 // Validate snapshot before returning
+#if STATE_CHECK
                 if (state != _state)
                     goto _redo;
+#endif
 
                 if (bestIndex != -1)
                 {
@@ -592,7 +592,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 if (cachedRandomPart == searchRandomPart)
                 {
                     // Random parts match - now do the expensive pointer dereference
-                    var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    var h = _store.ToGhostHeaderPointer(current);
 
                     // Full ID verification to handle collisions (~1 in 65,536)
                     if (h != null && h->Id == id)
@@ -604,8 +604,10 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                             if (txnId == maxTxnId)
                             {
                                 r = current;
+#if STATE_CHECK
                                 if (state != _state)
                                     goto _redo;
+#endif
                                 return true;
                             }
 
@@ -628,7 +630,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     /// Removes an entry by marking it as a Tombstone.
     /// Uses direct field access for lower overhead (protected by lock).
     /// </summary>
-    public bool Remove(GhostId id, long txnId)
+    public bool Remove(TSegmentStore _store, GhostId id, long txnId)
     {
 #if NATIVE_LOCK
         lock (this)
@@ -677,7 +679,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                                 if (_count < (_capacity >> 2))
                                     newCapacity = _capacity >> 1;
 
-                                Resize(Math.Max(newCapacity, InitialCapacity));
+                                Resize(_store, Math.Max(newCapacity, InitialCapacity));
                             }
 
                             return true;
@@ -687,11 +689,11 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 index = (index + 1) & mask;
             }
         }
-        #if !NATIVE_LOCK
+#if !NATIVE_LOCK
         finally {
             _lock.Exit();
         }
-        #endif
+#endif
     }
 
     /// <summary>
@@ -700,7 +702,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     /// </summary>
     /// <param name="bottomTxnId">The new oldest active transaction ID.</param>
     /// <returns>The number of entries removed.</returns>
-    public int Prune(long bottomTxnId)
+    public int Prune(TSegmentStore _store, long bottomTxnId)
     {
 #if NATIVE_LOCK
         lock (this)
@@ -726,7 +728,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                         if (h->TxnId <= bottomTxnId)
                         {
                             // It is a candidate. Check if superseded by a better old version.
-                            if (IsSuperseded(h->Id, h->TxnId, bottomTxnId, entries, randomParts, mask))
+                            if (IsSuperseded(_store, h->Id, h->TxnId, bottomTxnId, entries, randomParts, mask))
                             {
                                 // Mark as Tombstone
                                 _store.DecrementSegmentHolderUsage(current);
@@ -751,7 +753,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsSuperseded(GhostId id, long myTxnId, long bottomTxnId, SegmentReference[] entries, short[] randomParts, int mask)
+    private bool IsSuperseded(TSegmentStore _store, GhostId id, long myTxnId, long bottomTxnId, SegmentReference[] entries, short[] randomParts, int mask)
     {
         short searchRandomPart = id.RandomPartTag;
         int index = id.SlotComputation & mask;
@@ -785,7 +787,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     /// <summary>
     /// Resizes the map. Uses direct field access and publishes new MapState atomically at the end.
     /// </summary>
-    private void Resize(int newCapacity)
+    private void Resize(TSegmentStore _store, int newCapacity)
     {
         // 1. Create new arrays
         var newEntries = new SegmentReference[newCapacity];
@@ -897,8 +899,8 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
     /// <summary>
     /// Returns an enumerator that yields ONLY the latest version of each key visible at maxTxnId.
     /// </summary>
-    public DeduplicatedEnumerator GetDeduplicatedEnumerator(long maxTxnId)
-        => new DeduplicatedEnumerator(_state, _store, maxTxnId);
+    public DeduplicatedEnumerator GetDeduplicatedEnumerator(TSegmentStore _store, long maxTxnId)
+        => new DeduplicatedEnumerator(_store, _state, maxTxnId);
 
     public struct DeduplicatedEnumerator
     {
@@ -912,7 +914,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
         private SegmentReference _current;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal DeduplicatedEnumerator(MapState state, ISegmentStore store, long maxTxnId)
+        internal DeduplicatedEnumerator(TSegmentStore store, MapState state, long maxTxnId)
         {
             // Atomic capture of consistent state for lock-free iteration
             _entries = state.Entries;

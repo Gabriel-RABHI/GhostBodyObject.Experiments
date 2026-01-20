@@ -145,7 +145,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         /// Retrieves the entry with the specified Id.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TBody GetRef(GhostId id, out bool exists)
+        public TBody Get(GhostId id, out bool exists)
         {
 #if THREAD_SAFE
         _lock.Enter();

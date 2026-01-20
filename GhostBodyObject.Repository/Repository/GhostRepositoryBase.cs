@@ -52,7 +52,7 @@ namespace GhostBodyObject.Repository.Repository
         /// <summary>
         /// The ghost index that reference memory segment.
         /// </summary>
-        private readonly RepositoryGhostIndex<MemorySegmentStore> _ghostIndex;
+        private readonly RepositoryGhostIndex<MemorySegmentStore, MemorySegmentStoreHolders> _ghostIndex;
 
         /// <summary>
         /// Represents the range of transaction IDs associated with the current repository transaction.
@@ -64,7 +64,7 @@ namespace GhostBodyObject.Repository.Repository
 
         public long BottomTransactionId => _transactionRange.BottomTransactionId;
 
-        public RepositoryGhostIndex<MemorySegmentStore> GhostIndex => _ghostIndex;
+        public RepositoryGhostIndex<MemorySegmentStore, MemorySegmentStoreHolders> GhostIndex => _ghostIndex;
 
         public MemorySegmentStore Store => _store;
 
@@ -76,7 +76,7 @@ namespace GhostBodyObject.Repository.Repository
         public GhostRepositoryBase(SegmentStoreMode mode = SegmentStoreMode.InMemoryVolatileRepository, string path = default)
         {
             _store = new MemorySegmentStore(mode, path);
-            _ghostIndex = new RepositoryGhostIndex<MemorySegmentStore>(_store);
+            _ghostIndex = new RepositoryGhostIndex<MemorySegmentStore, MemorySegmentStoreHolders>(_store);
         }
         #endregion
 

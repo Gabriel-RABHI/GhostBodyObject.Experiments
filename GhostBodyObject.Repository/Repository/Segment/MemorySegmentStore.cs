@@ -43,7 +43,7 @@ using GhostBodyObject.Repository.Repository.Structs;
 namespace GhostBodyObject.Repository.Repository.Segment
 {
 
-    public sealed unsafe class MemorySegmentStore : ISegmentStore, IDisposable
+    public sealed unsafe class MemorySegmentStore : IDisposable, ISegmentStoreProvider<MemorySegmentStoreHolders>
     {
         private SegmentStoreMode _storeMode;
         private SegmentImplementationType _implementationType;
@@ -51,7 +51,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private bool _isCompactable = false;
 
         private MemorySegmentHolder[] _segmentHolders;
-        private MemorySegmentHolder _currentHolder;
+        private MemorySegmentHolder _currentSegmentHolder;
+        private MemorySegmentStoreHolders _holders;
         private byte*[] _segmentPointers;
         private int _lastSegmentId = 0;
         private int _segmentCount = 0;
@@ -75,8 +76,10 @@ namespace GhostBodyObject.Repository.Repository.Segment
             _isCompactable = mode.IsCompactable();
             _directoryPath = directoryPath ?? Directory.GetCurrentDirectory();
 
-            _segmentHolders = new MemorySegmentHolder[1024];
-            _segmentPointers = new byte*[1024];
+            _segmentHolders = new MemorySegmentHolder[8];
+            _segmentPointers = new byte*[8];
+
+            _holders = new MemorySegmentStoreHolders(this, _segmentHolders, _segmentPointers);
         }
 
         ~MemorySegmentStore()
@@ -101,8 +104,10 @@ namespace GhostBodyObject.Repository.Repository.Segment
             }
             _segmentHolders = newHolders;
             _segmentPointers = newPointers;
+            _holders = new MemorySegmentStoreHolders(this, _segmentHolders, _segmentPointers);
         }
 
+        /*
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void IncrementSegmentHolderUsage(SegmentReference reference)
         {
@@ -123,6 +128,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                 RebuildSegmentHolders();
             }
         }
+        */
 
         /// <summary>
         /// Gets an array containing all current memory segment holders. Is used by Transactions to keep segments alive.
@@ -131,7 +137,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
         /// array may be empty if no holders are present.</returns>
         public MemorySegmentStoreHolders GetHolders()
         {
-            return new MemorySegmentStoreHolders(_segmentHolders);
+            return _holders;
         }
 
         public void UpdateHolders(long bottomTxnId, long topTxnId)
@@ -166,16 +172,17 @@ namespace GhostBodyObject.Repository.Repository.Segment
                 var newPointers = new byte*[_segmentPointers.Length * 2];
                 Array.Copy(_segmentPointers, newPointers, _segmentPointers.Length);
                 _segmentPointers = newPointers;
+                _holders = new MemorySegmentStoreHolders(this, _segmentHolders, _segmentPointers);
             }
 
-            _currentHolder = new MemorySegmentHolder(segment, segmentId);
-            _segmentHolders[segmentId] = _currentHolder;
+            _currentSegmentHolder = new MemorySegmentHolder(segment, segmentId);
+            _segmentHolders[segmentId] = _currentSegmentHolder;
             _segmentPointers[segmentId] = segment.BasePointer;
             _lastSegmentId++;
             _segmentCount++;
             return segmentId;
         }
-
+        /*
 #if DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
@@ -217,11 +224,11 @@ namespace GhostBodyObject.Repository.Repository.Segment
             return new PinnedMemory<byte>(_segmentHolders[reference.SegmentId], h, *(b - 1));
         }
 #endif
-
+        
         public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
         {
             throw new NotSupportedException("Use CommitTransaction instead.");
-        }
+        }*/
 
         public TransactionContext ReserveTransaction<T>(T commiter, long txnId)
              where T : IModifiedBodyStream
@@ -231,18 +238,18 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
             if (bodies.Count == 0) return null;
 
-            if (_currentHolder == null)
+            if (_currentSegmentHolder == null)
             {
                 CreateSegment(SegmentSizeComputation.GetNextSegmentSize(_storeMode, _segmentCount));
             }
 
             var ctx = new TransactionContext
             {
-                StartSegmentId = _currentHolder.Index,
-                StartOffset = _currentHolder.Segment.Reserve(0),
+                StartSegmentId = _currentSegmentHolder.Index,
+                StartOffset = _currentSegmentHolder.Segment.Reserve(0),
                 IsSplit = false,
-                CurrentSegmentId = _currentHolder.Index,
-                CurrentOffset = _currentHolder.Segment.Reserve(0),
+                CurrentSegmentId = _currentSegmentHolder.Index,
+                CurrentOffset = _currentSegmentHolder.Segment.Reserve(0),
                 Bodies = bodies,
                 TransactionId = txnId,
                 BodyLocations = new (int SegmentId, int Offset)[bodies.Count]
@@ -305,6 +312,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                 startSeg.WriteAt(ctx.StartOffset, txHeader);
                 if (_isPersistent)
                     checksum.Write(txHeader);
+                // ------ The mess is dysjonction reserve / insert...
                 for (int i = 0; i < ctx.Bodies.Count; i++)
                 {
                     var body = ctx.Bodies[i];
@@ -435,7 +443,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void Dispose()
         {
-            _currentHolder = null;
+            _currentSegmentHolder = null;
             for (int i = 0; i < _segmentHolders.Length; i++)
             {
                 if (_segmentHolders[i] != null)

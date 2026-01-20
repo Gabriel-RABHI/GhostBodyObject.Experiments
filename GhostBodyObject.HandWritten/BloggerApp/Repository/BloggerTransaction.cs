@@ -70,9 +70,4 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
 
         public BodyCollection<BloggerUser> Users => new BodyCollection<BloggerUser>(_bodyIndex);
     }
-
-    public static class BloggerCollections
-    {
-        public static BodyCollection<BloggerUser> BloggerUsers => BloggerContext.Transaction.Users;
-    }
 }

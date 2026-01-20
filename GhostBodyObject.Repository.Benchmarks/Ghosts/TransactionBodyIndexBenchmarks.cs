@@ -73,7 +73,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 {
                     for (int i = 0; i < COUNT; i++)
                     {
-                        index.GetRef(ids[i], out _);
+                        index.Get(ids[i], out _);
                     }
                 })
                 .PrintToConsole($"GetRef() {COUNT:N0} lookups")
@@ -257,7 +257,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     // Lookup all
                     for (int i = 0; i < SMALL_COUNT; i++)
                     {
-                        index.GetRef(ids[i], out _);
+                        index.Get(ids[i], out _);
                     }
 
                     // Remove all
@@ -297,7 +297,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     for (int i = 0; i < SMALL_COUNT; i++)
                         index.Set(users[i]);
                     for (int i = 0; i < SMALL_COUNT; i++)
-                        index.GetRef(ids[i], out _);
+                        index.Get(ids[i], out _);
                     for (int i = 0; i < SMALL_COUNT; i++)
                         index.Remove(ids[i]);
                 });

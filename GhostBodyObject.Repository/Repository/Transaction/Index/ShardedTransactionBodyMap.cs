@@ -114,7 +114,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TBody Get(GhostId id, out bool exists)
-            => GetShard(id).GetRef(id, out exists);
+            => GetShard(id).Get(id, out exists);
 
         /// <summary>
         /// Removes the entry with the specified Id from the appropriate shard.

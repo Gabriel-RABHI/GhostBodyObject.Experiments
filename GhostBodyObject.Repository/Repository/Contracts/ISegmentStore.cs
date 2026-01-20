@@ -38,10 +38,18 @@ namespace GhostBodyObject.Repository.Repository.Contracts
     {
         GhostHeader* ToGhostHeaderPointer(SegmentReference reference);
 
+        PinnedMemory<byte> ToGhost(SegmentReference reference);
+
         SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId);
 
         void IncrementSegmentHolderUsage(SegmentReference reference);
 
         void DecrementSegmentHolderUsage(SegmentReference reference);
+    }
+
+    public unsafe interface ISegmentStoreProvider<TSegmentStore>
+        where TSegmentStore : ISegmentStore
+    {
+        TSegmentStore GetHolders();
     }
 }

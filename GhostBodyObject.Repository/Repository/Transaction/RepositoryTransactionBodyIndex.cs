@@ -52,6 +52,18 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             _maps = new object[maxTypeIdentifier + 8];
         }
 
+        public RepositoryTransactionBase Transaction => _txn;
+
+        public TBody GetBody<TBody>(GhostId id)
+            where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
+        {
+            var bodyMap = GetBodyMap<TBody>(TBody.GetTypeIdentifier());
+            var body = bodyMap.Get(id, out var exists);
+            if (exists)
+                return body;
+            return null;
+        }
+
         public ShardedTransactionBodyMap<TBody> GetBodyMap<TBody>(ushort typeIdentifier)
             where TBody : BodyBase
         {
@@ -91,7 +103,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             private readonly RepositoryTransactionBase _txn;
             private readonly ShardedTransactionBodyMap<TBody> _bodyMap;
             private readonly RepositoryTransactionBodyIndex _parent;
-            private ShardedSegmentGhostMap<MemorySegmentStore>.ShardedDeduplicatedEnumerator _ghostEnumerator;
+            private ShardedSegmentGhostMap<MemorySegmentStoreHolders>.ShardedDeduplicatedEnumerator _ghostEnumerator;
             private List<GhostId>.Enumerator _insertedIdsEnumerator;
             private TBody _current;
             private int _state; // 0: GhostMap, 1: InsertedIds, 2: Finished
@@ -121,7 +133,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                 var map = _txn.Repository.GhostIndex.GetIndex(TBody.GetTypeIdentifier(), false);
                 if (map != null)
                 {
-                    _ghostEnumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
+                    _ghostEnumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.Holders, _txn.OpeningTxnId);
                 }
                 else
                 {
@@ -153,7 +165,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                         // Iterating GhostMap
                         while (_ghostEnumerator.MoveNext())
                         {
-                            var ghost = _txn.Repository.Store.ToGhost(_ghostEnumerator.Current);
+                            var ghost = _txn.Holders.ToGhost(_ghostEnumerator.Current);
                             var header = ghost.As<GhostHeader>();
 
                             if (header->Status == GhostStatus.Tombstone)

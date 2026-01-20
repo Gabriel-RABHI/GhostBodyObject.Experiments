@@ -1,8 +1,10 @@
-﻿using System.Collections;
-using GhostBodyObject.Repository.Body.Contracts;
+﻿using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Index;
+using GhostBodyObject.Repository.Repository.Structs;
 using GhostBodyObject.Repository.Repository.Transaction;
+using System;
+using System.Collections;
 
 namespace GhostBodyObject.Repository.Repository.Transaction.Collections
 {
@@ -19,6 +21,21 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Collections
         public RepositoryTransactionBodyIndex.Enumerator<TBody> GetEnumerator()
         {
             return _index.GetEnumerator<TBody>(false);
+        }
+
+        public TBody Retreive(GhostId id)
+        {
+            var body = _index.GetBodyMap<TBody>(TBody.GetTypeIdentifier()).Get(id, out var exists);
+            if (exists)
+                return body;
+            var g = _index.Transaction.Repository.GhostIndex.FindGhost(id, _index.Transaction.OpeningTxnId);
+            if (!g.IsEmpty() && !g.IsTombstone())
+            {
+                var pm = _index.Transaction.Holders.ToGhost(g);
+                if (!pm.IsEmpty)
+                    TBody.Create(pm, false, true);
+            }
+            return default;
         }
 
         IEnumerator<TBody> IEnumerable<TBody>.GetEnumerator()
