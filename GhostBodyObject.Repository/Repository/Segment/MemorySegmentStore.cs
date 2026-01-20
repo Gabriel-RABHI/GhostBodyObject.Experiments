@@ -29,6 +29,8 @@
  * --------------------------------------------------------------------------
  */
 
+#define NULL_RETURN_PRINCIPLE
+
 using System.IO;
 using System.Runtime.CompilerServices;
 using GhostBodyObject.Common.Memory;
@@ -86,6 +88,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void RebuildSegmentHolders()
         {
+            if (!_segmentHolders.Any(h => h != null && h.ReferenceCount == 0))
+                return;
             var newHolders = new MemorySegmentHolder[_segmentHolders.Length];
             var newPointers = new byte*[_segmentPointers.Length];
             for (int i = 0; i < _segmentHolders.Length; i++)
@@ -120,7 +124,9 @@ namespace GhostBodyObject.Repository.Repository.Segment
             long size = recordH->Size + sizeof(StoreTransactionRecordHeader);
             if (_segmentHolders[reference.SegmentId].DecrementUsage(size))
             {
-                RebuildSegmentHolders();
+                // Cannot be done immediatly, because if the object simply moved, and the segment
+                // have only one reference, it will be disposed while still in use.
+                // -> RebuildSegmentHolders();
             }
         }
 
@@ -190,10 +196,17 @@ namespace GhostBodyObject.Repository.Repository.Segment
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
         {
+#if NULL_RETURN_PRINCIPLE
+            if (_segmentPointers[reference.SegmentId] == null)
+                return null;
+            if (_segmentHolders[reference.SegmentId] == null)
+                return null;
+#else
             if (_segmentPointers[reference.SegmentId] == null)
                 throw new NullReferenceException($"The pointer {reference.SegmentId} do not exists.");
             if (_segmentHolders[reference.SegmentId] == null)
                 throw new NullReferenceException($"The segment {reference.SegmentId} do not exists.");
+#endif
             if (reference.Offset > _segmentHolders[reference.SegmentId].Segment.Capacity)
                 throw new OverflowException($"The offset is superior to segment size.");
 
@@ -203,10 +216,17 @@ namespace GhostBodyObject.Repository.Repository.Segment
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public PinnedMemory<byte> ToGhost(SegmentReference reference)
         {
+#if NULL_RETURN_PRINCIPLE
+            if (_segmentPointers[reference.SegmentId] == null)
+                return PinnedMemory<byte>.Empty;
+            if (_segmentHolders[reference.SegmentId] == null)
+                return PinnedMemory<byte>.Empty;
+#else
             if (_segmentPointers[reference.SegmentId] == null)
                 throw new NullReferenceException($"The pointer {reference.SegmentId} do not exists.");
             if (_segmentHolders[reference.SegmentId] == null)
                 throw new NullReferenceException($"The segment {reference.SegmentId} do not exists.");
+#endif
             if (reference.Offset > _segmentHolders[reference.SegmentId].Segment.Capacity)
                 throw new OverflowException($"The offset is superior to segment size.");
 
@@ -386,6 +406,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             {
                 if (checksum != null)
                     checksum.Dispose();
+                RebuildSegmentHolders();
             }
         }
 

@@ -35,6 +35,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
     public static class SegmentSizeComputation
     {
         public static int MB => 1024 * 1024;
+        public static int KB => 1024;
 
         public static bool SmallSegmentsMode { get; set; } = false;
 
@@ -63,30 +64,30 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                 {
                     case SegmentStoreMode.InMemoryVolatileRepository:
                         if (segmentCount < 16)
-                            return 1 * MB; // 16 * 8 = 128 MB
+                            return 32 * KB;
                         if (segmentCount < 64)
-                            return 2 * MB; // 32 * 24 = 768 MB
-                        return 4 * MB;
+                            return 128 * KB;
+                        return 512 * KB;
                         break;
                     case SegmentStoreMode.InVirtualMemoryVolatileRepository:
                         if (segmentCount < 16)
-                            return 1 * MB; // 16 * 8 = 128 MB
+                            return 128 * KB;
                         if (segmentCount < 64)
-                            return 2 * MB; // 32 * 24 = 768 MB
-                        return 4 * MB;
+                            return 512 * KB;
+                        return 2048 * KB;
                         break;
                     case SegmentStoreMode.InMemoryVolatileLog:
-                        return 2 * MB;
+                        return 128 * KB;
                         break;
                     case SegmentStoreMode.PersistantRepository:
                     case SegmentStoreMode.PersistantLog:
                         if (segmentCount < 8)
-                            return 1 * MB; // 16 * 8 = 128 MB
+                            return 128 * KB;
                         if (segmentCount < 16)
-                            return 2 * MB; // 16 * 8 = 512 MB
+                            return 512 * KB;
                         if (segmentCount < 32)
-                            return 4 * MB; // 256 * 16 = 8 GB (8.6 GB total)
-                        return 8 * MB;
+                            return 2048 * KB;
+                        return 8192 * KB;
                         break;
                     default:
                         throw new InvalidOperationException("Unsupported Segment Store Mode.");
