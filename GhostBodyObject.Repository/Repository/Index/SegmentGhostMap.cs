@@ -560,7 +560,9 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
 
         short searchRandomPart = id.RandomPartTag;
         int index = id.SlotComputation & mask;
-        int bestIndex = -1;
+        
+        bool foundBest = false;
+        SegmentReference bestRef = default;
         long bestTxnFound = long.MinValue;
 
         while (true)
@@ -574,9 +576,9 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 if (state != _state)
                     goto _redo;
 
-                if (bestIndex != -1)
+                if (foundBest)
                 {
-                    r = entries[bestIndex];
+                    r = bestRef;
                     return true;
                 }
 
@@ -613,7 +615,8 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                             if (txnId > bestTxnFound)
                             {
                                 bestTxnFound = txnId;
-                                bestIndex = index;
+                                bestRef = current;
+                                foundBest = true;
                             }
                         }
                     }
