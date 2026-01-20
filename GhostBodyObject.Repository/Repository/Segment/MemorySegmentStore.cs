@@ -75,8 +75,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
             _isCompactable = mode.IsCompactable();
             _directoryPath = directoryPath ?? Directory.GetCurrentDirectory();
 
-            _segmentHolders = new MemorySegmentHolder[1024];
-            _segmentPointers = new byte*[1024];
+            _segmentHolders = new MemorySegmentHolder[8];
+            _segmentPointers = new byte*[8];
         }
 
         ~MemorySegmentStore()
@@ -162,10 +162,20 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
             if (segmentId >= _segmentHolders.Length)
             {
-                Array.Resize(ref _segmentHolders, _segmentHolders.Length * 2);
-                var newPointers = new byte*[_segmentPointers.Length * 2];
-                Array.Copy(_segmentPointers, newPointers, _segmentPointers.Length);
-                _segmentPointers = newPointers;
+                if (SegmentSizeComputation.SmallSegmentsMode)
+                {
+                    Array.Resize(ref _segmentHolders, _segmentHolders.Length + 1);
+                    var newPointers = new byte*[_segmentPointers.Length + 1];
+                    Array.Copy(_segmentPointers, newPointers, _segmentPointers.Length);
+                    _segmentPointers = newPointers;
+                } else
+                {
+                    Array.Resize(ref _segmentHolders, _segmentHolders.Length * 2);
+                    var newPointers = new byte*[_segmentPointers.Length * 2];
+                    Array.Copy(_segmentPointers, newPointers, _segmentPointers.Length);
+                    _segmentPointers = newPointers;
+                }
+                   
             }
 
             _currentHolder = new MemorySegmentHolder(segment, segmentId);

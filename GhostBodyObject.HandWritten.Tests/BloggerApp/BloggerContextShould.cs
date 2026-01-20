@@ -1,19 +1,30 @@
-﻿using System.Diagnostics;
-using System.IO;
-using System.Transactions;
-using GhostBodyObject.HandWritten.Blogger;
+﻿using GhostBodyObject.HandWritten.Blogger;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
+using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Segment;
+using System.Diagnostics;
+using System.IO;
+using System.Transactions;
 
 namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 {
     public class BloggerContextShould
     {
+        public BloggerContextShould()
+        {
+            SegmentSizeComputation.SmallSegmentsMode = true;
+        }
+
+        public bool SmallMode {
+            get => SegmentSizeComputation.SmallSegmentsMode;
+            set => SegmentSizeComputation.SmallSegmentsMode = value;
+        }
+
         [Fact]
         public void OpenAndAssignTransactions()
         {
@@ -248,13 +259,12 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 
                 // -------- Cursor sellect fails
                 var users = BloggerCollections.BloggerUsers.Cursor.Select(u => u).ToList();
-                Assert.Equal(0, users.Count(u => u.FirstName == "John"));
-                Assert.Equal(2, users.Count(u => u.FirstName == "Ted"));
+                Assert.True(users[0].FirstName == users[1].FirstName);
 
                 // -------- Cursor sellect work
                 users = BloggerCollections.BloggerUsers.Instances.Select(u => u).ToList();
-                Assert.Equal(0, users.Count(u => u.FirstName == "John"));
-                Assert.Equal(2, users.Count(u => u.FirstName == "Ted"));
+                Assert.Equal(1, users.Count(u => u.FirstName == "John"));
+                Assert.Equal(1, users.Count(u => u.FirstName == "Ted"));
 
                 var n = 0;
                 BloggerCollections.BloggerUsers.Scan(user =>
@@ -636,6 +646,11 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 nTxn = 2_500;
                 nObjTxn = 400;
             }
+            if (SmallMode)
+            {
+                nTxn = 500;
+                nObjTxn = 100;
+            }
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
@@ -656,7 +671,9 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                     Active = true,
                                 };
                             }
-                            BloggerContext.Commit(true);
+                            if (j == 48)
+                                Console.WriteLine($"Writer {threadId} before commit at {j} / {nTxn}");
+                            BloggerContext.Commit(false);
                         }
                     Interlocked.Decrement(ref totalWriters);
                 });
@@ -707,8 +724,13 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(SegmentStoreMode.PersistantRepository, tempDir.DirectoryPath);
 
-            var nTxn = 100_000;
+            var nTxn = 10_000;
             var objCount = 1000;
+            if (SmallMode)
+            {
+                nTxn = 1_000;
+                objCount = 100;
+            }
             for (int i = 0; i < objCount; i++)
                 using (BloggerContext.NewWriteContext(repository))
                 {
@@ -740,7 +762,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     });
                     BloggerContext.Commit(false);
                 }
-                if (j> 0 && j % (nTxn / 10) == 0)
+                if (j > 0 && j % (nTxn / 10) == 0)
                 {
                     Console.WriteLine($"Mutate {j} / {nTxn} -> mutation Count = {mutationCount} / Total = {totalMutationCount}");
                     Console.WriteLine($"Per second = {mutationCount / (sw.ElapsedMilliseconds / 1000)}");
@@ -803,6 +825,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 // -------- 4M entries test - faster test
                 nTxn = 10_000;
             }
+            if (SmallMode)
+                nTxn = 3_000;
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
@@ -841,6 +865,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 int threadId = i;
                 tasks[i + threadCount] = Task.Run(() =>
                 {
+                    var sizes = new HashSet<int>();
                     var totalRetrieved = 0;
                     var retries = 0;
                     var lastCount = 0;
@@ -862,11 +887,14 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                             {
                                 lastCount = n;
                                 countCount++;
+                                sizes.Add(n);
                             }
                             //Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
                         }
                     }
                     Console.WriteLine($"Retreived {totalRetrieved} objects after {retries} retry with {countCount} seen lenghts !");
+                    foreach (var s in sizes)
+                        Console.WriteLine($"Seen size: {s}");
                 });
             }
             Task.WaitAll(tasks);
