@@ -803,11 +803,12 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
 
-            int threadCount = 4;
+            int writethreadCount = 1;
+            int readthreadCount = 4;
             long totalReads = 0;
-            long totalWriters = threadCount;
+            long totalWriters = writethreadCount;
 
-            var tasks = new Task[threadCount * 2];
+            var tasks = new Task[writethreadCount + readthreadCount];
 
             using (BloggerContext.NewWriteContext(repository))
             {
@@ -826,8 +827,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 nTxn = 10_000;
             }
             if (SmallMode)
-                nTxn = 3_000;
-            for (int i = 0; i < threadCount; i++)
+                nTxn = 1_000_000;
+            for (int i = 0; i < writethreadCount; i++)
             {
                 int threadId = i;
                 tasks[i] = Task.Run(() =>
@@ -837,6 +838,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         for (int j = 0; j < nTxn; j++)
                             using (BloggerContext.NewWriteContext(repository))
                             {
+                                if (BloggerCollections.BloggerUsers.Instances.Count() == 0)
+                                    throw new InvalidOperationException("No object to mutate !");
                                 BloggerCollections.BloggerUsers.Scan(user =>
                                 {
                                     user.CustomerCode++;
@@ -860,15 +863,16 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 });
             }
 
-            for (int i = 0; i < threadCount; i++)
+            for (int i = 0; i < readthreadCount; i++)
             {
                 int threadId = i;
-                tasks[i + threadCount] = Task.Run(() =>
+                tasks[i + writethreadCount] = Task.Run(() =>
                 {
+                    return;
                     var sizes = new HashSet<int>();
                     var totalRetrieved = 0;
                     var retries = 0;
-                    var lastCount = 0;
+                    var lastCount = -1;
                     var countCount = 0;
                     while (totalWriters > 0)
                     {
@@ -877,10 +881,12 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         {
                             var n = 0;
                             sw = Stopwatch.StartNew();
+                            /*
                             forEach(user =>
                             {
                                 n++;
                             });
+                            */
                             Interlocked.Add(ref totalReads, n);
                             totalRetrieved = n;
                             if (n != lastCount)

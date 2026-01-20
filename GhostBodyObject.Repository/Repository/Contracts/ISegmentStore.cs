@@ -29,6 +29,7 @@
  * --------------------------------------------------------------------------
  */
 
+using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Structs;
 
@@ -43,5 +44,8 @@ namespace GhostBodyObject.Repository.Repository.Contracts
         void IncrementSegmentHolderUsage(SegmentReference reference);
 
         void DecrementSegmentHolderUsage(SegmentReference reference);
+
+        bool WriteTransaction<T>(T commiter, long txnId, Action<GhostId, SegmentReference> onGhostStored)
+            where T : IModifiedBodyStream;
     }
 }

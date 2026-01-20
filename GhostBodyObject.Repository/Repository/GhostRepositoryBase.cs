@@ -83,40 +83,14 @@ namespace GhostBodyObject.Repository.Repository
         public void CommitTransaction<T>(T commiter, bool twoStage = false)
             where T : IModifiedBodyStream
         {
-            TransactionContext context = null;
-
-            if (twoStage)
+            lock (_locker)
             {
-                lock (_locker)
+                if (_store.WriteTransaction(commiter, _transactionRange.CurrentTransactionId, (id, r) =>
                 {
-                    context = _store.ReserveTransaction(commiter, _transactionRange.CurrentTransactionId);
-                    if (context != null)
-                    {
-                        _transactionRange.IncrementCurrentTransactionId();
-                    }
-                }
-
-                if (context != null)
+                    _ghostIndex.AddGhost(r);
+                }))
                 {
-                    _store.WriteTransaction(context, (id, r) =>
-                    {
-                        _ghostIndex.AddGhost(r);
-                    });
-                }
-            }
-            else
-            {
-                lock (_locker)
-                {
-                    context = _store.ReserveTransaction(commiter, _transactionRange.CurrentTransactionId);
-                    if (context != null)
-                    {
-                        _store.WriteTransaction(context, (id, r) =>
-                        {
-                            _ghostIndex.AddGhost(r);
-                        });
-                        _transactionRange.IncrementCurrentTransactionId();
-                    }
+                    _transactionRange.IncrementCurrentTransactionId();
                 }
             }
         }
