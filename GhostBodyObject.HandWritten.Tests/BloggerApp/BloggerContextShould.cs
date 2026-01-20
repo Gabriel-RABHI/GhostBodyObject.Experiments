@@ -829,6 +829,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             }
             if (SmallMode)
                 nTxn = 1_000_000;
+            var inserted = false;
             for (int i = 0; i < writethreadCount; i++)
             {
                 int threadId = i;
@@ -850,6 +851,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                     user.CompanyName = $"CompanyName-{j}";
                                 });
                                 BloggerContext.Commit(false);
+                                inserted = true;
                             }
                     }
                     catch (Exception ex)
@@ -869,7 +871,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 int threadId = i;
                 tasks[i + writethreadCount] = Task.Run(() =>
                 {
-                    return;
                     var sizes = new HashSet<int>();
                     var totalRetrieved = 0;
                     var retries = 0;
@@ -877,26 +878,29 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     var countCount = 0;
                     while (totalWriters > 0)
                     {
-                        retries++;
-                        using (BloggerContext.NewReadContext(repository))
+                        if (inserted)
                         {
-                            var n = 0;
-                            sw = Stopwatch.StartNew();
-                            /*
-                            forEach(user =>
+                            retries++;
+                            using (BloggerContext.NewReadContext(repository))
                             {
-                                n++;
-                            });
-                            */
-                            Interlocked.Add(ref totalReads, n);
-                            totalRetrieved = n;
-                            if (n != lastCount)
-                            {
-                                lastCount = n;
-                                countCount++;
-                                sizes.Add(n);
+                                var n = 0;
+                                sw = Stopwatch.StartNew();
+
+                                forEach(user =>
+                                {
+                                    n++;
+                                });
+
+                                Interlocked.Add(ref totalReads, n);
+                                totalRetrieved = n;
+                                if (n != lastCount)
+                                {
+                                    lastCount = n;
+                                    countCount++;
+                                    sizes.Add(n);
+                                }
+                                //Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
                             }
-                            //Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
                         }
                     }
                     Console.WriteLine($"Retreived {totalRetrieved} objects after {retries} retry with {countCount} seen lenghts !");

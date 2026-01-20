@@ -318,6 +318,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
                 if (!CheckFit(currentSegmentId, headerSize))
                 {
                     HandleSegmentJump(ref currentSegmentId, ref currentOffset, ref isSplit);
+                    startSegmentId = currentSegmentId;
+                    startOffset = currentOffset;
                 }
 
                 var txHeader = new StoreTransactionHeader
@@ -331,7 +333,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
                 var segment = _segmentHolders[currentSegmentId].Segment;
                 segment.Reserve(headerSize);
-                startOffset = segment.Reserve(0);
+                // startOffset = segment.Reserve(0); // Removed: Wrongly overwrites startOffset
                 segment.WriteAt(currentOffset, txHeader);
                 if (_isPersistent) checksum.Write(txHeader);
                 currentOffset += headerSize;

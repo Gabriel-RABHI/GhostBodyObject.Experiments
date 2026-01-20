@@ -85,7 +85,7 @@ namespace GhostBodyObject.Repository.Repository
         {
             lock (_locker)
             {
-                if (_store.WriteTransaction(commiter, _transactionRange.CurrentTransactionId, (id, r) =>
+                if (_store.WriteTransaction(commiter, _transactionRange.CurrentTransactionId + 1, (id, r) =>
                 {
                     _ghostIndex.AddGhost(BottomTransactionId, r);
                 }))
