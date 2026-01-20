@@ -1,16 +1,18 @@
+using GhostBodyObject.Common.SpinLocks;
+using GhostBodyObject.Common.Utilities;
+using GhostBodyObject.Repository.Body.Contracts;
+using GhostBodyObject.Repository.Ghost.Constants;
+using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Repository.Contracts;
+using GhostBodyObject.Repository.Repository.Helpers;
+using GhostBodyObject.Repository.Repository.Index;
+using GhostBodyObject.Repository.Repository.Structs;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using GhostBodyObject.Common.Utilities;
-using GhostBodyObject.Repository.Body.Contracts;
-using GhostBodyObject.Repository.Ghost.Constants;
-using GhostBodyObject.Repository.Ghost.Structs;
-using GhostBodyObject.Repository.Repository.Contracts;
-using GhostBodyObject.Repository.Repository.Index;
-using GhostBodyObject.Repository.Repository.Structs;
 using Xunit;
 using static GhostBodyObject.Repository.Tests.Repository.Index.SegmentGhostTransactionnalMapShould;
 
@@ -410,29 +412,25 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
         }
 
         [Fact]
-        public void ConcurrentUpdatesAndDeduplicatedEnumeration_ShouldConsistency()
+        public void ConcurrentUpdatesAndDeduplicatedEnumeration_CoherencyCheck()
         {
             using var store = new ThreadSafeFakeSegmentStore();
             var map = new SegmentGhostMap<ThreadSafeFakeSegmentStore>(store, initialCapacity: 16);
             var id = new GhostId(GhostIdKind.Entity, 77, 77, 77);
-
-            long globalTxnId = 0;
-            // Tracks the latest TxnId that has fully completed its update
-            long latestCommittedTxnId = 0;
+            var ranges = new GhostRepositoryTransactionIdRange();
 
             bool running = true;
-            var truth = new ConcurrentDictionary<long, SegmentReference>();
 
             // initialize with one record
             {
-                long txnId = Interlocked.Increment(ref globalTxnId);
+                long txnId = ranges.IncrementCurrentTransactionId();
                 var r = store.NewHeader(id, txnId, out var h);
-                truth[txnId] = r;
                 map.Set(r, h);
-                Volatile.Write(ref latestCommittedTxnId, txnId);
             }
 
             var tasks = new List<Task>();
+
+            int readerCount = 4;
 
             // 1. Updater Thread (Single Writer Rule)
             int updaterCount = 1;
@@ -441,89 +439,80 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                 tasks.Add(Task.Run(() =>
                 {
                     var rnd = new Random(12345 + i);
+                    var mutationCount = 0;
                     while (Volatile.Read(ref running))
                     {
-                        long newTxnId = Interlocked.Increment(ref globalTxnId);
+                        long newTxnId = ranges.TopTransactionId + 1;
                         var r = store.NewHeader(id, newTxnId, out var h);
-                        truth[newTxnId] = r;
-
-                        long bottomTxnId = Math.Max(0, newTxnId - 50);
-                        map.SetAndRemove(r, h, bottomTxnId);
-
-                        // Publish the new committed state
-                        Volatile.Write(ref latestCommittedTxnId, newTxnId);
-
-                        if (rnd.Next(10) == 0) Thread.Yield();
+                        map.SetAndRemove(r, h, ranges.BottomTransactionId);
+                        ranges.IncrementCurrentTransactionId();
+                        if (rnd.Next(10) == 0)
+                            Thread.Yield();
+                        mutationCount++;
                     }
+                    Console.WriteLine($"Update count = {mutationCount}");
                 }));
             }
 
             // 2. Reader Threads (Deduplicated Enumerator)
-            // Rule: queryTxn cannot be equal to (or greater than) the currently writing txnId.
-            // We ensure this by reading 'latestCommittedTxnId' which lags behind the writer's 'globalTxnId'.
-            int readerCount = 4;
             for (int i = 0; i < readerCount; i++)
             {
                 int seed = i * 999;
                 tasks.Add(Task.Run(() =>
                 {
+                    bool seenAny = false;
                     var rnd = new Random(seed);
+                    var totalFound = 0;
                     while (Volatile.Read(ref running))
                     {
-                        long maxCommitted = Volatile.Read(ref latestCommittedTxnId);
-                        if (maxCommitted == 0)
-                            continue;
-
-                        long queryTxn = (long)(rnd.NextDouble() * maxCommitted) + 1;
-
-                        var enumerator = map.GetDeduplicatedEnumerator(queryTxn);
-                        int count = 0;
-                        SegmentReference foundRef = default;
+                        var count = 0;
+                        var txnId = ranges.IncrementCurrentTransactionViewId();
+                        var enumerator = map.GetDeduplicatedEnumerator(txnId);
+                        var foundRef = SegmentReference.Empty;
 
                         while (enumerator.MoveNext())
                         {
+                            seenAny = true;
                             var currentRef = enumerator.Current;
                             var ptr = store.ToGhostHeaderPointer(currentRef);
 
                             if (ptr == null)
                                 throw new Exception("Enumerator returned reference to null pointer");
 
+                            foundRef = currentRef;
                             if (ptr->Id == id)
                             {
                                 count++;
-                                foundRef = currentRef;
+                                totalFound++;
+                            }
+                            else
+                            {
+                                throw new Exception("Enumerator returned unknown ID.");
                             }
                         }
-
-                        // Strict check: Under single-writer + committed-read isolation, 
-                        // we theoretically should NOT see duplicates.
+                        ranges.DecrementTransactionViewId(txnId);
                         if (count > 1)
                             throw new Exception($"DeduplicatedEnumerator returned {count} items for the same ID!");
+
+                        if (seenAny && count == 0)
+                            throw new Exception($"DeduplicatedEnumerator do not sees the ID! txnId = {txnId}, ranges.CurrentTransactionId={ranges.CurrentTransactionId}, ranges.TopTransactionId={ranges.TopTransactionId}");
+
 
                         if (count == 1)
                         {
                             var ptr = store.ToGhostHeaderPointer(foundRef);
                             long foundTxn = ptr->TxnId;
 
-                            if (foundTxn > queryTxn)
-                                throw new Exception($"Enumerator found TxnId {foundTxn} > Query TxnId {queryTxn}");
-
-                            if (truth.TryGetValue(foundTxn, out var expectedRef))
-                            {
-                                if (expectedRef.Value != foundRef.Value)
-                                    throw new Exception($"Data Corruption! For TxnId {foundTxn}, expected Ref {expectedRef.Value} but got {foundRef.Value}");
-                            }
-                            else
-                            {
-                                throw new Exception($"Unknown TxnId {foundTxn} found in enumerator");
-                            }
+                            if (foundTxn > txnId)
+                                throw new Exception($"Enumerator found foundTxn {foundTxn} > Query txnId {txnId}");
                         }
                     }
+                    Console.WriteLine($"Reader {seed} found total {totalFound} items.");
                 }));
             }
 
             // Run for 2 seconds
-            Thread.Sleep(10_000); // 2 seconds is enough
+            Thread.Sleep(60 * 1000);
             Volatile.Write(ref running, false);
             Task.WaitAll(tasks.ToArray());
 

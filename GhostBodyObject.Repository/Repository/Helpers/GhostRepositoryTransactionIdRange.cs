@@ -65,16 +65,21 @@ namespace GhostBodyObject.Repository.Repository.Helpers
         /// Increments the current transaction identifier and returns the updated value.
         /// </summary>
         /// <returns>The new transaction identifier after incrementing the current value.</returns>
-        public long IncrementCurrentTransactionId() => Interlocked.Increment(ref _currentTxnId);
+        public long IncrementCurrentTransactionId()
+        {
+            lock (_lock)
+                return ++_currentTxnId;
+        } 
 
         /// <summary>
         /// Increment the view counter for the specific transaction id.
         /// </summary>
         /// <param name="txnId">The transaction id for wich a new viewer is registered.</param>
-        public void IncrementTransactionViewId(long txnId)
+        public long IncrementCurrentTransactionViewId()
         {
             lock (_lock)
             {
+                var txnId = _currentTxnId;
                 if (_views.TryGetValue(txnId, out int count))
                 {
                     _views[txnId] = count + 1;
@@ -83,6 +88,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                 {
                     _views.Add(txnId, 1);
                 }
+                return _currentTxnId;
             }
         }
 

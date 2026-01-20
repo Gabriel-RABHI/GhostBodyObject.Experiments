@@ -52,7 +52,6 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         public BloggerTransaction(BloggerRepository repository, bool readOnly = false) : base(repository, readOnly, 101)
         {
             _repository = repository;
-            _repository.Retain(this);
         }
 
         ~BloggerTransaction()

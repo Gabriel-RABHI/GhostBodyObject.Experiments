@@ -50,7 +50,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             _repository = repository;
             _isReadOnly = isReadOnly;
             _holders = repository.Store.GetHolders();
-            _openingTxnId = repository.CurrentTransactionId;
+            _openingTxnId = repository.GetNewTxnId();
             _bodyIndex = new RepositoryTransactionBodyIndex(this, 1024);
         }
 

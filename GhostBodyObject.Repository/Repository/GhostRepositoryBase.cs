@@ -95,10 +95,8 @@ namespace GhostBodyObject.Repository.Repository
             }
         }
 
-        public void Retain(RepositoryTransactionBase tnx)
-        {
-            _transactionRange.IncrementTransactionViewId(tnx.OpeningTxnId);
-        }
+        public long GetNewTxnId()
+            => _transactionRange.IncrementCurrentTransactionViewId();
 
         public void Forget(RepositoryTransactionBase tnx)
         {
