@@ -79,6 +79,18 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             }
         }
 
+        public RepositoryTransactionBase Transaction => _txn;
+
+        public TBody GetBody<TBody>(GhostId id)
+            where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
+        {
+            var bodyMap = GetBodyMap<TBody>(TBody.GetTypeIdentifier());
+            var body = bodyMap.Get(id, out var exists);
+            if (exists)
+                return body;
+            return null;
+        }
+
         public Enumerator<TBody> GetEnumerator<TBody>(bool useCursor = false)
             where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
         {
