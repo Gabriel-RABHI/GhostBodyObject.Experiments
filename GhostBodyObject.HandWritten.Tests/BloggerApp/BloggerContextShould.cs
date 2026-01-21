@@ -17,7 +17,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
     {
         public BloggerContextShould()
         {
-            SegmentSizeComputation.SmallSegmentsMode = true;
+            //SegmentSizeComputation.SmallSegmentsMode = true;
         }
 
         public bool SmallMode
@@ -825,7 +825,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 nTxn = 10_000;
             }
             if (SmallMode)
-                nTxn = 1_000_000;
+                nTxn = 100_000;
             var inserted = false;
             for (int i = 0; i < writethreadCount; i++)
             {

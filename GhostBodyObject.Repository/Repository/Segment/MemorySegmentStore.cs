@@ -53,10 +53,10 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private bool _isPersistent = false;
         private bool _isCompactable = false;
 
-        private MemorySegmentHolder[] _segmentHolders;
-        private MemorySegmentHolder _currentHolder;
+        private volatile MemorySegmentHolder[] _segmentHolders;
+        private volatile MemorySegmentHolder _currentHolder;
         private byte*[] _segmentPointers;
-        private int _lastSegmentId = 0;
+        private int _newSegmentIndex = 0;
         private int _segmentCount = 0;
         private int _transactionCount = 0;
         private ShortSpinLock _commitLocker;
@@ -110,9 +110,11 @@ namespace GhostBodyObject.Repository.Repository.Segment
             {
                 try
                 {
-                    var newHolders = new MemorySegmentHolder[_segmentHolders.Length];
-                    var newPointers = new byte*[_segmentPointers.Length];
-                    for (int i = 0; i < _segmentHolders.Length; i++)
+                    _segmentCount = 0;
+                    var l = _segmentHolders.Length;
+                    var newHolders = new MemorySegmentHolder[l];
+                    var newPointers = new byte*[l];
+                    for (int i = 0; i < l; i++)
                     {
                         if (_segmentHolders[i] != null)
                         {
@@ -120,6 +122,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                             {
                                 newHolders[i] = _segmentHolders[i];
                                 newPointers[i] = _segmentPointers[i];
+                                _segmentCount++;
                             }
                         }
                     }
@@ -183,10 +186,12 @@ namespace GhostBodyObject.Repository.Repository.Segment
             switch (_implementationType)
             {
                 case SegmentImplementationType.LOHPinnedMemory:
-                    segment = MemorySegment.NewInMemory(_storeMode, _lastSegmentId, capacity);
+                    segment = MemorySegment.NewInMemory(_storeMode, _newSegmentIndex, capacity);
+                    _newSegmentIndex++;
                     break;
                 case SegmentImplementationType.ProtectedMemoryMappedFile:
-                    segment = MemorySegment.NewMemoryMapped(_storeMode, _lastSegmentId, capacity, _isCompactable, _directoryPath, _prefix, _name);
+                    segment = MemorySegment.NewMemoryMapped(_storeMode, _newSegmentIndex, capacity, _isCompactable, _directoryPath, _prefix, _name);
+                    _newSegmentIndex++;
                     break;
             }
             if (segment == null)
@@ -196,13 +201,13 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         private int AddSegment(MemorySegment segment)
         {
-            int segmentId = _lastSegmentId;
-
-            if (segmentId >= _segmentHolders.Length)
+            var index = segment.Index;
+            var minLenght = index + 1;
+            if (minLenght > _segmentHolders.Length)
             {
                 if (SegmentSizeComputation.SmallSegmentsMode)
                 {
-                    Array.Resize(ref _segmentHolders, _segmentHolders.Length + 1);
+                    Array.Resize(ref _segmentHolders, minLenght);
                     var newPointers = new byte*[_segmentPointers.Length + 1];
                     Array.Copy(_segmentPointers, newPointers, _segmentPointers.Length);
                     _segmentPointers = newPointers;
@@ -214,15 +219,12 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     Array.Copy(_segmentPointers, newPointers, _segmentPointers.Length);
                     _segmentPointers = newPointers;
                 }
-
             }
-
-            _currentHolder = new MemorySegmentHolder(segment, segmentId);
-            _segmentHolders[segmentId] = _currentHolder;
-            _segmentPointers[segmentId] = segment.BasePointer;
-            _lastSegmentId++;
+            _currentHolder = new MemorySegmentHolder(segment);
+            _segmentHolders[index] = _currentHolder;
+            _segmentPointers[index] = segment.BasePointer;
             _segmentCount++;
-            return segmentId;
+            return index;
         }
 
 #if DEBUG
@@ -281,12 +283,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
         }
 #endif
 
-        public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
-        {
-            throw new NotSupportedException("Use CommitTransaction instead.");
-        }
-
-        public bool WriteTransaction<T>(T commiter, long txnId, Action<GhostId, SegmentReference> onGhostStored)
+        public bool WriteTransaction<T>(T commiter, GhostRepositoryTransactionIdRange range, Action<GhostId, SegmentReference> onGhostStored)
              where T : IModifiedBodyStream
         {
             var bodies = new List<BodyBase>();
@@ -302,6 +299,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             _commitLocker.Enter();
             try
             {
+                var txnId = range.TopTransactionId + 1;
                 if (_currentHolder == null)
                 {
                     CreateSegment(SegmentSizeComputation.GetNextSegmentSize(_storeMode, _segmentCount));
@@ -439,6 +437,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                 if (checksum != null)
                     checksum.Dispose();
                 _transactionCount++;
+                range.IncrementTopTransactionId();
                 _commitLocker.Exit();
             }
         }

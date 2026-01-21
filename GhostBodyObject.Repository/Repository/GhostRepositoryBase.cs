@@ -41,7 +41,6 @@ namespace GhostBodyObject.Repository.Repository
 {
     public class GhostRepositoryBase : IDisposable
     {
-        private object _locker = new object();
         private ShortSpinLock _spinLocker = new ShortSpinLock();
 
         /// <summary>
@@ -81,17 +80,11 @@ namespace GhostBodyObject.Repository.Repository
         public void CommitTransaction<T>(T commiter, bool twoStage = false)
             where T : IModifiedBodyStream
         {
-            lock (_locker)
-            {
                 var bottomTxnId = _transactionRange.BottomTransactionId;
-                if (_store.WriteTransaction(commiter, _transactionRange.TopTransactionId + 1, (id, r) =>
-                {
-                    _ghostIndex.AddGhost(bottomTxnId, r);
-                }))
-                {
-                    _transactionRange.IncrementTopTransactionId();
-                }
-            }
+            _store.WriteTransaction(commiter, _transactionRange, (id, r) =>
+            {
+                _ghostIndex.AddGhost(bottomTxnId, r);
+            });
         }
 
         public long GetNewTxnId()

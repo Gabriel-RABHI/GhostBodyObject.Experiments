@@ -28,7 +28,7 @@
  *
  * --------------------------------------------------------------------------
  */
-#define NATIVE_LOCK
+#undef NATIVE_LOCK
 
 using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Ghost.Structs;

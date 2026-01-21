@@ -36,6 +36,7 @@ using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;
 using System.IO.MemoryMappedFiles;
+using System.Security.Cryptography;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
@@ -48,6 +49,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private int _offset;
         private int _capacity;
         private SegmentHeader* _header;
+        private int _index;
         
         // MMF Fields
         private MemoryMappedFile _mmf;
@@ -73,21 +75,24 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public static int FlushCount => _flushCount;
 
-        public static MemorySegment NewInMemory(SegmentStoreMode mode, int id, int capacity = 1024 * 1024 * 8)
+        public int Index => _index;
+
+        public static MemorySegment NewInMemory(SegmentStoreMode mode, int index, int capacity = 1024 * 1024 * 8)
         {
-            return new MemorySegment(mode, SegmentImplementationType.LOHPinnedMemory, id, capacity, true, null, null, null);
+            return new MemorySegment(mode, SegmentImplementationType.LOHPinnedMemory, index, capacity, true, null, null, null);
         }
 
-        public static MemorySegment NewMemoryMapped(SegmentStoreMode mode, int id, int capacity, bool deletable, string directoryPath, string prefix, string name)
+        public static MemorySegment NewMemoryMapped(SegmentStoreMode mode, int index, int capacity, bool deletable, string directoryPath, string prefix, string name)
         {
-            return new MemorySegment(mode, SegmentImplementationType.ProtectedMemoryMappedFile, id, capacity, deletable, directoryPath, prefix, name);
+            return new MemorySegment(mode, SegmentImplementationType.ProtectedMemoryMappedFile, index, capacity, deletable, directoryPath, prefix, name);
         }
 
-        private MemorySegment(SegmentStoreMode mode, SegmentImplementationType t, int id, int capacity, bool deletable = true, string? directoryPath = null, string? prefix = null, string? name = null)
+        private MemorySegment(SegmentStoreMode mode, SegmentImplementationType t, int index, int capacity, bool deletable = true, string? directoryPath = null, string? prefix = null, string? name = null)
         {
             if (capacity < 1024)
                 throw new InvalidOperationException(nameof(capacity));
             SegmentType = t;
+            _index = index;
             Deletable = deletable;
             _capacity = capacity;
             
@@ -111,7 +116,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                         if (name == null)
                             throw new ArgumentNullException(nameof(name));
                         
-                        _filePath = Path.Combine(directoryPath, $"{prefix}_{name}_{id:D7}.{(Deletable ? "txn.seg" : "log.seg")}");
+                        _filePath = Path.Combine(directoryPath, $"{prefix}_{name}_{index:D7}.{(Deletable ? "txn.seg" : "log.seg")}");
                         
                         _mmf = MemoryMappedFile.CreateFromFile(_filePath, FileMode.OpenOrCreate, null, capacity, MemoryMappedFileAccess.ReadWrite);
                         
@@ -132,7 +137,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             // Assuming this constructor is only called for new segments.
             // If we load existing segments, we might need logic to read the header first.
             // For now, assume creation:
-            *_header = SegmentHeader.Create(mode, id, capacity);
+            *_header = SegmentHeader.Create(mode, index, capacity);
             _offset = sizeof(SegmentHeader); // Advance offset past header
 
             Interlocked.Increment(ref _aliveCount);

@@ -29,7 +29,7 @@
  * --------------------------------------------------------------------------
  */
 
-#define SAFE
+#undef SAFE
 
 using System.Runtime.CompilerServices;
 
@@ -42,7 +42,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public MemorySegment Segment { get; set; }
 
-        public int Index { get; set; }
+        public int Index => Segment.Index;
 
         public int ReferenceCount => _referenceCount;
 
@@ -52,10 +52,9 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public bool IsEmpty => Segment == null || Segment.IsEmpty;
 
-        public MemorySegmentHolder(MemorySegment segment, int index)
+        public MemorySegmentHolder(MemorySegment segment)
         {
             Segment = segment;
-            Index = index;
         }
 
         public void Dispose()
