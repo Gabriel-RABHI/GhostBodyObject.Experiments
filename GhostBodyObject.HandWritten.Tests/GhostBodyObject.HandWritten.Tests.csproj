@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <RunSettingsFilePath>C:\Users\gabri\source\repos\GhostBodyObject.Experiments\GhostBodyObject.HandWritten.Tests\bin\Release\net10.0\fine-code-coverage\coverage-tool-output\GhostBodyObject.HandWritten.Tests-fcc-mscodecoverage-generated.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
   <ItemGroup>

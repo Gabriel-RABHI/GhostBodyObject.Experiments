@@ -128,8 +128,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     }
                     if (_transactionCount > 0 && !newHolders.Any(s => s != null))
                         throw new InvalidOperationException();
-                    if (_transactionCount > 0 && newHolders[newHolders.Length - 1] == null)
-                        throw new InvalidOperationException();
+
                     _segmentHolders = newHolders;
                     _segmentPointers = newPointers;
                 }

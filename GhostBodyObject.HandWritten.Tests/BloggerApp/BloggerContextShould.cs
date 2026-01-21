@@ -196,6 +196,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [InlineData(SegmentStoreMode.PersistantRepository, true)]
         public void AddAndCommitTransactions(SegmentStoreMode mode, bool cursor)
         {
+            Console.WriteLine($"================================================================");
+            Console.WriteLine($"Test AddAndCommitTransactions - Mode={mode} - Cursor={cursor}");
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
 
@@ -404,6 +406,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [InlineData(SegmentStoreMode.PersistantRepository)]
         public void AddAndCommitTransactionsAndModify(SegmentStoreMode mode)
         {
+            Console.WriteLine($"================================================================");
+            Console.WriteLine($"Test AddAndCommitTransactionsAndModify - Mode={mode}");
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             using (BloggerContext.NewWriteContext(repository))
@@ -475,6 +479,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [InlineData(SegmentStoreMode.PersistantRepository)]
         public void AddAndCommitTransactionsLarge(SegmentStoreMode mode)
         {
+            Console.WriteLine($"================================================================");
+            Console.WriteLine($"Test AddAndCommitTransactionsLarge - Mode={mode}");
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
@@ -522,6 +528,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [InlineData(SegmentStoreMode.PersistantRepository)]
         public void AddAndCommitTransactionsLargeConcurrently(SegmentStoreMode mode)
         {
+            Console.WriteLine($"================================================================");
+            Console.WriteLine($"Test AddAndCommitTransactionsLargeConcurrently - Mode={mode}");
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
@@ -574,6 +582,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [InlineData(SegmentStoreMode.PersistantRepository)]
         public void ConcurrentEnumerations(SegmentStoreMode mode)
         {
+            Console.WriteLine($"================================================================");
+            Console.WriteLine($"Test ConcurrentEnumerations - Mode={mode}");
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
 
@@ -627,6 +637,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [InlineData(SegmentStoreMode.PersistantRepository, true)]
         public void AddAndCommitTransactionsConcurrentReadWrite(SegmentStoreMode mode, bool cursor)
         {
+            Console.WriteLine($"================================================================");
+            Console.WriteLine($"Test AddAndCommitTransactionsConcurrentReadWrite - Mode={mode} - Cursor={cursor}");
             Action<Action<BloggerUser>> forEach = cursor ? ((a) => BloggerCollections.BloggerUsers.Scan(a)) : ((a) => BloggerCollections.BloggerUsers.ForEach(a));
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
@@ -796,6 +808,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [InlineData(SegmentStoreMode.PersistantRepository, true)]
         public void AddAndMutateSameObjectWithConcurrentReadWrite(SegmentStoreMode mode, bool cursor)
         {
+            Console.WriteLine($"================================================================");
+            Console.WriteLine($"Test AddAndMutateSameObjectWithConcurrentReadWrite - Mode={mode} - Cursor={cursor}");
             Action<Action<BloggerUser>> forEach = cursor ? ((a) => BloggerCollections.BloggerUsers.Scan(a)) : ((a) => BloggerCollections.BloggerUsers.ForEach(a));
             using var tempDir = new TempDirectoryHelper(true);
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
@@ -903,6 +917,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     Console.WriteLine($"Retreived {totalRetrieved} objects after {retries} retry with {countCount} seen lenghts !");
                     foreach (var s in sizes)
                         Console.WriteLine($"Seen size: {s}");
+                    if (countCount > 1)
+                        throw new Exception("Size changed during reads, come from 1 to 0 multiples times !");
                 });
             }
             Task.WaitAll(tasks);
