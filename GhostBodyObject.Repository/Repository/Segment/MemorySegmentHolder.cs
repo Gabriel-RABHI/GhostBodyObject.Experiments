@@ -59,7 +59,11 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void Dispose()
         {
-            Segment = null;
+            if (Segment != null)
+            {
+                Segment.Dispose();
+                Segment = null;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -60,6 +60,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private int _segmentCount = 0;
         private int _transactionCount = 0;
         private ShortSpinLock _commitLocker;
+        private List<WeakReference<MemorySegmentHolder>> _droppedSegments = new();
 
         // MMF Configuration
         private string _directoryPath;
@@ -128,6 +129,19 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     }
                     if (_transactionCount > 0 && !newHolders.Any(s => s != null))
                         throw new InvalidOperationException();
+
+                    // Track dropped references for later disposal
+                    for (int i = 0; i < l; i++)
+                    {
+                        var dropped = _segmentHolders[i];
+                        if (dropped != null && !newHolders.Contains(dropped))
+                        {
+                            _droppedSegments.Add(new WeakReference<MemorySegmentHolder>(dropped));
+                        }
+                    }
+
+                    // Clean up dead references
+                    _droppedSegments.RemoveAll(w => !w.TryGetTarget(out _));
 
                     _segmentHolders = newHolders;
                     _segmentPointers = newPointers;
@@ -500,6 +514,17 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     _segmentHolders[i].Dispose();
                     _segmentHolders[i] = null;
                 }
+            }
+            if (_droppedSegments != null)
+            {
+                foreach (var weakRef in _droppedSegments)
+                {
+                    if (weakRef.TryGetTarget(out var segment))
+                    {
+                        segment.Dispose();
+                    }
+                }
+                _droppedSegments.Clear();
             }
             _segmentPointers = null;
             GC.SuppressFinalize(this);

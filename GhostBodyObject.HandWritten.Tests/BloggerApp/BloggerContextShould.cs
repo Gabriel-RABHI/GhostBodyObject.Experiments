@@ -927,6 +927,138 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         }
 
 
+        [Theory()]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository, false)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository, false)]
+        [InlineData(SegmentStoreMode.PersistantRepository, false)]
+        [InlineData(SegmentStoreMode.InMemoryVolatileRepository, true)]
+        [InlineData(SegmentStoreMode.InVirtualMemoryVolatileRepository, true)]
+        [InlineData(SegmentStoreMode.PersistantRepository, true)]
+        public void AddAndMutateMulripleObjectsWithConcurrentReadWrite(SegmentStoreMode mode, bool cursor)
+        {
+            Console.WriteLine($"================================================================");
+            Console.WriteLine($"Test AddAndMutateSameObjectWithConcurrentReadWrite - Mode={mode} - Cursor={cursor}");
+            Action<Action<BloggerUser>> forEach = cursor ? ((a) => BloggerCollections.BloggerUsers.Scan(a)) : ((a) => BloggerCollections.BloggerUsers.ForEach(a));
+            using var tempDir = new TempDirectoryHelper(true);
+            using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
+            var sw = Stopwatch.StartNew();
+
+            int writethreadCount = 1;
+            int readthreadCount = 4;
+            long totalReads = 0;
+            long totalWriters = writethreadCount;
+            long objectCount = 1000;
+
+            var tasks = new Task[writethreadCount + readthreadCount];
+
+            using (BloggerContext.NewWriteContext(repository))
+            {
+                for (int i = 0; i < objectCount; i++)
+                {
+                    var user = new BloggerUser()
+                    {
+                        Active = true,
+                    };
+                }
+                BloggerContext.Commit(false);
+            }
+
+            // -------- 100M entries test
+            var nTxn = 100_000;
+            if (false)
+            {
+                // -------- 4M entries test - faster test
+                nTxn = 10_000;
+            }
+            if (SmallMode)
+                nTxn = 100_000;
+            var inserted = false;
+            for (int i = 0; i < writethreadCount; i++)
+            {
+                int threadId = i;
+                tasks[i] = Task.Run(() =>
+                {
+                    try
+                    {
+                        for (int j = 0; j < nTxn; j++)
+                            using (BloggerContext.NewWriteContext(repository))
+                            {
+                                if (BloggerCollections.BloggerUsers.Instances.Count() == 0)
+                                    throw new InvalidOperationException("No object to mutate !");
+                                BloggerCollections.BloggerUsers.Scan(user =>
+                                {
+                                    user.CustomerCode++;
+                                    user.FirstName = $"FirstName-{j}";
+                                    user.LastName = $"LastName-{j}";
+                                    user.Country = $"Country-{j}";
+                                    user.CompanyName = $"CompanyName-{j}";
+                                });
+                                BloggerContext.Commit(false);
+                                inserted = true;
+                            }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Writer failed: {ex}");
+                        throw;
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref totalWriters);
+                    }
+                });
+            }
+
+            for (int i = 0; i < readthreadCount; i++)
+            {
+                int threadId = i;
+                tasks[i + writethreadCount] = Task.Run(() =>
+                {
+                    var sizes = new HashSet<int>();
+                    var totalRetrieved = 0;
+                    var retries = 0;
+                    var lastCount = -1;
+                    var countCount = 0;
+                    while (totalWriters > 0)
+                    {
+                        if (inserted)
+                        {
+                            retries++;
+                            using (BloggerContext.NewReadContext(repository))
+                            {
+                                var n = 0;
+                                sw = Stopwatch.StartNew();
+
+                                forEach(user =>
+                                {
+                                    n++;
+                                });
+
+                                Interlocked.Add(ref totalReads, n);
+                                totalRetrieved = n;
+                                if (n != lastCount)
+                                {
+                                    lastCount = n;
+                                    countCount++;
+                                    sizes.Add(n);
+                                }
+                                //Console.WriteLine($"Read and verify completed ({i} time - {n} objects) in {sw.ElapsedMilliseconds} ms");
+                            }
+                        }
+                    }
+                    Console.WriteLine($"Retreived {totalRetrieved} objects after {retries} retry with {countCount} seen lenghts !");
+                    foreach (var s in sizes)
+                        Console.WriteLine($"Seen size: {s}");
+                    if (countCount > 1)
+                        throw new Exception("Size changed during reads, come from 1 to 0 multiples times !");
+                });
+            }
+            Task.WaitAll(tasks);
+            Console.WriteLine($"Segment alive = {MemorySegment.AliveCount}");
+            Console.WriteLine($"Total reads = {totalReads}");
+        }
+
+
         [Fact()]
         public void AddAndMutateSameObjectUsingOneThread()
         {
