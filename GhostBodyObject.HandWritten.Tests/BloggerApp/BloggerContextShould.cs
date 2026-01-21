@@ -17,7 +17,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
     {
         public BloggerContextShould()
         {
-            SegmentSizeComputation.SmallSegmentsMode = true;
+            //SegmentSizeComputation.SmallSegmentsMode = true;
         }
 
         public bool SmallMode
@@ -644,8 +644,8 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             if (true)
             {
                 // -------- 4M entries test - faster test
-                nTxn = 2_500;
-                nObjTxn = 400;
+                nTxn = 10_000;
+                nObjTxn = 100;
             }
             if (SmallMode)
             {
@@ -662,7 +662,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         {
                             if (j % (nTxn / 10) == 0)
                             {
-                                //Thread.Sleep(5000);
                                 Console.WriteLine($"Writer {threadId} at {j} / {nTxn}");
                             }
                             for (int i = 0; i < nObjTxn; i++)
@@ -672,8 +671,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                     Active = true,
                                 };
                             }
-                            if (j == 48)
-                                Console.WriteLine($"Writer {threadId} before commit at {j} / {nTxn}");
                             BloggerContext.Commit(false);
                         }
                     Interlocked.Decrement(ref totalWriters);

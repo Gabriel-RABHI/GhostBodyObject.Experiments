@@ -269,7 +269,8 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 }
 
                 // Safety clamp
-                if (newCapacity < InitialCapacity) newCapacity = InitialCapacity;
+                if (newCapacity < InitialCapacity)
+                    newCapacity = InitialCapacity;
 
                 Resize(newCapacity);
             }
