@@ -43,7 +43,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
 {
     public class RepositoryTransactionBodyIndex : IModifiedBodyStream
     {
-        private readonly RepositoryTransactionBase _txn;
+        private RepositoryTransactionBase _txn;
         private object[] _maps;
         private List<BodyBase> _mutations = new List<BodyBase>();
 
@@ -51,6 +51,20 @@ namespace GhostBodyObject.Repository.Repository.Transaction
         {
             _txn = txn;
             _maps = new object[maxTypeIdentifier + 8];
+        }
+
+        public void Release()
+        {
+            _txn = null;
+            _mutations.Clear();
+            for (var i = 0; i < _maps.Length; i++)
+            {
+                if (_maps[i] != null)
+                {
+                    (_maps[i] as IReleasable).Release();
+                    _maps[i] = null;
+                }
+            }
         }
 
         public ShardedTransactionBodyMap<TBody> GetBodyMap<TBody>(ushort typeIdentifier)

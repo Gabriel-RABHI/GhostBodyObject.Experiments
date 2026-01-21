@@ -42,7 +42,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
     /// Distributes entries across multiple <see cref="TransactionBodyMap{TBody}"/> shards
     /// to reduce contention and improve cache locality in concurrent scenarios.
     /// </summary>
-    public unsafe sealed class ShardedTransactionBodyMap<TBody> : IEnumerable<TBody>, IModifiedBodyStream
+    public unsafe sealed class ShardedTransactionBodyMap<TBody> : IEnumerable<TBody>, IModifiedBodyStream, IReleasable
         where TBody : BodyBase
     {
         // Default shard count of 8 - power of 2 for fast masking
@@ -72,6 +72,16 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             {
                 _shards[i] = new TransactionBodyMap<TBody>(capPerShard);
             }
+        }
+
+        public void Release()
+        {
+            for (int i = 0; i < _shardCount; i++)
+            {
+                _shards[i].Release();
+            }
+            _mutations?.Clear();
+            _mutations = null;
         }
 
         public void RecordModifiedBody(TBody body)

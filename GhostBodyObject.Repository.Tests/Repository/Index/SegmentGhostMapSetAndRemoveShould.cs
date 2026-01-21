@@ -577,6 +577,11 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId) => throw new NotImplementedException();
             public SegmentReference StoreGhost(long bottomTxnId, PinnedMemory<byte> ghost, long txnId) => throw new NotImplementedException();
             public bool WriteTransaction<T>(T commiter, long txnId, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream => throw new NotImplementedException();
+
+            public bool WriteTransaction<T>(T commiter, GhostRepositoryTransactionIdRange range, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

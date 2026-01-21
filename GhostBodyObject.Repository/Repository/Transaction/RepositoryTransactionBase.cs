@@ -61,6 +61,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             {
                 _repository.Forget(_openingTxnId);
                 _closed = true;
+                _bodyIndex.Release();
             }
         }
 

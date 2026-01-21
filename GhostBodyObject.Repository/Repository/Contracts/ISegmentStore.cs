@@ -47,4 +47,9 @@ namespace GhostBodyObject.Repository.Repository.Contracts
         bool WriteTransaction<T>(T commiter, GhostRepositoryTransactionIdRange range, Action<GhostId, SegmentReference> onGhostStored)
             where T : IModifiedBodyStream;
     }
+
+    public unsafe interface IReleasable
+    {
+        void Release();
+    }
 }

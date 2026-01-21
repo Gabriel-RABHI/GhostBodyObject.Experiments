@@ -86,6 +86,11 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             UpdateThresholds();
         }
 
+        public void Release()
+        {
+            //Clear();
+        }
+
         /// <summary>
         /// Adds or Updates the entry.
         /// </summary>

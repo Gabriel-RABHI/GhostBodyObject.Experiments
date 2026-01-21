@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 
 using SmallMapType = SegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.SmallPinnedSegmentStore>;
 using LargeMapType = SegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.LargePinnedSegmentStore>;
+using GhostBodyObject.Repository.Repository.Helpers;
 
 namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 {
@@ -118,6 +119,11 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 throw new NotImplementedException();
             }
 
+            public bool WriteTransaction<T>(T commiter, GhostRepositoryTransactionIdRange range, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream
+            {
+                throw new NotImplementedException();
+            }
+
             public long TotalMemoryBytes => (long)_blocks.Length * SMALL_BLOCK_SIZE;
         }
 
@@ -172,6 +178,11 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             }
 
             public bool WriteTransaction<T>(T commiter, long txnId, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool WriteTransaction<T>(T commiter, GhostRepositoryTransactionIdRange range, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream
             {
                 throw new NotImplementedException();
             }
