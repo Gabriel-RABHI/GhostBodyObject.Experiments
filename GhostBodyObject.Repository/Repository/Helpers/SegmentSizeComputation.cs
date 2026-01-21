@@ -99,10 +99,10 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                 {
                     case SegmentStoreMode.InMemoryVolatileRepository:
                         if (segmentCount < 16)
-                            return 8 * MB; // 16 * 8 = 128 MB
+                            return 16 * MB; // 16 * 8 = 128 MB
                         if (segmentCount < 64)
                             return 32 * MB; // 32 * 24 = 768 MB
-                        return 128 * MB;
+                        return 64 * MB;
                         break;
                     case SegmentStoreMode.InVirtualMemoryVolatileRepository:
                         if (segmentCount < 16)
