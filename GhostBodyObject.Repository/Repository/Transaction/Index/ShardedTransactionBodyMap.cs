@@ -49,11 +49,10 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         private const int DefaultShardCount = 8;
         private readonly int _shardCount;
         private readonly int _shardMask;
-
-        private List<GhostId> _inserted;
-        private List<GhostId> _mappedMuted;
-
         private readonly TransactionBodyMap<TBody>[] _shards;
+        private List<TBody> _mutations;
+
+        public List<TBody> Mutations => _mutations;
 
         /// <summary>
         /// Initializes a new sharded transaction body map with the specified shard count and initial capacity.
@@ -75,21 +74,22 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             }
         }
 
-        public List<GhostId> InsertedIds
-            => _inserted == null ? (_inserted = new List<GhostId>()) : _inserted;
+        public void RecordModifiedBody(TBody body)
+        {
+            if (_mutations == null)
+                _mutations = new List<TBody>();
+            _mutations.Add(body);
+        }
 
-        public List<GhostId> MappedMutedIds
-            => _mappedMuted == null ? (_mappedMuted = new List<GhostId>()) : _mappedMuted;
+        public void RemoveModifiedBody(TBody body)
+        {
+            _mutations.Remove(body);
+        }
 
-        
         public void ReadModifiedBodies(Action<BodyBase> reader)
         {
-            if (_inserted != null)
-                foreach (var id in _inserted)
-                    reader(Get(id, out var exist));
-            if (_mappedMuted != null)
-                foreach (var id in _mappedMuted)
-                    reader(Get(id, out var exist));
+            foreach (TBody body in _mutations)
+                reader(body);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

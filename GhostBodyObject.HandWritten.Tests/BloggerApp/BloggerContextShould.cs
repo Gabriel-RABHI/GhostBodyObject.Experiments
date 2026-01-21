@@ -17,7 +17,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
     {
         public BloggerContextShould()
         {
-            //SegmentSizeComputation.SmallSegmentsMode = true;
+            SegmentSizeComputation.SmallSegmentsMode = true;
         }
 
         public bool SmallMode

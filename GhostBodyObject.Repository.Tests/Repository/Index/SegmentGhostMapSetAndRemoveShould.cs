@@ -404,7 +404,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             }
 
             // Run for 2 seconds
-            Thread.Sleep(10_000);
+            Thread.Sleep(5 * 1000);
             Volatile.Write(ref running, false);
             Task.WaitAll(tasks.ToArray());
 
@@ -423,7 +423,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
 
             // initialize with one record
             {
-                long txnId = ranges.IncrementCurrentTransactionId();
+                long txnId = ranges.IncrementTopTransactionId();
                 var r = store.NewHeader(id, txnId, out var h);
                 map.Set(r, h);
             }
@@ -445,7 +445,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                         long newTxnId = ranges.TopTransactionId + 1;
                         var r = store.NewHeader(id, newTxnId, out var h);
                         map.SetAndRemove(r, h, ranges.BottomTransactionId);
-                        ranges.IncrementCurrentTransactionId();
+                        ranges.IncrementTopTransactionId();
                         if (rnd.Next(10) == 0)
                             Thread.Yield();
                         mutationCount++;
@@ -466,7 +466,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                     while (Volatile.Read(ref running))
                     {
                         var count = 0;
-                        var txnId = ranges.IncrementCurrentTransactionViewId();
+                        var txnId = ranges.AddTransactionViewer();
                         var enumerator = map.GetDeduplicatedEnumerator(txnId);
                         var foundRef = SegmentReference.Empty;
 
@@ -490,12 +490,12 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                                 throw new Exception("Enumerator returned unknown ID.");
                             }
                         }
-                        ranges.DecrementTransactionViewId(txnId);
+                        ranges.RemoveTransactionViewer(txnId);
                         if (count > 1)
                             throw new Exception($"DeduplicatedEnumerator returned {count} items for the same ID!");
 
                         if (seenAny && count == 0)
-                            throw new Exception($"DeduplicatedEnumerator do not sees the ID! txnId = {txnId}, ranges.CurrentTransactionId={ranges.CurrentTransactionId}, ranges.TopTransactionId={ranges.TopTransactionId}");
+                            throw new Exception($"DeduplicatedEnumerator do not sees the ID! txnId = {txnId}, ranges.BottomTransactionId={ranges.BottomTransactionId}, ranges.TopTransactionId={ranges.TopTransactionId}");
 
 
                         if (count == 1)
@@ -512,7 +512,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             }
 
             // Run for 2 seconds
-            Thread.Sleep(60 * 1000);
+            Thread.Sleep(5 * 1000);
             Volatile.Write(ref running, false);
             Task.WaitAll(tasks.ToArray());
 

@@ -90,7 +90,7 @@ namespace GhostBodyObject.HandWritten.Tests
                     {
                         Console.WriteLine("Retry " + retry + " failled.");
                         if (retry++ > 10)
-                            throw new InvalidOperationException("Could not delete temp. Directory files after multiple GC attempts.");
+                            throw new InvalidOperationException($"Could not delete temp. Directory files remains after multiple GC attempts ({GetFiles().Length} files : {string.Join(", ", GetFiles().Take(3).Select(f => Path.GetFileName(f)))}).");
                         goto _redo;
                     }
                 }

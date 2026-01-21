@@ -45,6 +45,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
     {
         private readonly RepositoryTransactionBase _txn;
         private object[] _maps;
+        private List<BodyBase> _mutations = new List<BodyBase>();
 
         public RepositoryTransactionBodyIndex(RepositoryTransactionBase txn, ushort maxTypeIdentifier)
         {
@@ -62,21 +63,16 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             where TBody : BodyBase
         {
             if (_maps[typeIdentifier] == null)
-            {
                 _maps[typeIdentifier] = new ShardedTransactionBodyMap<TBody>();
-            }
             return (ShardedTransactionBodyMap<TBody>)_maps[typeIdentifier];
         }
 
+        public void RecordModifiedBody(BodyBase body) => _mutations.Add(body);
+
         public void ReadModifiedBodies(Action<BodyBase> reader)
         {
-            for (int i = 0; i < _maps.Length; i++)
-            {
-                if (_maps[i] is IModifiedBodyStream stream)
-                {
-                    stream.ReadModifiedBodies(reader);
-                }
-            }
+            foreach (var body in _mutations)
+                reader(body);
         }
 
         public RepositoryTransactionBase Transaction => _txn;
@@ -104,7 +100,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             private readonly ShardedTransactionBodyMap<TBody> _bodyMap;
             private readonly RepositoryTransactionBodyIndex _parent;
             private ShardedSegmentGhostMap<MemorySegmentStore>.ShardedDeduplicatedEnumerator _ghostEnumerator;
-            private List<GhostId>.Enumerator _insertedIdsEnumerator;
+            private bool _hadInserted;
+            private List<TBody>.Enumerator _insertedIdsEnumerator;
             private TBody _current;
             private int _state; // 0: GhostMap, 1: InsertedIds, 2: Finished
             private bool _isReadOnly;
@@ -142,15 +139,14 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                     if (_state == 1)
                     {
                         if (_hasBodyMap)
-                            _insertedIdsEnumerator = _bodyMap.InsertedIds.GetEnumerator();
+                        {
+                            _hadInserted = _bodyMap.Mutations != null;
+                            if (_hadInserted)
+                                _insertedIdsEnumerator = _bodyMap.Mutations.GetEnumerator();
+                        }
                         else
                             _state = 2;
                     }
-                }
-
-                if (!_isReadOnly && _hasBodyMap)
-                {
-                    // Prepare secondary enumerator for later, but do not start it yet.
                 }
             }
 
@@ -195,26 +191,18 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                             if (_useCursor)
                             {
                                 // If we have a cursor body, check if it was modified (detached)
-                                if (_cursorBody != null)
+                                if (_cursorBody != null && _cursorBody.Status != _cursorStatus)
                                 {
-                                    if (_cursorBody.Status != _cursorStatus)
-                                    {
-                                        // Status changed: The user modified the body. It is now "detached".
-                                        // We drop our reference to it (creating a new cursor for this iteration)
-                                        // so that we don't overwrite the user's modified object.
-                                        _cursorBody = null;
-                                    }
+                                    // Status changed: The user modified the body. It is now "detached".
+                                    // We drop our reference to it (creating a new cursor for this iteration)
+                                    // so that we don't overwrite the user's modified object.
+                                    _cursorBody = null;
                                 }
 
                                 if (_cursorBody == null)
-                                {
                                     _cursorBody = TBody.Create(ghost, true, true);
-                                }
                                 else
-                                {
                                     _cursorBody.SwapGhost(ghost);
-                                    // Status is implicitly updated by swapping data.
-                                }
 
                                 // Memorize status for next iteration check
                                 _cursorStatus = _cursorBody.Status;
@@ -223,24 +211,21 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                                 return true;
                             }
 
-                            // -------- Standard Mode (Allocation per item) --------
+                            // -------- Standard Mode (create one body per item) --------
                             // If we are here, we are not using cursor, and it wasn't in the map.
 
                             _current = TBody.Create(ghost, true, true);
 
                             if (!_isReadOnly)
                             {
-                                // In ReadWrite, we must add to map?
-                                // Original logic added to map.
+                                // In ReadWrite, we must add to map
                                 if (_bodyMap == null)
                                 {
                                     var bodyMap = _parent.GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
                                     bodyMap.Set(_current);
                                 }
                                 else
-                                {
                                     _bodyMap.Set(_current);
-                                }
                             }
                             else
                             {
@@ -251,9 +236,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                                     bodyMap.Set(_current);
                                 }
                                 else
-                                {
                                     _bodyMap.Set(_current);
-                                }
                             }
                             return true;
                         }
@@ -272,7 +255,9 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                         var currentBodyMap = _parent.GetBodyMap<TBody>(TBody.GetTypeIdentifier());
                         if (currentBodyMap != null)
                         {
-                            _insertedIdsEnumerator = currentBodyMap.InsertedIds.GetEnumerator();
+                            _hadInserted = currentBodyMap.Mutations != null;
+                            if (_hadInserted)
+                                _insertedIdsEnumerator = currentBodyMap.Mutations.GetEnumerator();
                         }
                         else
                         {
@@ -283,19 +268,17 @@ namespace GhostBodyObject.Repository.Repository.Transaction
 
                     if (_state == 1)
                     {
-                        // Iterating InsertedIds (only for ReadWrite)
-                        while (_insertedIdsEnumerator.MoveNext())
-                        {
-                            var id = _insertedIdsEnumerator.Current;
-                            // Need to fetch from map again to get the object
-                            var currentBodyMap = _parent.GetBodyMap<TBody>(TBody.GetTypeIdentifier());
-                            var body = currentBodyMap.Get(id, out var exist);
-                            if (exist && (body.Status != GhostStatus.MappedDeleted))
+                        // only for ReadWrite
+                        if (_hadInserted)
+                            while (_insertedIdsEnumerator.MoveNext())
                             {
-                                _current = body;
-                                return true;
+                                var body = _insertedIdsEnumerator.Current;
+                                if (body.Inserted)
+                                {
+                                    _current = body;
+                                    return true;
+                                }
                             }
-                        }
 
                         _state = 2;
                         return false;

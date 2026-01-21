@@ -113,6 +113,11 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 Interlocked.Decrement(ref _usageCount);
             }
 
+            public bool WriteTransaction<T>(T commiter, long txnId, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream
+            {
+                throw new NotImplementedException();
+            }
+
             public long TotalMemoryBytes => (long)_blocks.Length * SMALL_BLOCK_SIZE;
         }
 
@@ -164,6 +169,11 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             public void DecrementSegmentHolderUsage(SegmentReference segmentId)
             {
                 Interlocked.Decrement(ref _usageCount);
+            }
+
+            public bool WriteTransaction<T>(T commiter, long txnId, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream
+            {
+                throw new NotImplementedException();
             }
 
             public long TotalMemoryBytes => (long)_blocks.Length * LARGE_BLOCK_SIZE;

@@ -60,8 +60,6 @@ namespace GhostBodyObject.Repository.Repository
         private GhostRepositoryTransactionIdRange _transactionRange = new GhostRepositoryTransactionIdRange();
 
         #region PROPERTIES
-        public long CurrentTransactionId => _transactionRange.CurrentTransactionId;
-
         public long BottomTransactionId => _transactionRange.BottomTransactionId;
 
         public RepositoryGhostIndex<MemorySegmentStore> GhostIndex => _ghostIndex;
@@ -85,22 +83,23 @@ namespace GhostBodyObject.Repository.Repository
         {
             lock (_locker)
             {
-                if (_store.WriteTransaction(commiter, _transactionRange.CurrentTransactionId + 1, (id, r) =>
+                var bottomTxnId = _transactionRange.BottomTransactionId;
+                if (_store.WriteTransaction(commiter, _transactionRange.TopTransactionId + 1, (id, r) =>
                 {
-                    _ghostIndex.AddGhost(BottomTransactionId, r);
+                    _ghostIndex.AddGhost(bottomTxnId, r);
                 }))
                 {
-                    _transactionRange.IncrementCurrentTransactionId();
+                    _transactionRange.IncrementTopTransactionId();
                 }
             }
         }
 
         public long GetNewTxnId()
-            => _transactionRange.IncrementCurrentTransactionViewId();
+            => _transactionRange.AddTransactionViewer();
 
-        public void Forget(RepositoryTransactionBase tnx)
+        public void Forget(long tnxId)
         {
-            if (_transactionRange.DecrementTransactionViewId(tnx.OpeningTxnId))
+            if (_transactionRange.RemoveTransactionViewer(tnxId))
             {
                 Store.UpdateHolders(_transactionRange.BottomTransactionId, _transactionRange.TopTransactionId);
             }
