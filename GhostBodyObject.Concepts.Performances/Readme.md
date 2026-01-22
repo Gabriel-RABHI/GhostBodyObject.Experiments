@@ -23,8 +23,8 @@ They demonstrate the core, critical memory management that is the foundation of 
 - **Ensuring memory access security by design**: It uses the GC as the end controller to release unmanaged memory. It is compliant with .NET native threading and memory management principles.
 - The Virtual Memory is **write-protected** to avoid damage from unmanaged write errors.
 - **Provides leak-free MVCC views**: Efficient, versioned, Epoch-based, cache-friendly ghost map.
-- **Sharded Maps** for blazing-fast LINQ filter queries (predicates on up to 100M entries using 8 cores).
-- **ACID transactions**: Disk-flush based. Compliant with crash recovery, replication, and multi-process write-enabled sharing.
+- **Sharded Maps** for blazing-fast LINQ filter queries (predicates on up to 100M entries / second using 8 cores).
+- **ACID transactions**: single MMF disk-flush / commit. Compliant with crash recovery (hash based), replication, and multi-process write-enabled sharing (for tooling, replication agent, services, modules, etc).
 
 ### Comparison with FASTER
 Raw data managed using FASTER is fast—faster than GBO. However, any attempt to build GBO's advanced high-level features on top of FASTER would likely be an order of magnitude slower—or even more—than GBO. This is true for a few obvious reasons:
