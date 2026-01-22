@@ -1,5 +1,8 @@
 ﻿# GhostBodyObject : High Performance, Off-Heap, Zero Allocation Object Store
 ### Short Introduction
+
+After one full month of intense development, I am proud to present the first benchmarks of the **Ghost-Body-Object (GBO)** engine - the core, memory management system. Many optimizations and critical features are still to be implemented, but the results are already very promising and may not change, but positivly evolve. Whill the GBO engine is reaching the limits of what is possible in terme of performance, the performances may not evolve that much, but the feature set will grow a lot.
+
 **Ghost-Body-Object (GBO)** is a new .NET 10+ technology designed to break the limits of the standard Garbage Collector (GC) by moving data management off-heap while maintaining a high-level, object-oriented programming model with complete ACID durability and concurrency control.
 
 It is designed for **mission-critical applications** requiring consistent zero-latency, large dataset handling (TB+), and high concurrency without the "stop-the-world" pauses associated with large managed heaps.
@@ -25,10 +28,11 @@ They demonstrate the core, critical memory management that is the foundation of 
 
 ### Comparison with FASTER
 Raw data managed using FASTER is fast—faster than GBO. However, any attempt to build GBO's advanced high-level features on top of FASTER would likely be an order of magnitude slower—or even more—than GBO. This is true for a few obvious reasons:
-- FASTER is not transactional in the sense of an MVCC snapshot view of data from a point in time.
+- FASTER does not manage high-level entities: It provides a Key/Value API. Any high-level object management induces **serialization**, which means a lot of **memory copying** and **object allocation**.
+- Event if you try to implement zero-copy entities like GBO does, you still need to manage the mapping between FASTER's Key/Value pairs and your high-level entities, which adds complexity and overhead. The most critical part is the security of the access to raw data and buffers lifecycle. GBO use the GC to manage the release of native memory (even with virtual memory), **wich is the single safe way to do that in .NET**. That's why GBO is a "new memory - object model" for .NET. FASTER may not be used as a base for that.
+- FASTER is low-level. GBO provides both a high-end, high-level programming experience **AND** "zero-copy" and "zero-allocation" object management. The complete API is "ambient": any operation (creation, modification, deletion of any object) requires zero API calls (no Insert or Update calls needed on entities). The persistence and transactionality is fully managed by the GBO Context/Transaction system - it is completly invisible.
+- FASTER is not transactional in the sense of an MVCC snapshot view of data from a point in time. This is a critical feature for any high-concurrency application. GBO provides true MVCC with epoch-based garbage collection of old data versions. It makes it in pare with PostgreSQL MVCC model.
 - FASTER is not ACID: The ACID Commit concept is not supported—it can recover stale writes, but it is not ACID.
-- FASTER does not manage high-level entities: It provides a Key/Value API. Any high-level object management induces serialization, which means a lot of memory copying and object allocation.
-- FASTER is low-level. GBO provides both a high-end, high-level programming experience **AND** "zero-copy" and "zero-allocation" object management. The complete API is "ambient": any object modification (creation, modification, deletion) requires zero API calls (no Insert or Update calls needed on entities).
 
 ### Comparison with LMDB / MDBX
 While LMDB provides the highest read performance, the write performance is far from what GBO provides:
