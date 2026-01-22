@@ -154,7 +154,7 @@ To complete this highly critical, first implementation, I have to write this key
 - The **Reload / Recovery** of a persisted repository using compact, near instantly loaded on disk segment indexes, generated when a segment is "sealed".
 - The **Multi-process Sharing** of Segment chains and complete repository sync with mutations.
 
-I hope I'll be able to release the complete White Paper and the full implementation of the GhostBodyObject engine in March 2026.
+I hope I'll be able to release the complete White Paper and the full implementation of the GhostBodyObject "storage" engine in March 2026.
 
 Time is money. This project is AGPLv3 licensed, with commercial licenses available for enterprises. Contact me for more information.
 
