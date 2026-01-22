@@ -34,15 +34,15 @@ public void OpenAndAssignTransactions()
         var user = new BloggerUser();
 
         user.FirstName = "John";
-        user.LasName = "Travolta";
+        user.LastName = "Travolta";
         
-        Assert.True(BloggerContext.Transaction.Users.Any(u => u.FirstName == "John"));
+        Assert.True(BloggerCollections.Users.Any(u => u.FirstName == "John"));
 
         BloggerContext.Transaction.Commit();
     }
     using (BloggerContext.OpenReadContext(repository))
     {
-        Assert.True(BloggerCollections.Users.Any(u => u.LasName == "Travolta"));
+        Assert.True(BloggerCollections.Users.Any(u => u.LastName == "Travolta"));
     }
 }
 ```
