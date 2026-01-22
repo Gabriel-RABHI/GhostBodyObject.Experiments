@@ -83,45 +83,58 @@ Low-level, high-performance building blocks shared across the solution:
 - **Utilities**
   - `XorShift64` - Fast pseudo-random number generator for high-throughput ID generation
 
+#### GhostBodyObject.CodeGenerator
+Prototype for a Roslyn Source Generator to automate the creation of Body classes and Vector Tables from interface definitions.
+
 #### GhostBodyObject.Repository
-The core Ghost-Body repository infrastructure:
-
-- **Ghost Structures** (`Ghost/Structs/`)
-  - `GhostId` - 16-byte unique identifier with embedded kind, type, timestamp, and random components
-  - `GhostHeader` - 40-byte header containing ID, transaction ID, model version, status, flags, and mutation counter
-  - `ArrayMapSmallEntry` / `ArrayMapLargeEntry` - Compact structures tracking variable-length arrays within Ghost memory
-
-- **Ghost Values** (`Ghost/Values/`)
-  - `GhostStringUtf16` - Ref struct wrapping UTF-16 string data in pinned memory with full string-like API and in-place modification support
-  - `GhostStringUtf8` - UTF-8 variant of the Ghost string type
-  - `GhostSpan` - Generic span wrapper for typed array access within Ghost memory
-
-- **Ghost Constants** (`Ghost/Constants/`)
-  - `GhostIdKind` - Enumeration of Ghost ID types (Entity, Component, Edge, etc.")
-  - `GhostStatus` - Entity lifecycle states (Active, Deleted, etc.)
-
-- **Ghost Utilities** (`Ghost/Utils/`)
-  - `GhostHeaderIncrementor` - Atomic mutation counter management
+The core Ghost-Body repository infrastructure, containing all the logic for memory management, transactions, and object mapping.
 
 - **Body Contracts** (`Body/Contracts/`)
-  - `BodyBase` - Abstract base class for all Body implementations with array swap/append/prepend/insert/remove operations
-  - `BodyUnion` - Union type for unsafe casting between Body types
-  - `IEntityBody` - Interface for entity body implementations
+  - `BodyBase` - Abstract base class for all Body implementations.
+  - `IHasTypeIdentifier` - Interface for entities carrying type information.
+
+- **Body Relations** (`Body/Relations/`)
+  - `BodyRelationCollection` - Manages relationships between entities.
+  - `BodyWeakReference` - Weak references to Bodies.
 
 - **Body Vectors** (`Body/Vectors/`)
-  - `VectorTableHeader` - Header structure for virtual method dispatch tables containing function pointers for array operations
-  - `VectorTableRecord` - Record tracking vector table metadata
-  - `VectorTableRegistry` - Registry for building and managing version-specific vector tables
+  - `VectorTableHeader` / `VectorTableRecord` / `VectorTableRegistry` - Virtual method dispatch tables for array operations.
 
-- **Repository Infrastructure** (`Repository/`)
-  - `GhostRepository` - Main repository class managing segments, indexes, and transactions
-  - `RepositoryTransaction` - Transaction management for ACID guarantees
-  - `MemorySegment` / `MemorySegmentStore` / `MemorySegmentHolder` - Memory segment management for Ghost storage
-  - `SegmentGhostMap` / `ShardedSegmentGhostMap` - High-performance hash maps for Ghost indexing with tombstone-aware probing and MVCC support
-  - `RepositoryGhostIndex` - Index layer for Ghost lookup by ID
+- **Ghost Constants** (`Ghost/Constants/`)
+  - `GhostIdKind` - Enumeration of Ghost ID types.
+  - `GhostStatus` - Entity lifecycle states.
+
+- **Ghost Structs** (`Ghost/Structs/`)
+  - `GhostId` - 16-byte unique identifier.
+  - `GhostHeader` - 40-byte header containing metadata.
+  - `GhostTypeCombo` - Combined Kind and Type identifier.
+  - `ArrayMapSmallEntry` / `ArrayMapLargeEntry` - Compact structures for array tracking.
+
+- **Ghost Values** (`Ghost/Values/`)
+  - `GhostStringUtf16` / `GhostStringUtf8` - Zero-copy string wrappers.
+  - `GhostSpan` - Generic span wrapper.
+
+- **Ghost Utils** (`Ghost/Utils/`)
+  - `GhostHeaderIncrementor` - Atomic mutation counter.
 
 - **Model Attributes** (`Model/Attributs/`)
-  - `EntityBodyAttribute` / `EntityPropertyAttribute` - Attributes for defining entity schemas
+  - `EntityBodyAttribute` / `EntityPropertyAttribute` - Schema definition attributes.
+
+- **Model Schema** (`Model/Schema/`)
+  - `EntitySchemaLayout` - Schema layout definition.
+  - **Constants**: `PropertyKind`, `PropertyRelationAutomation`, `PropertyRelationCardinality`, `PropertyRelationConstraints`, `PropertyRelationStoreSpace`.
+
+- **Repository Infrastructure** (`Repository/`)
+  - `GhostRepositoryBase` - Base repository logic.
+  - **Constants**: `SegmentImplementationType`, `SegmentStoreMode`, `SegmentStructureType`, `SegmentTransactionOrigin`.
+  - **Contracts**: `IGhostToBodyMapper`, `IModifiedBodyStream`, `ISegmentStore`.
+  - **Helpers**: `GhostRepositoryTransactionIdRange`, `MemoryFlusher`, `SegmentSizeComputation`, `SegmentStoreModeExtensions`, `SizeComputations`, `TransactionChecksum`.
+  - **Index**: `RepositoryGhostIndex`, `SegmentGhostMap`, `ShardedSegmentGhostMap`.
+  - **Segment**: `MemorySegment`, `MemorySegmentHolder`, `MemorySegmentStore`, `MemorySegmentStoreHolders`, `SegmentReference`, `TransactionContext` (Legacy).
+    - **Structs**: `SealedSegmentEnd`, `SealedSegmentFooter`, `SegmentHeader`, `StoreTransactionContinuation`, `StoreTransactionEnd`, `StoreTransactionHeader`, `StoreTransactionRecordHeader`, `StoreTransactionSegmentJump`.
+  - **Transaction**: `RepositoryTransactionBase`, `RepositoryTransactionBodyIndex`.
+    - **Collections**: `BodyCollection`, `BodyInstanceCollection`, `BodyWhereIterator`.
+    - **Index**: `TransactionBodyMap`, `ShardedTransactionBodyMap`.
 
 ### Hand-Written Implementations
 
@@ -144,7 +157,21 @@ Prototype implementations demonstrating code generation patterns:
 
 #### GhostBodyObject.Experiments
 Exploratory code and prototypes:
-- `BabyBody/Customer.cs` - Early prototype of the Body pattern
+  - `BabyBody/Customer.cs` - Early prototype of the Body pattern
+
+#### GhostBodyObject.Concepts.Performances
+A specialized benchmark and concept demonstration project covering:
+
+- **Benchmarks** (`BloggerApp/`)
+  - `BloggerAppBenchmarks` - Comprehensive suite validating GBO core claims (Zero Allocation, MVCC, Persistence, Virtual Memory).
+
+- **Utils** (`Utils/`)
+  - `BenchTempDirectory` - Helper for managing temporary benchmark directories.
+
+- **Program.cs** - Entry point for the benchmark runner.
+
+#### GhostBodyObject.CodeGenerator
+Prototype for a Roslyn Source Generator to automate the creation of Body classes and Vector Tables from interface definitions.
 
 ### Benchmark Infrastructure
 
@@ -170,7 +197,8 @@ Custom brute-force benchmarking framework:
 1. **Zero-Copy String Access**: `GhostStringUtf16` provides string-like operations directly on pinned memory without copying, with implicit conversion to/from `string`.
 2. **In-Place Array Modifications**: The `BodyBase` class implements sophisticated array swap/append/prepend/insert/remove operations that maintain proper alignment and efficiently shift subsequent arrays.
 3. **Lock-Free Reading with MVCC**: `SegmentGhostMap` supports lock-free reads with retry-on-resize semantics, enabling snapshot isolation for enumerators.
-4. **Version-Aware Schema Evolution**: Vector tables are versioned, allowing entities to be read using the schema version they were written with.
+4. **Cursor Mode Iteration**: The `Enumerator<TBody>` supports a mutable "cursor" mode, reusing a single Body instance during iteration to achieve **zero allocations** when scanning millions of entities.
+5. **Version-Aware Schema Evolution**: Vector tables are versioned, allowing entities to be read using the schema version they were written with.
 5. **Custom Spinlocks**: Purpose-built synchronization primitives optimized for short critical sections common in high-frequency data access patterns.
 
 # Few Benchmarks Results
