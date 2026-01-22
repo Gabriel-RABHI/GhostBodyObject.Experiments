@@ -115,9 +115,9 @@ The `BloggerAppBenchmarks.cs` file demonstrates the capabilities of the engine s
 *Benchmark: `InsertMutateRemove_3`*
 - **What it does**: Inserts **10GB** of data using `SegmentStoreMode.InVirtualMemoryVolatileRepository`.
 - **Key Takeaway**:
-    - The process memory footprint remains low (e.g., 200MB) even with 10GB of data.
-    - **OS Paging**: The Operating System handles swapping pages in and out of RAM. GBO plays nicely with the OS Virtual Memory Manager.
-    - **Massive Datasets**: You can load datasets larger than available RAM.
+	- The process memory footprint remains low (e.g., 200MB) even with 10GB of data.
+	- **OS Paging**: The Operating System handles swapping pages in and out of RAM. GBO plays nicely with the OS Virtual Memory Manager.
+	- **Massive Datasets**: You can load datasets larger than available RAM.
 
 ### OBJ-04: ACID Persistence
 *Benchmark: `InsertMutateRemove_4`*
@@ -131,15 +131,15 @@ The `BloggerAppBenchmarks.cs` file demonstrates the capabilities of the engine s
 *Benchmark: `ConcurrentEnumerations`*
 - **What it does**: Compares random access (`Retreive(id)`) and sequential scanning.
 - **Key Takeaway**:
-    - **Parallel Filtering**: Collections are sharded. You can use `.AsParallel()` or multiple threads to scan the store at memory bandwidth speeds.
-    - **Point Retrieve**: `O(1)` access time via the `GhostMap`.
+	- **Parallel Filtering**: Collections are sharded. You can use `.AsParallel()` or multiple threads to scan the store at memory bandwidth speeds.
+	- **Point Retrieve**: `O(1)` access time via the `GhostMap`.
 
 ### OBJ-06: Safety & Lifecycle
 *Benchmark: `SegmentReleasing`*
 - **What it does**: Updates objects to make old versions obsolete, forcing Segments to be dropped.
 - **Key Takeaway**:
-    - **Safety**: If you hold onto a Body after its Transaction/Context creates it, GBO prevents you from accessing invalid memory.
-    - **Memory Reclamation**: Segments are reference-counted. When all Ghosts in a Segment are obsolete (updated/deleted) and no readers are looking at them, the Segment is disposed and the file deleted (or memory freed).
+	- **Safety**: If you hold onto a Body after its Transaction/Context creates it, GBO prevents you from accessing invalid memory.
+	- **Memory Reclamation**: Segments are reference-counted. When all Ghosts in a Segment are obsolete (updated/deleted) and no readers are looking at them, the Segment is disposed and the file deleted (or memory freed).
 
 ---
 ## Conclusion for Engineers
