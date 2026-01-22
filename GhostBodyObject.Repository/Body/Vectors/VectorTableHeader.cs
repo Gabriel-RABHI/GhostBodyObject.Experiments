@@ -29,7 +29,6 @@
  * --------------------------------------------------------------------------
  */
 
-using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
 using System.Runtime.InteropServices;
 

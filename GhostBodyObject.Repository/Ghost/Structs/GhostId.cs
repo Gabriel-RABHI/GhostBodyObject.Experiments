@@ -31,11 +31,8 @@
 
 using GhostBodyObject.Common.Utilities;
 using GhostBodyObject.Repository.Ghost.Constants;
-using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace GhostBodyObject.Repository.Ghost.Structs
 {
@@ -102,8 +99,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         // Epoch: 2024-01-01 (Adjust as needed to reset the 9-year loop)
         private static readonly long EpochTicks = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
-        public ulong RandomPart
-        {
+        public ulong RandomPart {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _random;
         }
@@ -134,7 +130,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         {
             // Clamp inputs to ensure they don't overwrite neighbor bits
             ulong k = (ulong)kind & KindMask;
-            ulong t = (ulong)typeId & TypeMask;
+            ulong t = typeId & TypeMask;
             ulong w = timestamp & TimestampMask;
 
             // Pack Header
@@ -145,22 +141,18 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         // ---------------------------------------------------------
         // Accessors (Zero-Cost unpacking)
         // ---------------------------------------------------------
-        public GhostIdKind Kind
-        {
+        public GhostIdKind Kind {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (GhostIdKind)((_header >> KindShift) & KindMask);
         }
 
-        public ushort TypeIdentifier
-        {
+        public ushort TypeIdentifier {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (ushort)((_header >> TypeShift) & TypeMask);
         }
 
-        public DateTime CreatedAt
-        {
-            get
-            {
+        public DateTime CreatedAt {
+            get {
                 long ticks = (long)(_header & TimestampMask) * 10;
                 return new DateTime(EpochTicks + ticks, DateTimeKind.Utc);
             }
@@ -169,8 +161,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         /// <summary>
         /// Gets the TypeCombo which combines Kind and TypeIdentifier in a single 16-bit value.
         /// </summary>
-        public GhostTypeCombo TypeCombo
-        {
+        public GhostTypeCombo TypeCombo {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _typeCombo;
         }

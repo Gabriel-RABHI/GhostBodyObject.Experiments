@@ -11,8 +11,7 @@ namespace GhostBodyObject.Common.Benchmarks.Objects
         [BruteForceBenchmark("OBJ-01", "GhostId vs GUID", "Objects")]
         public void SequentialTest()
         {
-            var r1 = RunMonitoredAction(() =>
-            {
+            var r1 = RunMonitoredAction(() => {
                 for (int i = 0; i < COUNT; i++)
                 {
                     var id = GhostId.NewId(GhostIdKind.Entity, 1234);
@@ -22,8 +21,7 @@ namespace GhostBodyObject.Common.Benchmarks.Objects
             .PrintDelayPerOp(COUNT)
             .PrintSpace();
 
-            var r2 = RunMonitoredAction(() =>
-            {
+            var r2 = RunMonitoredAction(() => {
                 for (int i = 0; i < COUNT; i++)
                 {
                     var id = Guid.NewGuid();

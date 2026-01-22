@@ -53,8 +53,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         // PROPERTIES
         // -----------------------------------------------------------------
 
-        public uint ValueSize
-        {
+        public uint ValueSize {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (uint)(_lowerHalf & ValueSizeMask);
 
@@ -62,8 +61,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
             set => _lowerHalf = (ushort)((_lowerHalf & ~ValueSizeMask) | (value & ValueSizeMask));
         }
 
-        public uint ArrayLength
-        {
+        public uint ArrayLength {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (uint)((_lowerHalf >> 5) & ArrayLengthMask);
 
@@ -75,38 +73,31 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         // COMPUTED PROPERTIES (New)
         // -----------------------------------------------------------------
 
-        public int PhysicalSize
-        {
+        public int PhysicalSize {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (int)((_lowerHalf & ValueSizeMask) * ((_lowerHalf >> 5) & ArrayLengthMask));
+            get => (_lowerHalf & ValueSizeMask) * ((_lowerHalf >> 5) & ArrayLengthMask);
         }
 
-        public int ArrayEndOffset
-        {
+        public int ArrayEndOffset {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 // ValueSize * ArrayLength
                 int size = (_lowerHalf & ValueSizeMask) * ((_lowerHalf >> 5) & ArrayLengthMask);
                 return ArrayOffset + size;
             }
         }
 
-        public int ArrayEndIntPaddedOffset
-        {
+        public int ArrayEndIntPaddedOffset {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 int size = (_lowerHalf & ValueSizeMask) * ((_lowerHalf >> 5) & ArrayLengthMask);
                 return (ArrayOffset + size + 3) & ~3;
             }
         }
 
-        public int ArrayEndLongPaddedOffset
-        {
+        public int ArrayEndLongPaddedOffset {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 int size = (_lowerHalf & ValueSizeMask) * ((_lowerHalf >> 5) & ArrayLengthMask);
                 return (ArrayOffset + size + 7) & ~7;
             }

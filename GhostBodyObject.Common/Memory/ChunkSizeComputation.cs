@@ -31,7 +31,6 @@
 
 #define LOW_MEM_OVERHEAD
 
-using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 

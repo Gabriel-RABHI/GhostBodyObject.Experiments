@@ -1,19 +1,10 @@
-using GhostBodyObject.Common.SpinLocks;
-using GhostBodyObject.Common.Utilities;
-using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Helpers;
-using GhostBodyObject.Repository.Repository.Index;
 using GhostBodyObject.Repository.Repository.Structs;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 using static GhostBodyObject.Repository.Tests.Repository.Index.SegmentGhostTransactionnalMapShould;
 
 namespace GhostBodyObject.Repository.Tests.Repository.Index
@@ -339,8 +330,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             int updaterCount = 4; // Multiple setters
             for (int i = 0; i < updaterCount; i++)
             {
-                tasks.Add(Task.Run(() =>
-                {
+                tasks.Add(Task.Run(() => {
                     var rnd = new Random(12345 + i);
                     while (Volatile.Read(ref running))
                     {
@@ -365,8 +355,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             for (int i = 0; i < readerCount; i++)
             {
                 int seed = i * 999;
-                tasks.Add(Task.Run(() =>
-                {
+                tasks.Add(Task.Run(() => {
                     var rnd = new Random(seed);
                     while (Volatile.Read(ref running))
                     {
@@ -392,8 +381,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                             {
                                 if (expectedRef.Value != foundRef.Value)
                                     throw new Exception($"Data Corruption! For TxnId {foundTxn}, expected Ref {expectedRef.Value} but got {foundRef.Value}");
-                            }
-                            else
+                            } else
                             {
                                 // If not in truth, we have a problem (we never delete from truth in this test)
                                 throw new Exception($"Unknown TxnId {foundTxn} found in map");
@@ -436,8 +424,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             int updaterCount = 1;
             for (int i = 0; i < updaterCount; i++)
             {
-                tasks.Add(Task.Run(() =>
-                {
+                tasks.Add(Task.Run(() => {
                     var rnd = new Random(12345 + i);
                     var mutationCount = 0;
                     while (Volatile.Read(ref running))
@@ -458,8 +445,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             for (int i = 0; i < readerCount; i++)
             {
                 int seed = i * 999;
-                tasks.Add(Task.Run(() =>
-                {
+                tasks.Add(Task.Run(() => {
                     bool seenAny = false;
                     var rnd = new Random(seed);
                     var totalFound = 0;
@@ -484,8 +470,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                             {
                                 count++;
                                 totalFound++;
-                            }
-                            else
+                            } else
                             {
                                 throw new Exception("Enumerator returned unknown ID.");
                             }
@@ -522,8 +507,8 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
 
         public class ThreadSafeFakeSegmentStore : ISegmentStore, IDisposable
         {
-            private ConcurrentDictionary<ulong, IntPtr> _pointers = new();
-            private ConcurrentDictionary<uint, int> _usageCounts = new();
+            private readonly ConcurrentDictionary<ulong, IntPtr> _pointers = new();
+            private readonly ConcurrentDictionary<uint, int> _usageCounts = new();
             private long _nextOffset = 0;
 
             public SegmentReference NewHeader(GhostId id, long txnId, out GhostHeader* h)

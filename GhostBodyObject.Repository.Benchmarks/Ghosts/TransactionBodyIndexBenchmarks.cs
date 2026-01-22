@@ -1,9 +1,7 @@
 ﻿using GhostBodyObject.BenchmarkRunner;
-using GhostBodyObject.Common.Utilities;
 using GhostBodyObject.HandWritten.Blogger;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
-using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Transaction.Index;
 using Spectre.Console;
@@ -32,8 +30,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 }
 
                 // Measure only the Set() calls
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     for (int i = 0; i < COUNT; i++)
                     {
                         index.Set(users[i]);
@@ -69,8 +66,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 AnsiConsole.WriteLine($"        -> Index Capacity = {index.Capacity:N0}, Count = {index.Count:N0}");
 
                 // Measure only the GetRef() calls
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     for (int i = 0; i < COUNT; i++)
                     {
                         index.GetRef(ids[i], out _);
@@ -104,8 +100,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 AnsiConsole.WriteLine($"        -> Index Capacity before remove = {index.Capacity:N0}, Count = {index.Count:N0}");
 
                 // Measure only the Remove() calls
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     for (int i = 0; i < COUNT; i++)
                     {
                         index.Remove(ids[i]);
@@ -140,8 +135,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 int enumCount = 0;
 
                 // Measure enumeration using struct enumerator
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     var enumerator = index.GetEnumerator();
                     while (enumerator.MoveNext())
                     {
@@ -175,8 +169,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 int enumCount = 0;
 
                 // Measure enumeration using raw array access
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     var entries = index.GetEntriesArray();
                     for (int i = 0; i < entries.Length; i++)
                     {
@@ -212,8 +205,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 AnsiConsole.WriteLine($"        -> Index Capacity = {index.Capacity:N0}, Count = {index.Count:N0}");
 
                 // Measure updating existing entries
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     for (int i = 0; i < SMALL_COUNT; i++)
                     {
                         index.Set(users[i]); // Same entry, triggers update path
@@ -246,8 +238,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 int operationCount = SMALL_COUNT * 3;
 
                 // Measure mixed operations: insert, lookup, remove cycle
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     // Insert all
                     for (int i = 0; i < SMALL_COUNT; i++)
                     {
@@ -292,8 +283,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 
                 // Benchmark TransactionBodyIndex
                 var index = new TransactionBodyMap<BloggerUser>();
-                var indexResult = RunMonitoredAction(() =>
-                {
+                var indexResult = RunMonitoredAction(() => {
                     for (int i = 0; i < SMALL_COUNT; i++)
                         index.Set(users[i]);
                     for (int i = 0; i < SMALL_COUNT; i++)
@@ -305,8 +295,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 
                 // Benchmark Dictionary
                 var dict = new Dictionary<GhostId, BloggerUser>();
-                var dictResult = RunMonitoredAction(() =>
-                {
+                var dictResult = RunMonitoredAction(() => {
                     for (int i = 0; i < SMALL_COUNT; i++)
                         dict[ids[i]] = users[i];
                     for (int i = 0; i < SMALL_COUNT; i++)
@@ -350,8 +339,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     users[i].Active = true;
                 }
 
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     for (int iter = 0; iter < iterations; iter++)
                     {
                         index.Clear();

@@ -1,5 +1,4 @@
-﻿using GhostBodyObject.Common.Memory;
-using GhostBodyObject.Experiments.BabyBody;
+﻿using GhostBodyObject.Experiments.BabyBody;
 using GhostBodyObject.HandWritten.Entities.Repository;
 using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
@@ -20,8 +19,7 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
     {
         public const int ModelVersion = 1;
 
-        internal unsafe ArraysAsStringsAndSpansSmall_VectorTable* _vTable
-        {
+        internal unsafe ArraysAsStringsAndSpansSmall_VectorTable* _vTable {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (ArraysAsStringsAndSpansSmall_VectorTable*)_vTablePtr;
 
@@ -50,18 +48,15 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public unsafe DateTime OneDateTime
-        {
+        public unsafe DateTime OneDateTime {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 GuardLocalScope();
                 return _data.Get<DateTime>(_vTable->OneDateTime_FieldOffset);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 using (GuardWriteScope())
                 {
                     _vTable->OneDateTime_Setter(this, value);
@@ -69,18 +64,15 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public unsafe int OneInt
-        {
+        public unsafe int OneInt {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 GuardLocalScope();
                 return _data.Get<int>(_vTable->OneInt_FieldOffset);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 using (GuardWriteScope())
                 {
                     _vTable->OneInt_Setter(this, value);
@@ -88,22 +80,19 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public GhostSpan<Guid> Guids
-        {
+        public GhostSpan<Guid> Guids {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 unsafe
                 {
                     GuardLocalScope();
                     var arrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->Guids_MapEntryOffset);
-                    return new GhostSpan<Guid>(this, _vTable->Guids_MapEntryIndex, _data.Slice((int)arrayEntry.ArrayOffset, arrayEntry.PhysicalSize));
+                    return new GhostSpan<Guid>(this, _vTable->Guids_MapEntryIndex, _data.Slice(arrayEntry.ArrayOffset, arrayEntry.PhysicalSize));
                 }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 unsafe
                 {
                     using (GuardWriteScope())
@@ -114,22 +103,19 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public GhostSpan<DateTime> DateTimes
-        {
+        public GhostSpan<DateTime> DateTimes {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 unsafe
                 {
                     GuardLocalScope();
                     var arrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->DateTimes_MapEntryOffset);
-                    return new GhostSpan<DateTime>(this, _vTable->DateTimes_MapEntryIndex, _data.Slice((int)arrayEntry.ArrayOffset, arrayEntry.PhysicalSize));
+                    return new GhostSpan<DateTime>(this, _vTable->DateTimes_MapEntryIndex, _data.Slice(arrayEntry.ArrayOffset, arrayEntry.PhysicalSize));
                 }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 unsafe
                 {
                     using (GuardWriteScope())
@@ -140,22 +126,19 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public GhostStringUtf16 StringU16
-        {
+        public GhostStringUtf16 StringU16 {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 unsafe
                 {
                     GuardLocalScope();
                     var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->StringU16_MapEntryOffset);
-                    return new GhostStringUtf16(this, _vTable->StringU16_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                    return new GhostStringUtf16(this, _vTable->StringU16_MapEntryIndex, _data.Slice(stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
                 }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 unsafe
                 {
                     using (GuardWriteScope())
@@ -166,22 +149,19 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public GhostStringUtf8 StringU8
-        {
+        public GhostStringUtf8 StringU8 {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 unsafe
                 {
                     GuardLocalScope();
                     var stringArrayEntry = _data.Get<ArrayMapSmallEntry>(_vTable->StringU8_MapEntryOffset);
-                    return new GhostStringUtf8(this, _vTable->StringU8_MapEntryIndex, _data.Slice((int)stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
+                    return new GhostStringUtf8(this, _vTable->StringU8_MapEntryIndex, _data.Slice(stringArrayEntry.ArrayOffset, stringArrayEntry.PhysicalSize));
                 }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 unsafe
                 {
                     using (GuardWriteScope())
@@ -273,29 +253,25 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             h->Initialize((ushort)TargetVersion);
             h->Id = GhostId.NewId(GhostIdKind.Entity, (ushort)TypeIdentifier);
 
-            var emptyGuid = new ArrayMapSmallEntry()
-            {
+            var emptyGuid = new ArrayMapSmallEntry() {
                 ArrayLength = 0,
                 ValueSize = (uint)sizeof(Guid),
                 ArrayOffset = (ushort)_vTable->Std.MinimalGhostSize
             };
 
-            var emptyDateTime = new ArrayMapSmallEntry()
-            {
+            var emptyDateTime = new ArrayMapSmallEntry() {
                 ArrayLength = 0,
                 ValueSize = (uint)sizeof(DateTime),
                 ArrayOffset = (ushort)_vTable->Std.MinimalGhostSize
             };
 
-            var emptyStringU16 = new ArrayMapSmallEntry()
-            {
+            var emptyStringU16 = new ArrayMapSmallEntry() {
                 ArrayLength = 0,
                 ValueSize = sizeof(char),
                 ArrayOffset = (ushort)_vTable->Std.MinimalGhostSize
             };
 
-            var emptyStringU8 = new ArrayMapSmallEntry()
-            {
+            var emptyStringU8 = new ArrayMapSmallEntry() {
                 ArrayLength = 0,
                 ValueSize = sizeof(byte),
                 ArrayOffset = (ushort)_vTable->Std.MinimalGhostSize

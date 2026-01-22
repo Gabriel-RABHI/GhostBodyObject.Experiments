@@ -1,9 +1,6 @@
 ﻿using GhostBodyObject.HandWritten.Entities;
 using GhostBodyObject.HandWritten.Entities.Arrays;
 using GhostBodyObject.HandWritten.Entities.Repository;
-using GhostBodyObject.Repository.Body.Contracts;
-using System.Text;
-using System.Linq;
 
 namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
 {
@@ -386,7 +383,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var body = new ArraysAsStringsAndSpansLarge();
 
                 body.StringU16 = new string('X', 500);
-                
+
                 var slice = body.StringU16.AsSpan(200, 50);
                 Assert.Equal(50, slice.Length);
                 Assert.Equal(new string('X', 50), new string(slice));

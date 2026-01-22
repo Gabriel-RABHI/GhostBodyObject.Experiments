@@ -42,7 +42,7 @@ namespace GhostBodyObject.Common.SpinLocks
     public struct ShortCountSpinLock
     {
         private int _count;
-        private volatile int _max;
+        private readonly int _max;
 
         /// <summary>
         /// Construct the primitive by specifying the number of enters allowed.

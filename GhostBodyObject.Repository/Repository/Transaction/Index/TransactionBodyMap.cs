@@ -356,8 +356,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 _current = null;
             }
 
-            public TBody Current
-            {
+            public TBody Current {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _current;
             }

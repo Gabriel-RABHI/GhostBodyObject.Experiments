@@ -2,12 +2,8 @@
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Contracts;
+using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-using static GhostBodyObject.Repository.Tests.Repository.Index.SegmentGhostTransactionnalMapShould;
 
 namespace GhostBodyObject.Repository.Tests.Repository.Index
 {
@@ -29,9 +25,9 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             }
 
             private int _nextOffset = 0;
-            private List<FakeSegmentStoreRecord> _store = new();
+            private readonly List<FakeSegmentStoreRecord> _store = new();
             // We pin headers here to stop GC moving them, ensuring pointer safety during tests
-            private List<System.Runtime.InteropServices.GCHandle> _handles = new();
+            private readonly List<System.Runtime.InteropServices.GCHandle> _handles = new();
 
             public void Dispose()
             {
@@ -55,8 +51,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             {
                 var h = new GhostHeader { Id = id, TxnId = txnId };
 
-                var record = new FakeSegmentStoreRecord
-                {
+                var record = new FakeSegmentStoreRecord {
                     Reference = new SegmentReference { SegmentId = 0, Offset = (uint)_nextOffset },
                     Header = h,
                     ToInsert = true
@@ -87,7 +82,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                 }
                 return null;
             }
-            
+
             public SegmentReference StoreGhost(long bottomTxnId, PinnedMemory<byte> ghost)
             {
                 throw new NotImplementedException();
@@ -144,6 +139,11 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             }
 
             public bool WriteTransaction<T>(T commiter, long txnId, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool WriteTransaction<T>(T commiter, GhostRepositoryTransactionIdRange range, Action<GhostId, SegmentReference> onGhostStored) where T : IModifiedBodyStream
             {
                 throw new NotImplementedException();
             }
@@ -461,7 +461,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
                 if (remainingItems == 0)
                 {
                     // When all items are removed, capacity might shrink to minimum
-                    Assert.True(map.Capacity <= initialCapacity, 
+                    Assert.True(map.Capacity <= initialCapacity,
                         $"Capacity {map.Capacity} should be <= initial {initialCapacity} after all removals");
                 }
             }
@@ -472,7 +472,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Index
             Assert.Equal(0, map.Count);
 
             // Verify capacity has potentially shrunk (or at least not grown)
-            Assert.True(map.Capacity <= initialCapacity, 
+            Assert.True(map.Capacity <= initialCapacity,
                 $"Final capacity {map.Capacity} should be <= initial {initialCapacity}");
 
             // Verify no items are visible via enumerator

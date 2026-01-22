@@ -31,9 +31,6 @@
 
 #undef NULL_RETURN_PRINCIPLE
 
-using System.IO;
-using System.Runtime.CompilerServices;
-using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Constants;
@@ -42,16 +39,17 @@ using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;
+using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
 
     public sealed unsafe class MemorySegmentStore : ISegmentStore, IDisposable
     {
-        private SegmentStoreMode _storeMode;
-        private SegmentImplementationType _implementationType;
-        private bool _isPersistent = false;
-        private bool _isCompactable = false;
+        private readonly SegmentStoreMode _storeMode;
+        private readonly SegmentImplementationType _implementationType;
+        private readonly bool _isPersistent = false;
+        private readonly bool _isCompactable = false;
 
         private volatile MemorySegmentHolder[] _segmentHolders;
         private volatile MemorySegmentHolder _currentHolder;
@@ -60,12 +58,12 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private int _segmentCount = 0;
         private int _transactionCount = 0;
         private ShortSpinLock _commitLocker;
-        private List<WeakReference<MemorySegmentHolder>> _droppedSegments = new();
+        private readonly List<WeakReference<MemorySegmentHolder>> _droppedSegments = new();
 
         // MMF Configuration
-        private string _directoryPath;
-        private string _prefix = "store";
-        private string _name = "data";
+        private readonly string _directoryPath;
+        private readonly string _prefix = "store";
+        private readonly string _name = "data";
 
         public SegmentImplementationType ImplementationType => _implementationType;
 
@@ -73,10 +71,8 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public bool IsPersistant => _isPersistent;
 
-        public bool IsCommiting
-        {
-            get
-            {
+        public bool IsCommiting {
+            get {
                 if (_commitLocker.TryEnter())
                 {
                     _commitLocker.Exit();
@@ -145,8 +141,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
                     _segmentHolders = newHolders;
                     _segmentPointers = newPointers;
-                }
-                finally
+                } finally
                 {
                     _commitLocker.Exit();
                 }
@@ -224,8 +219,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     var newPointers = new byte*[_segmentPointers.Length + 1];
                     Array.Copy(_segmentPointers, newPointers, _segmentPointers.Length);
                     _segmentPointers = newPointers;
-                }
-                else
+                } else
                 {
                     Array.Resize(ref _segmentHolders, _segmentHolders.Length * 2);
                     var newPointers = new byte*[_segmentPointers.Length * 2];
@@ -333,8 +327,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     startOffset = currentOffset;
                 }
 
-                var txHeader = new StoreTransactionHeader
-                {
+                var txHeader = new StoreTransactionHeader {
                     T = SegmentStructureType.StoreTransactionHeader,
                     Origin = SegmentTransactionOrigin.Repository,
                     Id = (ulong)txnId,
@@ -368,8 +361,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     currentOffset += recordSize;
 
                     // Write Record Header
-                    var recordHeader = new StoreTransactionRecordHeader
-                    {
+                    var recordHeader = new StoreTransactionRecordHeader {
                         T = SegmentStructureType.StoreTransactionRecordHeader,
                         Origin = SegmentTransactionOrigin.Repository,
                         Size = (uint)ghostSize
@@ -403,8 +395,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
                 int endOffset = currentOffset;
                 currentOffset += endSize;
 
-                var txEnd = new StoreTransactionEnd
-                {
+                var txEnd = new StoreTransactionEnd {
                     T = SegmentStructureType.StoreTransactionEnd,
                     RecCount = (uint)bodies.Count
                 };
@@ -429,23 +420,20 @@ namespace GhostBodyObject.Repository.Repository.Segment
                             {
                                 int end = currentOffset;
                                 s.FlushRange(start, end - start);
-                            }
-                            else
+                            } else
                             {
                                 int end = s.Capacity - s.FreeSpace;
                                 s.FlushRange(start, end - start);
                                 s.FlushRange(s.Capacity - 8, 8); // Flush Footer
                             }
                         }
-                    }
-                    else
+                    } else
                     {
                         startSeg.FlushRange(startOffset, currentOffset - startOffset);
                     }
                 }
                 return true;
-            }
-            finally
+            } finally
             {
                 if (checksum != null)
                     checksum.Dispose();
@@ -465,24 +453,21 @@ namespace GhostBodyObject.Repository.Repository.Segment
         {
             var currentSeg = _segmentHolders[currentSegmentId].Segment;
 
-            var jump = new StoreTransactionSegmentJump
-            {
+            var jump = new StoreTransactionSegmentJump {
                 T = SegmentStructureType.StoreTransactionSegmentJump,
             };
 
             int jumpOffset = currentSeg.Reserve(sizeof(StoreTransactionSegmentJump));
             currentSeg.WriteAt(jumpOffset, jump);
 
-            var sealEnd = new SealedSegmentEnd
-            {
+            var sealEnd = new SealedSegmentEnd {
                 T = SegmentStructureType.SealedSegmentEnd,
                 NextSegmentId = (uint)(currentSegmentId + 1)
             };
             int sealOffset = currentSeg.Reserve(sizeof(SealedSegmentEnd));
             currentSeg.WriteAt(sealOffset, sealEnd);
 
-            var footer = new SealedSegmentFooter
-            {
+            var footer = new SealedSegmentFooter {
                 T = SegmentStructureType.SealedSegmentFooter,
                 SegmentEndOffset = (uint)(sealOffset + sizeof(SealedSegmentEnd))
             };
@@ -493,8 +478,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             isSplit = true;
 
             var nextSeg = _segmentHolders[currentSegmentId].Segment;
-            var continuation = new StoreTransactionContinuation
-            {
+            var continuation = new StoreTransactionContinuation {
                 T = SegmentStructureType.StoreTransactionContinuation,
                 PreviousSegmentId = (uint)(currentSegmentId - 1)
             };

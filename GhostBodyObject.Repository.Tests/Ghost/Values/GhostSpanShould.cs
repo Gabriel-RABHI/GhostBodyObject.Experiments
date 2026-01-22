@@ -89,8 +89,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 _ = ghost[5];
                 Assert.Fail("Expected IndexOutOfRangeException");
-            }
-            catch (IndexOutOfRangeException)
+            } catch (IndexOutOfRangeException)
             {
                 // Expected
             }
@@ -104,8 +103,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 _ = ghost[-1];
                 Assert.Fail("Expected IndexOutOfRangeException");
-            }
-            catch (IndexOutOfRangeException)
+            } catch (IndexOutOfRangeException)
             {
                 // Expected
             }
@@ -170,10 +168,10 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             int[] original = { 1, 2, 3 };
             GhostSpan<int> ghost = original;
             int[] copy = ghost.ToArray();
-            
+
             // Modify original
             original[0] = 999;
-            
+
             // Copy should not be affected
             Assert.Equal(1, copy[0]);
         }
@@ -576,8 +574,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 _ = ghost.First;
                 Assert.Fail("Expected InvalidOperationException");
-            }
-            catch (InvalidOperationException)
+            } catch (InvalidOperationException)
             {
                 // Expected
             }
@@ -591,8 +588,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 _ = ghost.Last;
                 Assert.Fail("Expected InvalidOperationException");
-            }
-            catch (InvalidOperationException)
+            } catch (InvalidOperationException)
             {
                 // Expected
             }
@@ -938,11 +934,11 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
         [Fact]
         public void WorksWithCustomStruct()
         {
-            GhostSpan<Point2D> ghost = new Point2D[] 
-            { 
-                new(1, 2), 
-                new(3, 4), 
-                new(5, 6) 
+            GhostSpan<Point2D> ghost = new Point2D[]
+            {
+                new(1, 2),
+                new(3, 4),
+                new(5, 6)
             };
             Assert.Equal(3, ghost.Length);
             Assert.Equal(1, ghost[0].X);
@@ -983,7 +979,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
         public void EmptyArrayOperations()
         {
             GhostSpan<int> ghost = default;
-            
+
             // These should not throw
             Assert.Equal("[]", ghost.ToString());
             Assert.True(ghost.Equals(Array.Empty<int>()));
@@ -999,7 +995,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
         {
             var large = Enumerable.Range(0, 10000).ToArray();
             GhostSpan<int> ghost = large;
-            
+
             Assert.Equal(10000, ghost.Length);
             Assert.Equal(0, ghost.First);
             Assert.Equal(9999, ghost.Last);
@@ -1019,8 +1015,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 _ = ghost.AsWritableSpan();
                 Assert.Fail("Expected InvalidOperationException");
-            }
-            catch (InvalidOperationException)
+            } catch (InvalidOperationException)
             {
                 // Expected - source array-backed GhostSpan is read-only
             }
@@ -1034,8 +1029,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 ghost.Reverse();
                 Assert.Fail("Expected InvalidOperationException");
-            }
-            catch (InvalidOperationException)
+            } catch (InvalidOperationException)
             {
                 // Expected
             }
@@ -1049,8 +1043,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 ghost.Fill(0);
                 Assert.Fail("Expected InvalidOperationException");
-            }
-            catch (InvalidOperationException)
+            } catch (InvalidOperationException)
             {
                 // Expected
             }
@@ -1064,8 +1057,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 ghost.Sort();
                 Assert.Fail("Expected InvalidOperationException");
-            }
-            catch (InvalidOperationException)
+            } catch (InvalidOperationException)
             {
                 // Expected
             }

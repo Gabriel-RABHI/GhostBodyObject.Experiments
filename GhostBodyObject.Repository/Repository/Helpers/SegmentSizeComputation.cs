@@ -59,7 +59,6 @@ namespace GhostBodyObject.Repository.Repository.Helpers
         {
             if (SmallSegmentsMode)
             {
-                var r = 0;
                 switch (_storeMode)
                 {
                     case SegmentStoreMode.InMemoryVolatileRepository:
@@ -68,17 +67,14 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                         if (segmentCount < 64)
                             return 128 * KB;
                         return 512 * KB;
-                        break;
                     case SegmentStoreMode.InVirtualMemoryVolatileRepository:
                         if (segmentCount < 16)
                             return 128 * KB;
                         if (segmentCount < 64)
                             return 512 * KB;
                         return 2048 * KB;
-                        break;
                     case SegmentStoreMode.InMemoryVolatileLog:
                         return 128 * KB;
-                        break;
                     case SegmentStoreMode.PersistantRepository:
                     case SegmentStoreMode.PersistantLog:
                         if (segmentCount < 8)
@@ -88,13 +84,11 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                         if (segmentCount < 32)
                             return 2048 * KB;
                         return 8192 * KB;
-                        break;
                     default:
                         throw new InvalidOperationException("Unsupported Segment Store Mode.");
                 }
             } else
             {
-                var r = 0;
                 switch (_storeMode)
                 {
                     case SegmentStoreMode.InMemoryVolatileRepository:
@@ -103,17 +97,14 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                         if (segmentCount < 64)
                             return 32 * MB; // 32 * 24 = 768 MB
                         return 64 * MB;
-                        break;
                     case SegmentStoreMode.InVirtualMemoryVolatileRepository:
                         if (segmentCount < 16)
                             return 16 * MB; // 16 * 8 = 128 MB
                         if (segmentCount < 64)
                             return 64 * MB; // 32 * 24 = 768 MB
                         return 256 * MB;
-                        break;
                     case SegmentStoreMode.InMemoryVolatileLog:
                         return 32 * MB;
-                        break;
                     case SegmentStoreMode.PersistantRepository:
                     case SegmentStoreMode.PersistantLog:
                         if (segmentCount < 8)
@@ -123,12 +114,11 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                         if (segmentCount < 32)
                             return 256 * MB; // 256 * 16 = 8 GB (8.6 GB total)
                         return 1024 * MB;
-                        break;
                     default:
                         throw new InvalidOperationException("Unsupported Segment Store Mode.");
                 }
             }
-                
+
         }
     }
 }

@@ -1,24 +1,14 @@
-﻿using System.Runtime.InteropServices.JavaScript;
-using GhostBodyObject.HandWritten.BloggerApp.Entities.Post;
-using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
-using GhostBodyObject.HandWritten.Entities.Arrays;
+﻿using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.Repository.Body.Contracts;
-using GhostBodyObject.Repository.Ghost.Constants;
-using GhostBodyObject.Repository.Ghost.Structs;
-using GhostBodyObject.Repository.Repository;
 using GhostBodyObject.Repository.Repository.Contracts;
-using GhostBodyObject.Repository.Repository.Index;
-using GhostBodyObject.Repository.Repository.Segment;
-using GhostBodyObject.Repository.Repository.Structs;
 using GhostBodyObject.Repository.Repository.Transaction;
 using GhostBodyObject.Repository.Repository.Transaction.Collections;
-using GhostBodyObject.Repository.Repository.Transaction.Index;
 
 namespace GhostBodyObject.HandWritten.Blogger.Repository
 {
     public class BloggerTransaction : RepositoryTransactionBase, IModifiedBodyStream
     {
-        private BloggerRepository _repository;
+        private readonly BloggerRepository _repository;
         private bool _validated;
 
         public BloggerRepository Repository => _repository;

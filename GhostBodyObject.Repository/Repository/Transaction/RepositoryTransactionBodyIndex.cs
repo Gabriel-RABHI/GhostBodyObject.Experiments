@@ -29,23 +29,21 @@
  * --------------------------------------------------------------------------
  */
 
-using System.Collections;
-using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Contracts;
-using GhostBodyObject.Repository.Repository.Index;
 using GhostBodyObject.Repository.Repository.Segment;
 using GhostBodyObject.Repository.Repository.Transaction.Index;
+using System.Collections;
 
 namespace GhostBodyObject.Repository.Repository.Transaction
 {
     public class RepositoryTransactionBodyIndex : IModifiedBodyStream
     {
         private RepositoryTransactionBase _txn;
-        private object[] _maps;
-        private List<BodyBase> _mutations = new List<BodyBase>();
+        private readonly object[] _maps;
+        private readonly List<BodyBase> _mutations = new List<BodyBase>();
 
         public RepositoryTransactionBodyIndex(RepositoryTransactionBase txn, ushort maxTypeIdentifier)
         {
@@ -118,10 +116,10 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             private List<TBody>.Enumerator _insertedIdsEnumerator;
             private TBody _current;
             private int _state; // 0: GhostMap, 1: InsertedIds, 2: Finished
-            private bool _isReadOnly;
-            private bool _hasBodyMap;
-            private bool _isBodyMapEmpty;
-            private bool _useCursor;
+            private readonly bool _isReadOnly;
+            private readonly bool _hasBodyMap;
+            private readonly bool _isBodyMapEmpty;
+            private readonly bool _useCursor;
             private TBody _cursorBody;
             private GhostStatus _cursorStatus;
 
@@ -145,8 +143,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                 if (map != null)
                 {
                     _ghostEnumerator = map.GhostMap.GetDeduplicatedEnumerator(_txn.OpeningTxnId);
-                }
-                else
+                } else
                 {
                     _ghostEnumerator = default;
                     _state = _isReadOnly ? 2 : 1; // Skip GhostMap if no index
@@ -157,8 +154,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                             _hadInserted = _bodyMap.Mutations != null;
                             if (_hadInserted)
                                 _insertedIdsEnumerator = _bodyMap.Mutations.GetEnumerator();
-                        }
-                        else
+                        } else
                             _state = 2;
                     }
                 }
@@ -237,19 +233,16 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                                 {
                                     var bodyMap = _parent.GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
                                     bodyMap.Set(_current);
-                                }
-                                else
+                                } else
                                     _bodyMap.Set(_current);
-                            }
-                            else
+                            } else
                             {
                                 // In ReadOnly
                                 if (_bodyMap == null)
                                 {
                                     var bodyMap = _parent.GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
                                     bodyMap.Set(_current);
-                                }
-                                else
+                                } else
                                     _bodyMap.Set(_current);
                             }
                             return true;
@@ -272,8 +265,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
                             _hadInserted = currentBodyMap.Mutations != null;
                             if (_hadInserted)
                                 _insertedIdsEnumerator = currentBodyMap.Mutations.GetEnumerator();
-                        }
-                        else
+                        } else
                         {
                             _state = 2; // Nothing to iterate
                             return false;

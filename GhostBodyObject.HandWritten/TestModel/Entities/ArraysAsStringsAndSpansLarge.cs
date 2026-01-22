@@ -1,5 +1,4 @@
-﻿using GhostBodyObject.Common.Memory;
-using GhostBodyObject.Experiments.BabyBody;
+﻿using GhostBodyObject.Experiments.BabyBody;
 using GhostBodyObject.HandWritten.Entities.Repository;
 using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
@@ -20,8 +19,7 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
     {
         public const int ModelVersion = 1;
 
-        internal unsafe ArraysAsStringsAndSpansLarge_VectorTable* _vTable
-        {
+        internal unsafe ArraysAsStringsAndSpansLarge_VectorTable* _vTable {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (ArraysAsStringsAndSpansLarge_VectorTable*)_vTablePtr;
 
@@ -50,18 +48,15 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public unsafe DateTime OneDateTime
-        {
+        public unsafe DateTime OneDateTime {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 GuardLocalScope();
                 return _data.Get<DateTime>(_vTable->OneDateTime_FieldOffset);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 using (GuardWriteScope())
                 {
                     _vTable->OneDateTime_Setter(this, value);
@@ -69,18 +64,15 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public unsafe int OneInt
-        {
+        public unsafe int OneInt {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 GuardLocalScope();
                 return _data.Get<int>(_vTable->OneInt_FieldOffset);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 using (GuardWriteScope())
                 {
                     _vTable->OneInt_Setter(this, value);
@@ -88,11 +80,9 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public GhostSpan<Guid> Guids
-        {
+        public GhostSpan<Guid> Guids {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 unsafe
                 {
                     GuardLocalScope();
@@ -102,8 +92,7 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 unsafe
                 {
                     using (GuardWriteScope())
@@ -114,11 +103,9 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public GhostSpan<DateTime> DateTimes
-        {
+        public GhostSpan<DateTime> DateTimes {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 unsafe
                 {
                     GuardLocalScope();
@@ -128,8 +115,7 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 unsafe
                 {
                     using (GuardWriteScope())
@@ -140,11 +126,9 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public GhostStringUtf16 StringU16
-        {
+        public GhostStringUtf16 StringU16 {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 unsafe
                 {
                     GuardLocalScope();
@@ -154,8 +138,7 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 unsafe
                 {
                     using (GuardWriteScope())
@@ -166,11 +149,9 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
         }
 
-        public GhostStringUtf8 StringU8
-        {
+        public GhostStringUtf8 StringU8 {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 unsafe
                 {
                     GuardLocalScope();
@@ -180,8 +161,7 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 unsafe
                 {
                     using (GuardWriteScope())
@@ -274,29 +254,25 @@ namespace GhostBodyObject.HandWritten.Entities.Arrays
             h->Initialize((ushort)TargetVersion);
             h->Id = GhostId.NewId(GhostIdKind.Entity, (ushort)TypeIdentifier);
 
-            var emptyGuid = new ArrayMapLargeEntry()
-            {
+            var emptyGuid = new ArrayMapLargeEntry() {
                 ArrayLength = 0,
                 ValueSize = (byte)sizeof(Guid),
                 ArrayOffset = (uint)_vTable->Std.MinimalGhostSize
             };
 
-            var emptyDateTime = new ArrayMapLargeEntry()
-            {
+            var emptyDateTime = new ArrayMapLargeEntry() {
                 ArrayLength = 0,
                 ValueSize = (byte)sizeof(DateTime),
                 ArrayOffset = (uint)_vTable->Std.MinimalGhostSize
             };
 
-            var emptyStringU16 = new ArrayMapLargeEntry()
-            {
+            var emptyStringU16 = new ArrayMapLargeEntry() {
                 ArrayLength = 0,
                 ValueSize = sizeof(char),
                 ArrayOffset = (uint)_vTable->Std.MinimalGhostSize
             };
 
-            var emptyStringU8 = new ArrayMapLargeEntry()
-            {
+            var emptyStringU8 = new ArrayMapLargeEntry() {
                 ArrayLength = 0,
                 ValueSize = sizeof(byte),
                 ArrayOffset = (uint)_vTable->Std.MinimalGhostSize

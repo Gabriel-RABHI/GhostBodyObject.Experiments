@@ -30,9 +30,6 @@
  */
 
 using GhostBodyObject.Repository.Model.Schema.Constants;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace GhostBodyObject.Repository.Model.Schema
 {

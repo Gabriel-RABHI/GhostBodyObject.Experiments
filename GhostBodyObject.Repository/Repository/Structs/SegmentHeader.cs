@@ -57,8 +57,7 @@ namespace GhostBodyObject.Repository.Repository.Structs
 
         public static SegmentHeader Create(SegmentStoreMode mode, int segmentId, int capacity)
         {
-            return new SegmentHeader
-            {
+            return new SegmentHeader {
                 T = SegmentStructureType.SegmentHeader,
                 Mode = mode,
                 Empty = 0,

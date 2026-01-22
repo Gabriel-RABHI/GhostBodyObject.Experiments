@@ -29,14 +29,12 @@
  * --------------------------------------------------------------------------
  */
 
-using GhostBodyObject.Common.Memory;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;
 using System.IO.MemoryMappedFiles;
-using System.Security.Cryptography;
 
 namespace GhostBodyObject.Repository.Repository.Segment
 {
@@ -45,19 +43,19 @@ namespace GhostBodyObject.Repository.Repository.Segment
         private static int _aliveCount = 0;
         private static int _flushCount = 0;
 
-        private byte[] _inMemoryData;
+        private readonly byte[] _inMemoryData;
         private int _offset;
-        private int _capacity;
-        private SegmentHeader* _header;
-        private int _index;
-        
+        private readonly int _capacity;
+        private readonly SegmentHeader* _header;
+        private readonly int _index;
+
         // MMF Fields
-        private MemoryMappedFile _mmf;
-        private MemoryMappedViewAccessor _readAccessor;
-        private MemoryMappedViewAccessor _writeAccessor;
-        private byte* _readPtr;
-        private byte* _writePtr;
-        private string _filePath;
+        private readonly MemoryMappedFile _mmf;
+        private readonly MemoryMappedViewAccessor _readAccessor;
+        private readonly MemoryMappedViewAccessor _writeAccessor;
+        private readonly byte* _readPtr;
+        private readonly byte* _writePtr;
+        private readonly string _filePath;
 
         public SegmentImplementationType SegmentType { get; private set; }
 
@@ -95,7 +93,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
             _index = index;
             Deletable = deletable;
             _capacity = capacity;
-            
+
             switch (SegmentType)
             {
                 case SegmentImplementationType.LOHPinnedMemory:
@@ -115,24 +113,24 @@ namespace GhostBodyObject.Repository.Repository.Segment
                             throw new ArgumentNullException(nameof(prefix));
                         if (name == null)
                             throw new ArgumentNullException(nameof(name));
-                        
+
                         _filePath = Path.Combine(directoryPath, $"{prefix}_{name}_{index:D7}.{(Deletable ? "txn.seg" : "log.seg")}");
-                        
+
                         _mmf = MemoryMappedFile.CreateFromFile(_filePath, FileMode.OpenOrCreate, null, capacity, MemoryMappedFileAccess.ReadWrite);
-                        
+
                         // Create read-only view
                         _readAccessor = _mmf.CreateViewAccessor(0, capacity, MemoryMappedFileAccess.Read);
                         _readAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref _readPtr);
-                        
+
                         // Create write view
                         _writeAccessor = _mmf.CreateViewAccessor(0, capacity, MemoryMappedFileAccess.Write);
                         _writeAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref _writePtr);
-                        
+
                         _header = (SegmentHeader*)_writePtr;
                     }
                     break;
             }
-            
+
             // Only initialize header if it's a new segment (offset 0)
             // Assuming this constructor is only called for new segments.
             // If we load existing segments, we might need logic to read the header first.
@@ -145,7 +143,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 
         public void Dispose()
         {
-             switch (SegmentType)
+            switch (SegmentType)
             {
                 case SegmentImplementationType.LOHPinnedMemory:
                     // GC handles array
@@ -158,11 +156,11 @@ namespace GhostBodyObject.Repository.Repository.Segment
                     }
                     if (_writeAccessor != null)
                     {
-                         _writeAccessor.SafeMemoryMappedViewHandle.ReleasePointer();
+                        _writeAccessor.SafeMemoryMappedViewHandle.ReleasePointer();
                         _writeAccessor.Dispose();
                     }
                     _mmf?.Dispose();
-                    
+
                     if (Deletable && _filePath != null && File.Exists(_filePath))
                     {
                         try { File.Delete(_filePath); } catch { }
@@ -184,18 +182,17 @@ namespace GhostBodyObject.Repository.Repository.Segment
         {
             if (_offset + size > _capacity)
                 throw new OverflowException();
-            
+
             // For LOH memory, we can use the array wrapper. For MMF, we need a PinnedMemory that works with pointers.
             // PinnedMemory ctor taking (byte[], offset, size) won't work for MMF if _inMemoryData is null.
             // Check PinnedMemory implementation... it seems to rely on an object owner or a pointer.
             // The existing code: new PinnedMemory<byte>(_inMemoryData, _offset, size)
-            
+
             PinnedMemory<byte> memory;
             if (SegmentType == SegmentImplementationType.LOHPinnedMemory)
             {
                 memory = new PinnedMemory<byte>(_inMemoryData, _offset, size);
-            }
-            else
+            } else
             {
                 // Assuming PinnedMemory has a constructor (object owner, void* ptr, int length)
                 // We use the write pointer for allocation as we intend to write to it?
@@ -205,11 +202,11 @@ namespace GhostBodyObject.Repository.Repository.Segment
                 // Using 'this' as owner to prevent GC? MMF doesn't need GC pinning.
                 memory = new PinnedMemory<byte>(this, _writePtr + _offset, size);
             }
-            
+
             _offset += size;
             return memory;
         }
-        
+
         /// <summary>
         /// Reserves space in the segment without writing data. Returns the offset where the reservation starts.
         /// </summary>
@@ -227,21 +224,21 @@ namespace GhostBodyObject.Repository.Repository.Segment
             var size = data.Length;
             if (_offset + size + 4 > _capacity)
                 throw new OverflowException();
-            
+
             // Write size
             *(int*)(_writePtr + _offset) = data.Length;
             _offset += 4;
-            
+
             int offset = _offset;
-            
+
             // Copy data
             Buffer.MemoryCopy(data.Ptr, _writePtr + _offset, size, size);
-            
+
             // Update header in place
             var h = (GhostHeader*)(_writePtr + _offset);
             h->TxnId = txnId;
             h->Status = GhostStatus.Mapped;
-            
+
             _offset += size;
             return offset;
         }
@@ -251,9 +248,9 @@ namespace GhostBodyObject.Repository.Repository.Segment
             int size = sizeof(T);
             if (_offset + size > _capacity)
                 throw new OverflowException();
-            
+
             *(T*)(_writePtr + _offset) = value;
-            
+
             int currentOffset = _offset;
             _offset += size;
             return currentOffset;
@@ -264,33 +261,33 @@ namespace GhostBodyObject.Repository.Repository.Segment
             int size = sizeof(T);
             if (_offset + size > _capacity)
                 throw new OverflowException();
-            
+
             T* ptr = (T*)(_writePtr + _offset);
             *ptr = value;
             r = ptr;
-            
+
             int currentOffset = _offset;
             _offset += size;
             return currentOffset;
         }
-        
+
         public void WriteAt<T>(int offset, T value) where T : unmanaged
         {
             if (offset + sizeof(T) > _capacity)
                 throw new ArgumentOutOfRangeException(nameof(offset));
-                
+
             *(T*)(_writePtr + offset) = value;
         }
-        
+
         public byte* WriteBytesAt(int offset, byte* source, int length)
         {
-             if (offset + length > _capacity)
+            if (offset + length > _capacity)
                 throw new ArgumentOutOfRangeException(nameof(offset));
-             
-             Buffer.MemoryCopy(source, _writePtr + offset, length, length);
-             return _writePtr + offset;
+
+            Buffer.MemoryCopy(source, _writePtr + offset, length, length);
+            return _writePtr + offset;
         }
-        
+
         public void FlushRange(int offset, int length)
         {
             if (SegmentType == SegmentImplementationType.ProtectedMemoryMappedFile)

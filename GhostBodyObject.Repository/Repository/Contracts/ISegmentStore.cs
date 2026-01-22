@@ -29,7 +29,6 @@
  * --------------------------------------------------------------------------
  */
 
-using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;

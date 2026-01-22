@@ -1,12 +1,10 @@
-﻿using GhostBodyObject.Common.Memory;
-using GhostBodyObject.Experiments.BabyBody;
+﻿using GhostBodyObject.Experiments.BabyBody;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Body.Vectors;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
-using GhostBodyObject.Repository.Ghost.Values;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -111,8 +109,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
             h->Initialize((ushort)TargetVersion);
             h->Id = GhostId.NewId(GhostIdKind.Entity, (ushort)TypeIdentifier);
 
-            var emptyString = new ArrayMapSmallEntry()
-            {
+            var emptyString = new ArrayMapSmallEntry() {
                 ArrayLength = 0,
                 ValueSize = sizeof(char),
                 ArrayOffset = (ushort)_vTable->Std.MinimalGhostSize
@@ -292,7 +289,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 
         public static unsafe void Hobbies_Setter_MappedMutable(BloggerUser body, GhostStringUtf16 src)
             => BodyBase.SwapAnyArray(body.ToStandalone(), MemoryMarshal.AsBytes(src.AsSpan()), body._vTable->Hobbies_MapEntryIndex);
-        
+
         #endregion
 
         #region MAPPED MUTABLE

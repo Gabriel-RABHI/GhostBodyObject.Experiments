@@ -49,8 +49,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                 {
                     ThrowLastWin32Error();
                 }
-            }
-            else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            } else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 // Linux msync requires the address to be aligned to the page size.
                 // We must calculate the start of the page containing our data.
@@ -73,8 +72,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                 {
                     ThrowLastLibCError();
                 }
-            }
-            else
+            } else
             {
                 throw new PlatformNotSupportedException("Only Windows and Linux/MacOS are supported for granular flushing.");
             }

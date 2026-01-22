@@ -30,7 +30,6 @@
  */
 
 using GhostBodyObject.Repository.Repository.Constants;
-using System.Drawing;
 using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Helpers

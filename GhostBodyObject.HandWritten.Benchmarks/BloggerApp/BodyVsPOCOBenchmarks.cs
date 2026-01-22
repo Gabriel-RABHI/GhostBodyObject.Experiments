@@ -2,10 +2,6 @@
 using GhostBodyObject.HandWritten.Blogger;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
-using System;
-using System.Collections.Generic;
-using System.Runtime;
-using System.Text;
 
 /*
 
@@ -65,8 +61,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                     user.Active = true;
                     users.Add(new BloggerUser());
                 }
-                r1 = RunMonitoredAction(() =>
-                {
+                r1 = RunMonitoredAction(() => {
                     //var user = users[0];
                     for (int j = 0; j < 10; j++)
                         for (int i = 0; i < COUNT; i++)
@@ -95,8 +90,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             var pocousers = new List<UserPOCO>();
             for (int i = 0; i < COUNT; i++)
                 pocousers.Add(new UserPOCO());
-            var r2 = RunMonitoredAction(() =>
-            {
+            var r2 = RunMonitoredAction(() => {
                 //var user = pocousers[0];
                 for (int j = 0; j < 10; j++)
                     for (int i = 0; i < COUNT; i++)
@@ -139,13 +133,12 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             using (BloggerContext.NewWriteContext(repository))
             {
                 var array = new BloggerUser[32];
-                r1 = RunMonitoredAction(() =>
-                {
+                r1 = RunMonitoredAction(() => {
                     for (int j = 0; j < 100; j++)
                         for (int i = 0; i < COUNT; i++)
                         {
                             var user = new BloggerUser();
-                            array[i% 32] = user;
+                            array[i % 32] = user;
                             user.Delete();
                         }
                 })
@@ -158,8 +151,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             using (BloggerContext.NewWriteContext(repository))
             {
                 var array = new BloggerUser[32];
-                r2 = RunMonitoredAction(() =>
-                {
+                r2 = RunMonitoredAction(() => {
                     for (int j = 0; j < 100; j++)
                         for (int i = 0; i < COUNT; i++)
                         {
@@ -180,8 +172,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                 var userSrc = new BloggerUser();
                 var ghost = userSrc.Ghost;
                 var array = new BloggerUser[32];
-                r3 = RunMonitoredAction(() =>
-                {
+                r3 = RunMonitoredAction(() => {
                     for (int j = 0; j < 100; j++)
                         for (int i = 0; i < COUNT; i++)
                         {
@@ -197,8 +188,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             }
 
             var arrayPoco = new UserPOCO[32];
-            var r4 = RunMonitoredAction(() =>
-            {
+            var r4 = RunMonitoredAction(() => {
                 for (int j = 0; j < 100; j++)
                     for (int i = 0; i < COUNT; i++)
                     {
@@ -276,7 +266,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
 
             pocousers.Clear();
 
-            var r4 =RunGCCollect("Release retainned UserPOCO.");
+            var r4 = RunGCCollect("Release retainned UserPOCO.");
 
             PrintComparison("Body / POCO", "Retainned Garbage collection delay", new BenchmarkResult[] { r1, r3 });
             PrintComparison("Body / POCO", "Garbage collection delay", new BenchmarkResult[] { r2, r4 });
@@ -284,8 +274,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
 
         public BenchmarkResult RunGCCollect(string prompt)
         {
-            return RunMonitoredAction(() =>
-            {
+            return RunMonitoredAction(() => {
                 // First pass: collect all generations
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
 

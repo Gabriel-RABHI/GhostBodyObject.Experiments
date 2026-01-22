@@ -44,10 +44,8 @@ namespace GhostBodyObject.Repository.Repository.Helpers
         private long _topTxnId = 0;
         private readonly SortedList<long, int> _views = new SortedList<long, int>();
 
-        public long BottomTransactionId
-        {
-            get
-            {
+        public long BottomTransactionId {
+            get {
                 lock (_lock)
                 {
                     if (_views.Count == 0)
@@ -67,7 +65,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
         {
             lock (_lock)
                 return ++_topTxnId;
-        } 
+        }
 
         /// <summary>
         /// Increment the view counter for the specific transaction id.
@@ -81,8 +79,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                 if (_views.TryGetValue(txnId, out int count))
                 {
                     _views[txnId] = count + 1;
-                }
-                else
+                } else
                 {
                     _views.Add(txnId, 1);
                 }
@@ -105,8 +102,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                     {
                         _views.Remove(txnId);
                         return true;
-                    }
-                    else
+                    } else
                     {
                         _views[txnId] = count - 1;
                         return false;

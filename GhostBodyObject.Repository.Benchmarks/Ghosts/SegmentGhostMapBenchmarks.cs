@@ -3,14 +3,13 @@ using GhostBodyObject.Common.Utilities;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Contracts;
+using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;
 using Spectre.Console;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-using SmallMapType = SegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.SmallPinnedSegmentStore>;
 using LargeMapType = SegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.LargePinnedSegmentStore>;
-using GhostBodyObject.Repository.Repository.Helpers;
+using SmallMapType = SegmentGhostMap<GhostBodyObject.Repository.Benchmarks.Ghosts.SegmentGhostMapBenchmarks.SmallPinnedSegmentStore>;
 
 namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 {
@@ -67,9 +66,9 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         // ---------------------------------------------------------
         public class SmallPinnedSegmentStore : ISegmentStore, IDisposable
         {
-            private SmallGhostBlock[] _blocks;
+            private readonly SmallGhostBlock[] _blocks;
             private GCHandle _handle;
-            private SmallGhostBlock* _basePointer;
+            private readonly SmallGhostBlock* _basePointer;
             private int _usageCount = 0;
 
             public SmallPinnedSegmentStore(int capacity)
@@ -87,8 +86,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 
             public GhostHeader* GetHeaderPointer(int index) => &(_basePointer + index)->Header;
 
-            public SegmentReference CreateReference(int index) => new SegmentReference
-            {
+            public SegmentReference CreateReference(int index) => new SegmentReference {
                 SegmentId = 0,
                 Offset = (uint)(index * SMALL_BLOCK_SIZE)
             };
@@ -132,9 +130,9 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
         // ---------------------------------------------------------
         public class LargePinnedSegmentStore : ISegmentStore, IDisposable
         {
-            private LargeGhostBlock[] _blocks;
+            private readonly LargeGhostBlock[] _blocks;
             private GCHandle _handle;
-            private LargeGhostBlock* _basePointer;
+            private readonly LargeGhostBlock* _basePointer;
             private int _usageCount = 0;
 
             public LargePinnedSegmentStore(int capacity)
@@ -152,8 +150,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 
             public GhostHeader* GetHeaderPointer(int index) => &(_basePointer + index)->Header;
 
-            public SegmentReference CreateReference(int index) => new SegmentReference
-            {
+            public SegmentReference CreateReference(int index) => new SegmentReference {
                 SegmentId = 0,
                 Offset = (uint)(index * LARGE_BLOCK_SIZE)
             };
@@ -161,7 +158,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public GhostHeader* ToGhostHeaderPointer(SegmentReference reference)
                 => (GhostHeader*)((byte*)_basePointer + reference.Offset);
-                
+
             public SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId)
             {
                 throw new NotImplementedException();
@@ -220,8 +217,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     headerPtr->Id = id;
                     headerPtr->TxnId = 100 + v;
 
-                    entries[entryIndex] = new PreparedEntry
-                    {
+                    entries[entryIndex] = new PreparedEntry {
                         Reference = store.CreateReference(entryIndex),
                         HeaderPointer = headerPtr
                     };
@@ -230,8 +226,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             }
 
             // Measure only the Set() calls
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 for (int i = 0; i < entryIndex; i++)
                 {
                     map.Set(entries[i].Reference, entries[i].HeaderPointer);
@@ -258,15 +253,14 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             for (int e = 0; e < ENTITY_COUNT; e++)
             {
                 var id = new GhostId(GhostIdKind.Entity, 50, (ulong)e, XorShift64.Next());
-                
+
                 for (int v = 0; v < (rnd.Next(100) < MULTI_VERSIONS_PERCENT ? VERSIONS_PER_ENTITY : 1); v++)
                 {
                     var headerPtr = store.GetHeaderPointer(entryIndex);
                     headerPtr->Id = id;
                     headerPtr->TxnId = 100 + v;
 
-                    entries[entryIndex] = new PreparedEntry
-                    {
+                    entries[entryIndex] = new PreparedEntry {
                         Reference = store.CreateReference(entryIndex),
                         HeaderPointer = headerPtr
                     };
@@ -275,8 +269,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             }
 
             // Measure only the Set() calls
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 for (int i = 0; i < entryIndex; i++)
                 {
                     map.Set(entries[i].Reference, entries[i].HeaderPointer);
@@ -321,8 +314,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             long maxTxnId = 200;
 
             // Measure only the Get() calls
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 for (int i = 0; i < ENTITY_COUNT; i++)
                 {
                     map.Get(ids[i], maxTxnId, out _);
@@ -365,8 +357,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             long maxTxnId = 200;
 
             // Measure only the Get() calls
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 for (int i = 0; i < ENTITY_COUNT; i++)
                 {
                     map.Get(ids[i], maxTxnId, out _);
@@ -400,8 +391,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     headerPtr->Id = id;
                     headerPtr->TxnId = (e * 100) + v;
 
-                    entries[entryIndex] = new PreparedEntry
-                    {
+                    entries[entryIndex] = new PreparedEntry {
                         Reference = store.CreateReference(entryIndex),
                         HeaderPointer = headerPtr
                     };
@@ -412,8 +402,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
 
             // Measure only the Set() calls
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 for (int i = 0; i < totalEntries; i++)
                 {
                     map.Set(entries[i].Reference, entries[i].HeaderPointer);
@@ -447,8 +436,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                     headerPtr->Id = id;
                     headerPtr->TxnId = (e * 100) + v;
 
-                    entries[entryIndex] = new PreparedEntry
-                    {
+                    entries[entryIndex] = new PreparedEntry {
                         Reference = store.CreateReference(entryIndex),
                         HeaderPointer = headerPtr
                     };
@@ -459,8 +447,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             AnsiConsole.WriteLine($"        -> Map Capacity = {map.Capacity:N0} for {((map.Capacity * 8) / 1024 / 1024):N0} Mo. Store = {store.TotalMemoryBytes / 1024 / 1024:N0} Mo.");
 
             // Measure only the Set() calls
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 for (int i = 0; i < totalEntries; i++)
                 {
                     map.Set(entries[i].Reference, entries[i].HeaderPointer);
@@ -501,8 +488,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 
             long removeTxnId = 200;
 
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 for (int i = 0; i < ENTITY_COUNT; i++)
                 {
                     map.Remove(ids[i], removeTxnId);
@@ -545,8 +531,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
 
             long removeTxnId = 200;
 
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 for (int i = 0; i < ENTITY_COUNT; i++)
                 {
                     map.Remove(ids[i], removeTxnId);
@@ -571,7 +556,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             for (int e = 0; e < ENTITY_COUNT; e++)
             {
                 var id = new GhostId(GhostIdKind.Entity, 50, (ulong)e, XorShift64.Next());
-                
+
                 for (int v = 0; v < (rnd.Next(100) < MULTI_VERSIONS_PERCENT ? VERSIONS_PER_ENTITY : 1); v++)
                 {
                     var headerPtr = store.GetHeaderPointer(entryIndex);
@@ -587,8 +572,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             int enumCount = 0;
 
             // Measure enumeration
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 var enumerator = map.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
@@ -612,7 +596,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             for (int e = 0; e < ENTITY_COUNT; e++)
             {
                 var id = new GhostId(GhostIdKind.Entity, 50, (ulong)e, XorShift64.Next());
-                
+
                 for (int v = 0; v < (rnd.Next(100) < MULTI_VERSIONS_PERCENT ? VERSIONS_PER_ENTITY : 1); v++)
                 {
                     var headerPtr = store.GetHeaderPointer(entryIndex);
@@ -628,8 +612,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
             int enumCount = 0;
 
             // Measure enumeration
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 var enumerator = map.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
@@ -679,8 +662,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 int enumCount = 0;
 
                 // Measure deduplicated enumeration
-                RunParallelAction(thCount, (th) =>
-                {
+                RunParallelAction(thCount, (th) => {
                     var enumerator = map.GetDeduplicatedEnumerator(105);
                     while (enumerator.MoveNext())
                     {
@@ -730,8 +712,7 @@ namespace GhostBodyObject.Repository.Benchmarks.Ghosts
                 int enumCount = 0;
 
                 // Measure deduplicated enumeration
-                RunParallelAction(thCount, (th) =>
-                {
+                RunParallelAction(thCount, (th) => {
                     var enumerator = map.GetDeduplicatedEnumerator(105);
                     while (enumerator.MoveNext())
                     {

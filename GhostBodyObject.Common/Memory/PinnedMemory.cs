@@ -29,7 +29,6 @@
  * --------------------------------------------------------------------------
  */
 
-using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -141,11 +140,9 @@ public readonly unsafe struct PinnedMemory<T> : IEquatable<PinnedMemory<T>> wher
     /// returned reference allows direct modification of the underlying element.</remarks>
     /// <param name="index">The zero-based index of the element to retrieve. Must be within the bounds of the collection.</param>
     /// <returns>A reference to the element at the specified index.</returns>
-    public ref T this[int index]
-    {
+    public ref T this[int index] {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
+        get {
             // Optional: Add bounds checking via Debug.Assert or if block
             return ref Unsafe.AsRef<T>(_ptr + index);
         }
@@ -249,8 +246,7 @@ public readonly unsafe struct PinnedMemory<T> : IEquatable<PinnedMemory<T>> wher
     /// </summary>
     /// <remarks>The returned span provides direct access to the memory buffer. Modifying the span will affect
     /// the underlying data. The span is valid only as long as the parent object remains valid and unmodified.</remarks>
-    public Span<T> Span
-    {
+    public Span<T> Span {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => new Span<T>(_ptr, _length);
     }

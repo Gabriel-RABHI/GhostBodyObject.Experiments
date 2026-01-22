@@ -18,7 +18,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
         {
             // Determine thread counts based on processor count (powers of 2)
             var threadCounts = GetThreadCounts();
-            
+
             foreach (var blockSize in BlockSizes)
             {
                 WriteComment($"Block Size: {blockSize} bytes - {AllocationsPerThread:N0} allocations per thread");
@@ -29,8 +29,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                     long totalOps = (long)AllocationsPerThread * threadCount;
 
                     // TransientGhostMemoryAllocator
-                    var ghostResult = RunParallelAction(threadCount, _ =>
-                    {
+                    var ghostResult = RunParallelAction(threadCount, _ => {
                         for (int i = 0; i < AllocationsPerThread; i++)
                         {
                             var mem = TransientGhostMemoryAllocator.Allocate(blockSize);
@@ -44,8 +43,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                     results.Add(ghostResult);
 
                     // Native Memory (NativeMemory.Alloc/Free)
-                    var nativeResult = RunParallelAction(threadCount, _ =>
-                    {
+                    var nativeResult = RunParallelAction(threadCount, _ => {
                         for (int i = 0; i < AllocationsPerThread; i++)
                         {
                             unsafe
@@ -61,8 +59,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                     results.Add(nativeResult);
 
                     // .NET byte[] allocator
-                    var dotnetResult = RunParallelAction(threadCount, _ =>
-                    {
+                    var dotnetResult = RunParallelAction(threadCount, _ => {
                         for (int i = 0; i < AllocationsPerThread; i++)
                         {
                             var arr = new byte[blockSize];
@@ -98,8 +95,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 long totalOps = (long)AllocationsPerThread * threadCount;
 
                 // TransientGhostMemoryAllocator
-                var ghostResult = RunParallelAction(threadCount, _ =>
-                {
+                var ghostResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < AllocationsPerThread; i++)
                     {
                         var mem = TransientGhostMemoryAllocator.Allocate(blockSize);
@@ -110,13 +106,12 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 results.Add(ghostResult);
 
                 // Native Memory
-                var nativeResult = RunParallelAction(threadCount, _ =>
-                {
+                var nativeResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < AllocationsPerThread; i++)
                     {
                         unsafe
                         {
-                            var ptr = NativeMemory.Alloc((nuint)blockSize);
+                            var ptr = NativeMemory.Alloc(blockSize);
                             ((byte*)ptr)[0] = (byte)(i & 0xFF);
                             NativeMemory.Free(ptr);
                         }
@@ -126,8 +121,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 results.Add(nativeResult);
 
                 // .NET byte[]
-                var dotnetResult = RunParallelAction(threadCount, _ =>
-                {
+                var dotnetResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < AllocationsPerThread; i++)
                     {
                         var arr = new byte[blockSize];
@@ -161,8 +155,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 long totalOps = (long)resizeIterations * threadCount;
 
                 // TransientGhostMemoryAllocator with resize
-                var ghostResult = RunParallelAction(threadCount, _ =>
-                {
+                var ghostResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < resizeIterations; i++)
                     {
                         var mem = TransientGhostMemoryAllocator.Allocate(100);
@@ -176,8 +169,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 results.Add(ghostResult);
 
                 // Native Memory with realloc pattern
-                var nativeResult = RunParallelAction(threadCount, _ =>
-                {
+                var nativeResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < resizeIterations; i++)
                     {
                         unsafe
@@ -195,8 +187,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 results.Add(nativeResult);
 
                 // .NET with Array.Resize pattern
-                var dotnetResult = RunParallelAction(threadCount, _ =>
-                {
+                var dotnetResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < resizeIterations; i++)
                     {
                         var arr = new byte[100];
@@ -223,12 +214,12 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
         {
             int maxThreads = Environment.ProcessorCount;
             var counts = new List<int>();
-            
+
             for (int t = 1; t <= maxThreads; t *= 2)
             {
                 counts.Add(t);
             }
-            
+
             // Ensure we include the max processor count if it's not already included
             if (counts.Count > 0 && counts[^1] != maxThreads && maxThreads > counts[^1])
             {
@@ -236,14 +227,14 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 int highestPow2 = 1;
                 while (highestPow2 * 2 <= maxThreads)
                     highestPow2 *= 2;
-                
+
                 if (!counts.Contains(highestPow2))
                     counts.Add(highestPow2);
             }
-            
+
             return [.. counts];
         }
     }
 
-    
+
 }

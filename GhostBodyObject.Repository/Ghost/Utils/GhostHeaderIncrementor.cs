@@ -55,7 +55,7 @@ namespace GhostBodyObject.Experiments.BabyBody
 
         public int Padd(int padding)
         {
-            if(padding != 2 && padding != 4 && padding != 8 && padding != 16)
+            if (padding != 2 && padding != 4 && padding != 8 && padding != 16)
                 throw new System.ArgumentException("Padding must be 2, 4, 8, or 16 bytes.");
             _redo:
             if ((_offset % padding) != 0)

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
 
 namespace GhostBodyObject.Repository.Tests.Ghost.Values
 {
@@ -89,8 +88,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 GhostStringUtf8 ghost = "Hello";
                 _ = ghost[5];
-            }
-            catch (IndexOutOfRangeException)
+            } catch (IndexOutOfRangeException)
             {
                 exceptionThrown = true;
             }
@@ -105,8 +103,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 GhostStringUtf8 ghost = "Hello";
                 _ = ghost[-1];
-            }
-            catch (IndexOutOfRangeException)
+            } catch (IndexOutOfRangeException)
             {
                 exceptionThrown = true;
             }

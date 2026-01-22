@@ -35,7 +35,6 @@ using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Index;
 using GhostBodyObject.Repository.Repository.Segment;
-using GhostBodyObject.Repository.Repository.Transaction;
 
 namespace GhostBodyObject.Repository.Repository
 {
@@ -56,7 +55,7 @@ namespace GhostBodyObject.Repository.Repository
         /// <summary>
         /// Represents the range of transaction IDs associated with the current repository transaction.
         /// </summary>
-        private GhostRepositoryTransactionIdRange _transactionRange = new GhostRepositoryTransactionIdRange();
+        private readonly GhostRepositoryTransactionIdRange _transactionRange = new GhostRepositoryTransactionIdRange();
 
         #region PROPERTIES
         public long BottomTransactionId => _transactionRange.BottomTransactionId;
@@ -80,9 +79,8 @@ namespace GhostBodyObject.Repository.Repository
         public void CommitTransaction<T>(T commiter, bool twoStage = false)
             where T : IModifiedBodyStream
         {
-                var bottomTxnId = _transactionRange.BottomTransactionId;
-            _store.WriteTransaction(commiter, _transactionRange, (id, r) =>
-            {
+            var bottomTxnId = _transactionRange.BottomTransactionId;
+            _store.WriteTransaction(commiter, _transactionRange, (id, r) => {
                 _ghostIndex.AddGhost(bottomTxnId, r);
             });
         }

@@ -30,7 +30,6 @@
  */
 
 using GhostBodyObject.Repository.Body.Contracts;
-using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Segment;
 
 namespace GhostBodyObject.Repository.Repository.Transaction
@@ -39,8 +38,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction
     {
         private readonly GhostRepositoryBase _repository;
         private readonly bool _isReadOnly;
-        private long _openingTxnId;
-        private MemorySegmentStoreHolders _holders;
+        private readonly long _openingTxnId;
+        private readonly MemorySegmentStoreHolders _holders;
         protected RepositoryTransactionBodyIndex _bodyIndex;
         private bool _closed;
 

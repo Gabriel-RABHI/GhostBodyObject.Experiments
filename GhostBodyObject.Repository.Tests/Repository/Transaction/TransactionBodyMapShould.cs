@@ -1,12 +1,9 @@
-﻿using GhostBodyObject.Common.Utilities;
-using GhostBodyObject.HandWritten.Blogger;
+﻿using GhostBodyObject.HandWritten.Blogger;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Transaction.Index;
-using System;
-using System.Collections.Generic;
 
 namespace GhostBodyObject.Repository.Tests.Repository.Transaction
 {
@@ -207,8 +204,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                     if (i % 2 == 0)
                     {
                         Assert.False(exists);
-                    }
-                    else
+                    } else
                     {
                         Assert.True(exists);
                         Assert.Same(users[i], retrieved);
@@ -461,8 +457,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Transaction
                     if (Array.IndexOf(removeIndices, i) >= 0)
                     {
                         Assert.False(exists);
-                    }
-                    else
+                    } else
                     {
                         Assert.True(exists, $"Entry at index {i} should exist");
                         Assert.Same(users[i], retrieved);

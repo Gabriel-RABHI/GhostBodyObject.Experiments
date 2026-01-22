@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
+﻿using System.Reflection;
 
 namespace GhostBodyObject.Repository.Tests.Helpers
 {
     public class TempDirectoryHelper : IDisposable
     {
-        private string _directoryPath;
+        private readonly string _directoryPath;
 
         public string DirectoryPath => _directoryPath;
 
@@ -18,8 +15,7 @@ namespace GhostBodyObject.Repository.Tests.Helpers
                 _directoryPath = GetTemporaryDirectory();
                 Console.WriteLine("Temp. directory : " + _directoryPath);
                 return;
-            }
-            else
+            } else
             {
                 string assemblyLocation = Assembly.GetExecutingAssembly().Location;
                 string baseDirectory = Path.GetDirectoryName(assemblyLocation);

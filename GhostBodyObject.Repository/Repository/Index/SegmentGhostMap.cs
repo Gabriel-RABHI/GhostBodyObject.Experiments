@@ -316,8 +316,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                             _count++;
                             _tombstoneCount--;
                             _store.IncrementSegmentHolderUsage(r);
-                        }
-                        else
+                        } else
                         {
                             entries[index] = r;
                             randomParts[index] = newRandomPart;
@@ -342,7 +341,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 // 4. GhostId Match?
                 else if (currentRandomPart == newRandomPart)
                 {
-                    var existingHeader = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    var existingHeader = _store.ToGhostHeaderPointer(current);
                     if (existingHeader != null && existingHeader->Id == newId)
                     {
                         long currentTxnId = existingHeader->TxnId;
@@ -365,8 +364,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                                 // First candidate found.
                                 bestOldSlotIndex = index;
                                 bestOldTxnId = currentTxnId;
-                            }
-                            else
+                            } else
                             {
                                 // Compare with current best.
                                 int garbageIndex;
@@ -378,8 +376,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                                     // Update best to current
                                     bestOldSlotIndex = index;
                                     bestOldTxnId = currentTxnId;
-                                }
-                                else
+                                } else
                                 {
                                     // Previous best is better (or equal). Current is garbage.
                                     garbageIndex = index;
@@ -396,8 +393,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                                     _store.IncrementSegmentHolderUsage(r);
                                     insertionPending = false;
                                     // Count unchanged (1 replace 1)
-                                }
-                                else
+                                } else
                                 {
                                     // Mark as tombstone
                                     _store.DecrementSegmentHolderUsage(garbageRef);
@@ -414,12 +410,12 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 index = (index + 1) & mask;
             }
         }
-        #if !NATIVE_LOCK
+#if !NATIVE_LOCK
         finally
         {
             _lock.Exit();
         }
-        #endif
+#endif
     }
 
     /// <summary>
@@ -520,7 +516,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 // Fast filter: compare cached random part first
                 else if (currentRandomPart == newRandomPart)
                 {
-                    var existingHeader = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    var existingHeader = _store.ToGhostHeaderPointer(current);
                     if (existingHeader != null && existingHeader->Id == newId && existingHeader->TxnId == newTxnId)
                     {
                         // Logical duplicate found - update the reference
@@ -535,11 +531,12 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 index = (index + 1) & mask;
             }
         }
-        #if !NATIVE_LOCK
-        finally {
+#if !NATIVE_LOCK
+        finally
+        {
             _lock.Exit();
         }
-        #endif
+#endif
     }
 
     /// <summary>
@@ -561,7 +558,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
 
         short searchRandomPart = id.RandomPartTag;
         int index = id.SlotComputation & mask;
-        
+
         bool foundBest = false;
         SegmentReference bestRef = default;
         long bestTxnFound = long.MinValue;
@@ -595,7 +592,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 if (cachedRandomPart == searchRandomPart)
                 {
                     // Random parts match - now do the expensive pointer dereference
-                    var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    var h = _store.ToGhostHeaderPointer(current);
 
                     // Full ID verification to handle collisions (~1 in 65,536)
                     if (h != null && h->Id == id)
@@ -664,7 +661,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                     // Fast filter: compare cached random part first
                     if (randomParts[index] == searchRandomPart)
                     {
-                        var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                        var h = _store.ToGhostHeaderPointer(current);
                         if (h != null && h->Id == id && h->TxnId == txnId)
                         {
                             // Mark as Tombstone
@@ -691,11 +688,12 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 index = (index + 1) & mask;
             }
         }
-        #if !NATIVE_LOCK
-        finally {
+#if !NATIVE_LOCK
+        finally
+        {
             _lock.Exit();
         }
-        #endif
+#endif
     }
 
     /// <summary>
@@ -723,7 +721,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 SegmentReference current = entries[i];
                 if (current.IsValid())
                 {
-                    var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    var h = _store.ToGhostHeaderPointer(current);
                     if (h != null)
                     {
                         // Check if candidate for removal (Old Version)
@@ -748,7 +746,8 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             return removedCount;
         }
 #if !NATIVE_LOCK
-        finally {
+        finally
+        {
             _lock.Exit();
         }
 #endif
@@ -769,7 +768,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             {
                 if (randomParts[index] == searchRandomPart)
                 {
-                    var h = (GhostHeader*)_store.ToGhostHeaderPointer(current);
+                    var h = _store.ToGhostHeaderPointer(current);
                     if (h != null && h->Id == id)
                     {
                         long thatTxnId = h->TxnId;
@@ -806,7 +805,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             SegmentReference e = oldEntries[i];
             if (e.IsValid()) // Filters Empty AND Tombstones
             {
-                var h = (GhostHeader*)_store.ToGhostHeaderPointer(e);
+                var h = _store.ToGhostHeaderPointer(e);
                 if (h != null)
                 {
                     // Slot uses specific bit-range
@@ -891,8 +890,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             return false;
         }
 
-        public SegmentReference Current
-        {
+        public SegmentReference Current {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _current;
         }
@@ -946,7 +944,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                 if (!candidate.IsValid()) continue;
 
                 // 1. Check Visibility
-                GhostHeader* h = (GhostHeader*)store.ToGhostHeaderPointer(candidate);
+                GhostHeader* h = store.ToGhostHeaderPointer(candidate);
                 if (h == null || h->TxnId > maxTxn) continue;
 
                 // 2. The "Winner Check" (Deduplication)
@@ -994,7 +992,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
                     // Fast filter: compare cached random part first
                     if (randomParts[index] == searchRandomPart)
                     {
-                        var h = (GhostHeader*)store.ToGhostHeaderPointer(current);
+                        var h = store.ToGhostHeaderPointer(current);
                         if (h != null && h->Id == id)
                         {
                             long txnId = h->TxnId;
@@ -1016,8 +1014,7 @@ public sealed unsafe class SegmentGhostMap<TSegmentStore>
             return bestRef.Value == candidate.Value;
         }
 
-        public SegmentReference Current
-        {
+        public SegmentReference Current {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _current;
         }

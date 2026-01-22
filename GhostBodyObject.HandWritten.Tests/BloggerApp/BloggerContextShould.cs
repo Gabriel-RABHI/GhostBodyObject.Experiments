@@ -1,15 +1,10 @@
 ﻿using GhostBodyObject.HandWritten.Blogger;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
-using GhostBodyObject.Repository.Body.Contracts;
-using GhostBodyObject.Repository.Ghost.Constants;
-using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Segment;
 using System.Diagnostics;
-using System.IO;
-using System.Transactions;
 
 namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 {
@@ -17,11 +12,12 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
     {
         public BloggerContextShould()
         {
-            //SegmentSizeComputation.SmallSegmentsMode = true;
+#if DEBUG
+            SmallMode = true;
+#endif
         }
 
-        public bool SmallMode
-        {
+        public bool SmallMode {
             get => SegmentSizeComputation.SmallSegmentsMode;
             set => SegmentSizeComputation.SmallSegmentsMode = value;
         }
@@ -44,8 +40,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [Fact]
         public void ForbidCreationInReadOnlyContexts()
         {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
+            Assert.Throws<InvalidOperationException>(() => {
                 var repository = new BloggerRepository();
                 using (BloggerContext.NewReadContext(repository))
                 {
@@ -57,8 +52,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [Fact]
         public void ForbidNestedContexts()
         {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
+            Assert.Throws<InvalidOperationException>(() => {
                 var repository = new BloggerRepository();
                 using (BloggerContext.NewWriteContext(repository))
                 {
@@ -79,8 +73,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         {
             var repository = new BloggerRepository();
 
-            var t1 = Task.Run(() =>
-            {
+            var t1 = Task.Run(() => {
                 Thread.Sleep(500);
                 using (BloggerContext.NewWriteContext(repository))
                 {
@@ -89,8 +82,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     Thread.Sleep(1000);
                 }
             });
-            var t2 = Task.Run(() =>
-            {
+            var t2 = Task.Run(() => {
                 Thread.Sleep(500);
                 using (BloggerContext.NewWriteContext(repository))
                 {
@@ -99,8 +91,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     Thread.Sleep(1000);
                 }
             });
-            var t3 = Task.Run(() =>
-            {
+            var t3 = Task.Run(() => {
                 Thread.Sleep(500);
                 using (BloggerContext.NewWriteContext(repository))
                 {
@@ -115,13 +106,11 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         [Fact]
         public void ForbidParalellScopesInScope()
         {
-            Assert.Throws<AggregateException>(() =>
-            {
+            Assert.Throws<AggregateException>(() => {
                 var repository = new BloggerRepository();
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    var t1 = Task.Run(() =>
-                    {
+                    var t1 = Task.Run(() => {
                         Thread.Sleep(500);
                         using (BloggerContext.NewWriteContext(repository))
                         {
@@ -130,8 +119,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                             Thread.Sleep(1000);
                         }
                     });
-                    var t2 = Task.Run(() =>
-                    {
+                    var t2 = Task.Run(() => {
                         Thread.Sleep(500);
                         using (BloggerContext.NewWriteContext(repository))
                         {
@@ -140,8 +128,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                             Thread.Sleep(1000);
                         }
                     });
-                    var t3 = Task.Run(() =>
-                    {
+                    var t3 = Task.Run(() => {
                         Thread.Sleep(500);
                         using (BloggerContext.NewWriteContext(repository))
                         {
@@ -159,25 +146,21 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
         public void ForbidInTaskMutations()
         {
             var COUNT = 10_000_000;
-            Assert.Throws<AggregateException>(() =>
-            {
+            Assert.Throws<AggregateException>(() => {
                 var repository = new BloggerRepository();
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    var t1 = Task.Run(() =>
-                    {
+                    var t1 = Task.Run(() => {
                         var user = new BloggerUser();
                         for (int i = 0; i < COUNT; i++)
                             user.Active = !user.Active;
                     });
-                    var t2 = Task.Run(() =>
-                    {
+                    var t2 = Task.Run(() => {
                         var user = new BloggerUser();
                         for (int i = 0; i < COUNT; i++)
                             user.Active = !user.Active;
                     });
-                    var t3 = Task.Run(() =>
-                    {
+                    var t3 = Task.Run(() => {
                         var user = new BloggerUser();
                         for (int i = 0; i < COUNT; i++)
                             user.Active = !user.Active;
@@ -206,21 +189,18 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             // -------- Mutations
             using (BloggerContext.NewWriteContext(repository))
             {
-                var user = new BloggerUser()
-                {
+                var user = new BloggerUser() {
                     Active = true,
                     FirstName = "John",
                     LastName = "Doe"
                 };
-                user = new BloggerUser()
-                {
+                user = new BloggerUser() {
                     Active = true,
                     FirstName = "Ted",
                     LastName = "Smith"
                 };
                 var n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.Active);
                     Assert.True(
                         (user.FirstName == "John" && user.LastName == "Doe") ||
@@ -233,8 +213,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             // -------- Validate
             using (BloggerContext.NewReadContext(repository))
             {
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.Active);
                     Assert.True(
                         (user.FirstName == "John" && user.LastName == "Doe") ||
@@ -243,8 +222,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             }
             using (BloggerContext.NewWriteContext(repository))
             {
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.Active);
                     Assert.True(
                         (user.FirstName == "John" && user.LastName == "Doe") ||
@@ -270,8 +248,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 Assert.Equal(1, users.Count(u => u.FirstName == "Ted"));
 
                 var n = 0;
-                BloggerCollections.BloggerUsers.Scan(user =>
-                {
+                BloggerCollections.BloggerUsers.Scan(user => {
                     Assert.True(user.Active);
                     Assert.True(
                         (user.FirstName == "John" && user.LastName == "Doe") ||
@@ -286,8 +263,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 Assert.Equal(1, list.Count(u => u.FirstName == "Ted"));
 
                 n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.City == "New York City");
                     n++;
                 });
@@ -298,8 +274,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewReadContext(repository))
             {
                 var n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.City == "New York City");
                     n++;
                 });
@@ -313,8 +288,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewWriteContext(repository))
             {
                 var n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.City == "New York City");
                     n++;
                 });
@@ -326,8 +300,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewWriteContext(repository))
             {
                 var n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     user.City = "Paris";
                     n++;
                 });
@@ -338,8 +311,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewReadContext(repository))
             {
                 var n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.City == "New York City");
                     n++;
                 });
@@ -348,8 +320,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewWriteContext(repository))
             {
                 var n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.City == "New York City");
                     n++;
                 });
@@ -361,16 +332,14 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewWriteContext(repository))
             {
                 var n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     if (user.FirstName == "John")
                         user.Delete();
                     n++;
                 });
                 Assert.Equal(2, n);
                 n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.FirstName == "Ted");
                     n++;
                 });
@@ -381,8 +350,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewReadContext(repository))
             {
                 var n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.FirstName == "Ted");
                     n++;
                 });
@@ -391,8 +359,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewWriteContext(repository))
             {
                 var n = 0;
-                forEach(user =>
-                {
+                forEach(user => {
                     Assert.True(user.FirstName == "Ted");
                     n++;
                 });
@@ -412,21 +379,18 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             using (BloggerContext.NewWriteContext(repository))
             {
-                var user = new BloggerUser()
-                {
+                var user = new BloggerUser() {
                     Active = true,
                     FirstName = "John",
                     LastName = "Doe"
                 };
-                user = new BloggerUser()
-                {
+                user = new BloggerUser() {
                     Active = true,
                     FirstName = "Ted",
                     LastName = "Smith"
                 };
                 var n = 0;
-                BloggerCollections.BloggerUsers.ForEach(user =>
-                {
+                BloggerCollections.BloggerUsers.ForEach(user => {
                     Assert.True(user.Active);
                     Assert.True(
                         (user.FirstName == "John" && user.LastName == "Doe") ||
@@ -439,8 +403,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using (BloggerContext.NewWriteContext(repository))
             {
                 var n = 0;
-                BloggerCollections.BloggerUsers.ForEach(user =>
-                {
+                BloggerCollections.BloggerUsers.ForEach(user => {
                     Assert.True(user.Active);
                     Assert.True(
                         (user.FirstName == "John" && user.LastName == "Doe") ||
@@ -461,8 +424,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             {
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    var user = new BloggerUser()
-                    {
+                    var user = new BloggerUser() {
                         Active = true,
                     };
                     BloggerContext.Commit(false);
@@ -488,10 +450,9 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int j = 0; j < 50_000; j++)
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    for (int i=0;i< 20; i++)
+                    for (int i = 0; i < 20; i++)
                     {
-                        var user = new BloggerUser()
-                        {
+                        var user = new BloggerUser() {
                             Active = true,
                             CustomerCode = i + (j % 99)
                         };
@@ -507,8 +468,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     long verifySum = 0;
                     var n = 0;
                     sw = Stopwatch.StartNew();
-                    BloggerCollections.BloggerUsers.Scan(user =>
-                    {
+                    BloggerCollections.BloggerUsers.Scan(user => {
                         Assert.True(user.Active);
                         verifySum += user.CustomerCode;
                         n++;
@@ -534,7 +494,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             using var repository = new BloggerRepository(mode, tempDir.DirectoryPath);
             var sw = Stopwatch.StartNew();
 
-            int threadCount = 8;
+            int threadCount = 5;
 
             var tasks = new Task[threadCount];
 
@@ -542,15 +502,20 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             {
                 int threadId = i;
                 tasks[i] = Task.Run(() => {
-                    for (int j = 0; j < 200; j++)
+                    for (int j = 0; j < 1000; j++)
                         using (BloggerContext.NewWriteContext(repository))
                         {
                             for (int i = 0; i < 2000; i++)
                             {
-                                var user = new BloggerUser()
-                                {
+                                var user = new BloggerUser() {
                                     Active = true,
                                 };
+                                /*
+                                user.FirstName = $"FirstName-{j}";
+                                user.LastName = $"LastName-{j}";
+                                user.Country = $"Country-{j}";
+                                user.CompanyName = $"CompanyName-{j}";
+                                */
                             }
                             BloggerContext.Commit(true);
                         }
@@ -565,8 +530,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 {
                     var n = 0;
                     sw = Stopwatch.StartNew();
-                    BloggerCollections.BloggerUsers.Scan(user =>
-                    {
+                    BloggerCollections.BloggerUsers.Scan(user => {
                         Assert.True(user.Active);
                         n++;
                     });
@@ -592,8 +556,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 {
                     for (int i = 0; i < 1_000; i++)
                     {
-                        var user = new BloggerUser()
-                        {
+                        var user = new BloggerUser() {
                             Active = true,
                         };
                     }
@@ -667,8 +630,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
-                tasks[i] = Task.Run(() =>
-                {
+                tasks[i] = Task.Run(() => {
                     for (int j = 0; j < nTxn; j++)
                         using (BloggerContext.NewWriteContext(repository))
                         {
@@ -678,8 +640,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                             }
                             for (int i = 0; i < nObjTxn; i++)
                             {
-                                var user = new BloggerUser()
-                                {
+                                var user = new BloggerUser() {
                                     Active = true,
                                 };
                             }
@@ -692,8 +653,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < threadCount; i++)
             {
                 int threadId = i;
-                tasks[i + threadCount] = Task.Run(() =>
-                {
+                tasks[i + threadCount] = Task.Run(() => {
                     var totalRetrieved = 0;
                     var retries = 0;
                     var lastCount = 0;
@@ -704,8 +664,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         using (BloggerContext.NewReadContext(repository))
                         {
                             var n = 0;
-                            forEach(user =>
-                            {
+                            forEach(user => {
                                 Assert.True(user.Active);
                                 n++;
                             });
@@ -744,8 +703,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < objCount; i++)
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    var user = new BloggerUser()
-                    {
+                    var user = new BloggerUser() {
                         FirstName = "John" + i,
                         Active = true,
                     };
@@ -760,8 +718,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             {
                 using (BloggerContext.NewWriteContext(repository))
                 {
-                    BloggerCollections.BloggerUsers.Scan(user =>
-                    {
+                    BloggerCollections.BloggerUsers.Scan(user => {
                         user.CustomerCode++;
                         user.FirstName = $"FirstName-{j}";
                         user.LastName = $"LastName-{j}";
@@ -824,8 +781,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 
             using (BloggerContext.NewWriteContext(repository))
             {
-                var user = new BloggerUser()
-                {
+                var user = new BloggerUser() {
                     Active = true,
                 };
                 BloggerContext.Commit(false);
@@ -844,8 +800,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < writethreadCount; i++)
             {
                 int threadId = i;
-                tasks[i] = Task.Run(() =>
-                {
+                tasks[i] = Task.Run(() => {
                     try
                     {
                         for (int j = 0; j < nTxn; j++)
@@ -853,8 +808,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                             {
                                 if (BloggerCollections.BloggerUsers.Instances.Count() == 0)
                                     throw new InvalidOperationException("No object to mutate !");
-                                BloggerCollections.BloggerUsers.Scan(user =>
-                                {
+                                BloggerCollections.BloggerUsers.Scan(user => {
                                     user.CustomerCode++;
                                     user.FirstName = $"FirstName-{j}";
                                     user.LastName = $"LastName-{j}";
@@ -864,13 +818,11 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                 BloggerContext.Commit(false);
                                 inserted = true;
                             }
-                    }
-                    catch (Exception ex)
+                    } catch (Exception ex)
                     {
                         Console.WriteLine($"Writer failed: {ex}");
                         throw;
-                    }
-                    finally
+                    } finally
                     {
                         Interlocked.Decrement(ref totalWriters);
                     }
@@ -880,8 +832,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < readthreadCount; i++)
             {
                 int threadId = i;
-                tasks[i + writethreadCount] = Task.Run(() =>
-                {
+                tasks[i + writethreadCount] = Task.Run(() => {
                     var sizes = new HashSet<int>();
                     var totalRetrieved = 0;
                     var retries = 0;
@@ -897,8 +848,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                 var n = 0;
                                 sw = Stopwatch.StartNew();
 
-                                forEach(user =>
-                                {
+                                forEach(user => {
                                     n++;
                                 });
 
@@ -955,8 +905,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             {
                 for (int i = 0; i < objectCount; i++)
                 {
-                    var user = new BloggerUser()
-                    {
+                    var user = new BloggerUser() {
                         Active = true,
                     };
                 }
@@ -976,8 +925,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < writethreadCount; i++)
             {
                 int threadId = i;
-                tasks[i] = Task.Run(() =>
-                {
+                tasks[i] = Task.Run(() => {
                     try
                     {
                         for (int j = 0; j < nTxn; j++)
@@ -985,8 +933,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                             {
                                 if (BloggerCollections.BloggerUsers.Instances.Count() == 0)
                                     throw new InvalidOperationException("No object to mutate !");
-                                BloggerCollections.BloggerUsers.Scan(user =>
-                                {
+                                BloggerCollections.BloggerUsers.Scan(user => {
                                     user.CustomerCode++;
                                     user.FirstName = $"FirstName-{j}";
                                     user.LastName = $"LastName-{j}";
@@ -996,13 +943,11 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                 BloggerContext.Commit(false);
                                 inserted = true;
                             }
-                    }
-                    catch (Exception ex)
+                    } catch (Exception ex)
                     {
                         Console.WriteLine($"Writer failed: {ex}");
                         throw;
-                    }
-                    finally
+                    } finally
                     {
                         Interlocked.Decrement(ref totalWriters);
                     }
@@ -1012,8 +957,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             for (int i = 0; i < readthreadCount; i++)
             {
                 int threadId = i;
-                tasks[i + writethreadCount] = Task.Run(() =>
-                {
+                tasks[i + writethreadCount] = Task.Run(() => {
                     return;
                     var sizes = new HashSet<int>();
                     var totalRetrieved = 0;
@@ -1030,8 +974,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                                 var n = 0;
                                 sw = Stopwatch.StartNew();
 
-                                forEach(user =>
-                                {
+                                forEach(user => {
                                     n++;
                                 });
 
@@ -1076,8 +1019,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
 
             using (BloggerContext.NewWriteContext(repository))
             {
-                var user = new BloggerUser()
-                {
+                var user = new BloggerUser() {
                     Active = true,
                 };
                 BloggerContext.Commit(false);
@@ -1099,8 +1041,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                     {
                         if (BloggerCollections.BloggerUsers.Instances.Count() == 0)
                             throw new InvalidOperationException("No object to mutate !");
-                        BloggerCollections.BloggerUsers.Scan(user =>
-                        {
+                        BloggerCollections.BloggerUsers.Scan(user => {
                             user.CustomerCode++;
                             user.FirstName = $"FirstName-{j}";
                             user.LastName = $"LastName-{j}";
@@ -1109,8 +1050,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                         });
                         BloggerContext.Commit(false);
                     }
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 Console.WriteLine($"Writer failed: {ex}");
                 throw;

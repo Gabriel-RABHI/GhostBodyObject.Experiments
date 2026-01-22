@@ -2,7 +2,6 @@
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
-using GhostBodyObject.Repository.Repository.Contracts;
 using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.HandWritten.BloggerApp.Entities.Post
@@ -23,11 +22,9 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.Post
         }
 
 
-        public string Name
-        {
+        public string Name {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 // The Guard now acts as a Scope
 #if DEBUG
             GuardLocalScope();
@@ -36,8 +33,7 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.Post
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 // The Guard now acts as a Scope
 #if DEBUG
             using (GuardWriteScope())
@@ -50,11 +46,9 @@ namespace GhostBodyObject.HandWritten.BloggerApp.Entities.Post
             }
         }
 
-        public int Age
-        {
+        public int Age {
             get => _age;
-            set
-            {
+            set {
 #if DEBUG
             using (GuardWriteScope())
             {

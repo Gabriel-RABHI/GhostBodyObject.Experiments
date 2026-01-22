@@ -1,7 +1,5 @@
-﻿using System;
-using System.Runtime.CompilerServices; // For Unsafe
+﻿using System.Runtime.CompilerServices; // For Unsafe
 using System.Runtime.InteropServices;  // For MemoryMarshal, GCHandle
-using Xunit;
 
 // Namespace depends on your project structure
 namespace GhostBodyObject.Common.Tests.Memory
@@ -172,8 +170,7 @@ namespace GhostBodyObject.Common.Tests.Memory
                     Assert.Equal(expected.ID, result.ID);
                     Assert.Equal(expected.Value, result.Value);
                 }
-            }
-            finally
+            } finally
             {
                 handle.Free();
             }

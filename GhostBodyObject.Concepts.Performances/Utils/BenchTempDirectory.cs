@@ -1,19 +1,18 @@
 ﻿using System.Reflection;
 
-namespace GhostBodyObject.HandWritten.Tests
+namespace GhostBodyObject.Concepts.Performances.Utils
 {
-    public class TempDirectoryHelper : IDisposable
+    public class BenchTempDirectory : IDisposable
     {
         private readonly string _directoryPath;
 
         public string DirectoryPath => _directoryPath;
 
-        public TempDirectoryHelper(bool temporaryFolder)
+        public BenchTempDirectory(bool temporaryFolder)
         {
             if (temporaryFolder)
             {
                 _directoryPath = GetTemporaryDirectory();
-                Console.WriteLine("Temp. directory : " + _directoryPath);
                 return;
             } else
             {
@@ -31,8 +30,6 @@ namespace GhostBodyObject.HandWritten.Tests
                 Directory.CreateDirectory(tempDirectoryPath);
 
                 _directoryPath = tempDirectoryPath;
-
-                Console.WriteLine("Temp. directory : " + _directoryPath);
             }
         }
 
@@ -51,7 +48,7 @@ namespace GhostBodyObject.HandWritten.Tests
             return Directory.GetFiles(_directoryPath).Select(f => Path.GetFileName(f)).ToArray();
         }
 
-        public void GCCollect()
+        public static void GCCollect()
         {
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
             GC.WaitForPendingFinalizers();

@@ -1,7 +1,5 @@
 ﻿using GhostBodyObject.BenchmarkRunner;
 using GhostBodyObject.Common.SpinLocks;
-using System.Collections.Generic;
-using System.Threading;
 
 namespace GhostBodyObject.Common.Benchmarks.Memory
 {
@@ -30,8 +28,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // ShortSpinLock
                 var shortSpinLock = new ShortSpinLock();
                 sharedCounter = 0;
-                var shortSpinResult = RunParallelAction(threadCount, _ =>
-                {
+                var shortSpinResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
                         shortSpinLock.Enter();
@@ -45,8 +42,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // .NET SpinLock
                 var dotnetSpinLock = new SpinLock(enableThreadOwnerTracking: false);
                 sharedCounter = 0;
-                var dotnetSpinResult = RunParallelAction(threadCount, _ =>
-                {
+                var dotnetSpinResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
                         bool lockTaken = false;
@@ -61,8 +57,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // Monitor (lock statement)
                 var lockObject = new object();
                 sharedCounter = 0;
-                var monitorResult = RunParallelAction(threadCount, _ =>
-                {
+                var monitorResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
                         lock (lockObject)
@@ -103,8 +98,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // ShortRecursiveSpinLock
                 var recursiveLock = new ShortRecursiveSpinLock();
                 sharedCounter = 0;
-                var recursiveResult = RunParallelAction(threadCount, _ =>
-                {
+                var recursiveResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
                         // Simulate recursive entry
@@ -121,8 +115,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // .NET SpinLock with thread owner tracking (simulating recursion check)
                 var dotnetSpinLock = new SpinLock(enableThreadOwnerTracking: true);
                 sharedCounter = 0;
-                var dotnetSpinResult = RunParallelAction(threadCount, _ =>
-                {
+                var dotnetSpinResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
                         bool lockTaken = false;
@@ -138,8 +131,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // Monitor (naturally recursive)
                 var lockObject = new object();
                 sharedCounter = 0;
-                var monitorResult = RunParallelAction(threadCount, _ =>
-                {
+                var monitorResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
                         for (int d = 0; d < recursionDepth; d++)
@@ -183,8 +175,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // ShortReadWriteSpinLock - Read Heavy (90% reads, 10% writes)
                 var rwSpinLock = new ShortReadWriteSpinLock();
                 sharedValue = 0;
-                var rwSpinReadResult = RunParallelAction(threadCount, threadId =>
-                {
+                var rwSpinReadResult = RunParallelAction(threadCount, threadId => {
                     bool isWriter = threadId == 0; // Only first thread writes
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
@@ -193,8 +184,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                             rwSpinLock.EnterWrite();
                             sharedValue++;
                             rwSpinLock.ExitWrite();
-                        }
-                        else
+                        } else
                         {
                             rwSpinLock.EnterRead();
                             _ = sharedValue;
@@ -208,8 +198,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // .NET ReaderWriterLockSlim
                 var rwLockSlim = new ReaderWriterLockSlim();
                 sharedValue = 0;
-                var rwSlimResult = RunParallelAction(threadCount, threadId =>
-                {
+                var rwSlimResult = RunParallelAction(threadCount, threadId => {
                     bool isWriter = threadId == 0;
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
@@ -218,8 +207,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                             rwLockSlim.EnterWriteLock();
                             sharedValue++;
                             rwLockSlim.ExitWriteLock();
-                        }
-                        else
+                        } else
                         {
                             rwLockSlim.EnterReadLock();
                             _ = sharedValue;
@@ -258,8 +246,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // ShortReadWriteSpinLock - Write Heavy (50% writes)
                 var rwSpinLock = new ShortReadWriteSpinLock();
                 sharedValue = 0;
-                var rwSpinResult = RunParallelAction(threadCount, threadId =>
-                {
+                var rwSpinResult = RunParallelAction(threadCount, threadId => {
                     bool isWriter = threadId % 2 == 0; // Half threads write
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
@@ -268,8 +255,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                             rwSpinLock.EnterWrite();
                             sharedValue++;
                             rwSpinLock.ExitWrite();
-                        }
-                        else
+                        } else
                         {
                             rwSpinLock.EnterRead();
                             _ = sharedValue;
@@ -283,8 +269,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // .NET ReaderWriterLockSlim
                 var rwLockSlim = new ReaderWriterLockSlim();
                 sharedValue = 0;
-                var rwSlimResult = RunParallelAction(threadCount, threadId =>
-                {
+                var rwSlimResult = RunParallelAction(threadCount, threadId => {
                     bool isWriter = threadId % 2 == 0;
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
@@ -293,8 +278,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                             rwLockSlim.EnterWriteLock();
                             sharedValue++;
                             rwLockSlim.ExitWriteLock();
-                        }
-                        else
+                        } else
                         {
                             rwLockSlim.EnterReadLock();
                             _ = sharedValue;
@@ -338,8 +322,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // ShortCountSpinLock
                 var countLock = new ShortCountSpinLock(maxConcurrency);
                 sharedCounter = 0;
-                var countResult = RunParallelAction(threadCount, _ =>
-                {
+                var countResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < ContentionOperationsPerThread; i++)
                     {
                         countLock.Enter();
@@ -353,8 +336,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // .NET SemaphoreSlim
                 using var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
                 sharedCounter = 0;
-                var semaphoreResult = RunParallelAction(threadCount, _ =>
-                {
+                var semaphoreResult = RunParallelAction(threadCount, _ => {
                     for (int i = 0; i < ContentionOperationsPerThread; i++)
                     {
                         semaphore.Wait();
@@ -390,8 +372,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
 
             // ShortSpinLock
             var shortSpinLock = new ShortSpinLock();
-            var shortSpinResult = RunMonitoredAction(() =>
-            {
+            var shortSpinResult = RunMonitoredAction(() => {
                 for (int i = 0; i < iterations; i++)
                 {
                     shortSpinLock.Enter();
@@ -404,8 +385,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
 
             // ShortRecursiveSpinLock
             var recursiveLock = new ShortRecursiveSpinLock();
-            var recursiveResult = RunMonitoredAction(() =>
-            {
+            var recursiveResult = RunMonitoredAction(() => {
                 for (int i = 0; i < iterations; i++)
                 {
                     recursiveLock.Enter();
@@ -418,8 +398,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
 
             // .NET SpinLock (no tracking)
             var dotnetSpinLock = new SpinLock(enableThreadOwnerTracking: false);
-            var dotnetSpinResult = RunMonitoredAction(() =>
-            {
+            var dotnetSpinResult = RunMonitoredAction(() => {
                 for (int i = 0; i < iterations; i++)
                 {
                     bool lockTaken = false;
@@ -433,8 +412,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
 
             // .NET SpinLock (with tracking)
             var dotnetSpinLockTracked = new SpinLock(enableThreadOwnerTracking: true);
-            var dotnetSpinTrackedResult = RunMonitoredAction(() =>
-            {
+            var dotnetSpinTrackedResult = RunMonitoredAction(() => {
                 for (int i = 0; i < iterations; i++)
                 {
                     bool lockTaken = false;
@@ -448,8 +426,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
 
             // Monitor (lock)
             var lockObject = new object();
-            var monitorResult = RunMonitoredAction(() =>
-            {
+            var monitorResult = RunMonitoredAction(() => {
                 for (int i = 0; i < iterations; i++)
                 {
                     lock (lockObject)
@@ -487,8 +464,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
             // ShortSpinLock
             var shortSpinLock = new ShortSpinLock();
             sharedCounter = 0;
-            var shortSpinResult = RunParallelAction(maxThreads, _ =>
-            {
+            var shortSpinResult = RunParallelAction(maxThreads, _ => {
                 for (int i = 0; i < ContentionOperationsPerThread; i++)
                 {
                     shortSpinLock.Enter();
@@ -502,8 +478,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
             // .NET SpinLock
             var dotnetSpinLock = new SpinLock(enableThreadOwnerTracking: false);
             sharedCounter = 0;
-            var dotnetSpinResult = RunParallelAction(maxThreads, _ =>
-            {
+            var dotnetSpinResult = RunParallelAction(maxThreads, _ => {
                 for (int i = 0; i < ContentionOperationsPerThread; i++)
                 {
                     bool lockTaken = false;
@@ -518,8 +493,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
             // Monitor (lock)
             var lockObject = new object();
             sharedCounter = 0;
-            var monitorResult = RunParallelAction(maxThreads, _ =>
-            {
+            var monitorResult = RunParallelAction(maxThreads, _ => {
                 for (int i = 0; i < ContentionOperationsPerThread; i++)
                 {
                     lock (lockObject)
@@ -558,8 +532,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // ShortSpinLock TryEnter
                 var shortSpinLock = new ShortSpinLock();
                 successCount = 0;
-                var shortSpinResult = RunParallelAction(threadCount, _ =>
-                {
+                var shortSpinResult = RunParallelAction(threadCount, _ => {
                     int localSuccess = 0;
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
@@ -577,8 +550,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // .NET SpinLock TryEnter
                 var dotnetSpinLock = new SpinLock(enableThreadOwnerTracking: false);
                 successCount = 0;
-                var dotnetSpinResult = RunParallelAction(threadCount, _ =>
-                {
+                var dotnetSpinResult = RunParallelAction(threadCount, _ => {
                     int localSuccess = 0;
                     for (int i = 0; i < OperationsPerThread; i++)
                     {
@@ -598,8 +570,7 @@ namespace GhostBodyObject.Common.Benchmarks.Memory
                 // Monitor.TryEnter
                 var lockObject = new object();
                 successCount = 0;
-                var monitorResult = RunParallelAction(threadCount, _ =>
-                {
+                var monitorResult = RunParallelAction(threadCount, _ => {
                     int localSuccess = 0;
                     for (int i = 0; i < OperationsPerThread; i++)
                     {

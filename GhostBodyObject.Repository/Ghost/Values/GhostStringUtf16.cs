@@ -115,11 +115,9 @@ namespace GhostBodyObject.Repository
         /// <summary>
         /// Gets the character at the specified index.
         /// </summary>
-        public char this[int index]
-        {
+        public char this[int index] {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 if ((uint)index >= (uint)Length)
                     ThrowIndexOutOfRange();
                 return AsSpan()[index];

@@ -1,9 +1,6 @@
 ﻿using GhostBodyObject.HandWritten.Entities;
 using GhostBodyObject.HandWritten.Entities.Arrays;
 using GhostBodyObject.HandWritten.Entities.Repository;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace GhostBodyObject.HandWritten.Tests.TestModel
 {
@@ -46,7 +43,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel
             var repository = new TestModelRepository();
             using (TestModelContext.OpenReadContext(repository))
             {
-                for (int i=0;i< count; i++)
+                for (int i = 0; i < count; i++)
                 {
                     var body = new ArraysAsStringsAndSpansLarge();
                     body.StringU16 = "Test " + i;

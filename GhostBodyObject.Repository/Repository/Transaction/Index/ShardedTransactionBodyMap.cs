@@ -136,10 +136,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         /// <summary>
         /// Gets the total count of entries across all shards.
         /// </summary>
-        public int Count
-        {
-            get
-            {
+        public int Count {
+            get {
                 int count = 0;
                 for (int i = 0; i < _shardCount; i++)
                     count += _shards[i].Count;
@@ -150,10 +148,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         /// <summary>
         /// Gets the total capacity across all shards.
         /// </summary>
-        public int Capacity
-        {
-            get
-            {
+        public int Capacity {
+            get {
                 int capacity = 0;
                 for (int i = 0; i < _shardCount; i++)
                     capacity += _shards[i].Capacity;
@@ -219,8 +215,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 return false;
             }
 
-            public TBody Current
-            {
+            public TBody Current {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _currentEnum.Current;
             }

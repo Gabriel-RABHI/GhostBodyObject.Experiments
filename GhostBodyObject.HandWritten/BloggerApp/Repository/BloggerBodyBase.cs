@@ -1,9 +1,4 @@
-﻿using GhostBodyObject.Common.Memory;
-using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
-using GhostBodyObject.Repository.Body.Contracts;
-using GhostBodyObject.Repository.Body.Vectors;
-using GhostBodyObject.Repository.Ghost.Structs;
-using GhostBodyObject.Repository.Repository.Transaction;
+﻿using GhostBodyObject.Repository.Body.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 

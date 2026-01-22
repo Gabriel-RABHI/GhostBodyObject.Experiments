@@ -29,11 +29,8 @@
  * --------------------------------------------------------------------------
  */
 
-using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace GhostBodyObject.Repository.Repository.Structs
 {
@@ -70,6 +67,6 @@ namespace GhostBodyObject.Repository.Repository.Structs
         {
             return Value == 0 ? "-" : $"{SegmentId} -> {Offset}";
         }
-    
+
     }
 }
