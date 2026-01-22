@@ -6,44 +6,44 @@ It is designed for **mission-critical applications** requiring consistent zero-l
 
 Please, read the README.md file of the GitHub repository.
 
-### 22 january 2026
-First "real" results of the GBO engine, on an I9 9900K 8 cores CPU / NvME SSD :
-- **1M+ insert** of objects in ACID transactional way, per second.
-- **100M+ entities Linq enumerations**, per second, using 8 threads. This can be done un single thread / multi-shard (maps are internally sharded).
-- This demonstrate the critical **robust, flexible, lock-free storage engine** that gracefully scale both in throughput and data size.
-- The **In-Memory Index efficiency**: 1.5 GB to index 100M ghosts.
+### January 22, 2026
+First "real" results of the GBO engine, running on an i9-9900K 8-core CPU / NVMe SSD:
+- Up to **1M+ object inserts** per second in an ACID transactional manner.
+- **100M+ entity LINQ enumerations** per second, using 8 threads.
+- **Robust, flexible, lock-free storage engine** that scales gracefully in both throughput and data size.
+- **In-Memory Index efficiency**: 1.5 GB to index 100M ghosts.
 
-This primarily results are the basis for the complete implementation of the complete, documented (White Paper to come) technology.
+These preliminary results are the basis for the implementation of the complete, documented technology: the **GBO White Paper**, coming in February 2026.
 
-### This benchmarks
-The state of the current benchmark project code demonstrate the core, critical memory management that is the foundation of this technology :
-- **Ensuring memory access security by design** : it use the GC as end controller to release the unmanaged memory. It is compliant with the .Net native threading and memory management principles.
-- The Virtual Memory is **write protected** to avoid unmanaged write errors damages.
-- Provide **leak free MVCC views** : efficient versioned, Epoch based, cache friendly ghost map.
-- **Sharded Maps** for blazing fast filters Linq queries (up to 100M entries predicates using 8 cores).
-- **ACID transactions** : disk flush based. Is compliant with crash recovery, replication and multi-process write enabled sharing.
+### These Benchmarks
+They demonstrate the core, critical memory management that is the foundation of this technology:
+- **Ensuring memory access security by design**: It uses the GC as the end controller to release unmanaged memory. It is compliant with .NET native threading and memory management principles.
+- The Virtual Memory is **write-protected** to avoid damage from unmanaged write errors.
+- **Provides leak-free MVCC views**: Efficient, versioned, Epoch-based, cache-friendly ghost map.
+- **Sharded Maps** for blazing-fast LINQ filter queries (predicates on up to 100M entries using 8 cores).
+- **ACID transactions**: Disk-flush based. Compliant with crash recovery, replication, and multi-process write-enabled sharing.
 
 ### Comparison with FASTER
-Raw data managed using FASTER is fast - faster than GBO. But any attempt to build the GBO advanced high level features on top of FASTER will provide a order of magnitude, or more, less performances. This is true for few obvious reasons :
-- FASTER is not transactional - in the meaning of a MVCC snapshot view of data from a point in time.
-- FASTER is not ACID : the ACID Commit concept do not even exist - he can recover stale writes, but is not ACID.
-- FASTER do not manage high level entities : it provide a Key / Value API. Any high level object management induce serialization, which mean lot of memory copy and objects allocations.
-- FASTER is low level: GBO provide both a high end, high level programming experience **AND** "zero-copy" and "zero-allocation" object management. The complete API is "ambiant" : any object modification (creation, modification, deletion) need zero API call (no Insert, or Update to call on entities).
+Raw data managed using FASTER is fast—faster than GBO. However, any attempt to build GBO's advanced high-level features on top of FASTER would likely be an order of magnitude slower—or even more—than GBO. This is true for a few obvious reasons:
+- FASTER is not transactional in the sense of an MVCC snapshot view of data from a point in time.
+- FASTER is not ACID: The ACID Commit concept is not supported—it can recover stale writes, but it is not ACID.
+- FASTER does not manage high-level entities: It provides a Key/Value API. Any high-level object management induces serialization, which means a lot of memory copying and object allocation.
+- FASTER is low-level. GBO provides both a high-end, high-level programming experience **AND** "zero-copy" and "zero-allocation" object management. The complete API is "ambient": any object modification (creation, modification, deletion) requires zero API calls (no Insert or Update calls needed on entities).
 
 ### Comparison with LMDB / MDBX
-While LMDB provide the highest read performances, the write performances are far from what is providing GBO :
-- The B+Tree data structure with COW is an a powerful design, but have a terrible write amplification problem.
-- The long lived read transaction lead to unmanageable fragmentation and store size dramatic increase. The GBO store engine is managing this without the same problems.
-- The GBO object store do not provide sorted key maps : it implement indexes (sorted based, or bucket based) as an higher order feature, because the engine is a fast and flexible object store. It is possible to develop a B-Tree on top of GBO, where nodes are GBO objects.
-- Defragmentation and compacting is a lot simpler in GBO. GBO can optimize tables for cache locality.
-- GBO Segment system provide a fast (it is only a matter of append segment raw data from an another one) and simple replication principle.
+While LMDB provides the highest read performance, the write performance is far from what GBO provides:
+- The B+Tree data structure with COW is a powerful design but has a terrible write amplification problem.
+- Long-lived read transactions lead to unmanageable fragmentation and a dramatic increase in store size. The GBO storage engine manages this without the same problems.
+- The GBO object store does not provide sorted key maps: It implements indexes (sorted-based or bucket-based) as a higher-order feature because the engine is a fast and flexible object store. It is possible to develop a B-Tree on top of GBO, where nodes are GBO objects.
+- Defragmentation and compacting are much simpler in GBO. GBO can optimize tables for cache locality.
+- The GBO Segment system provides a fast (it is only a matter of appending raw segment data from another one) and simple replication principle.
 
-### Comparison with Postgre / EF Core
-Comparison is useless :
-- GBO is really - really - more simple: full C#, no IQueryable limitations, ambiant API, no flaws linked to Unit of Work pattern, a complete, full featured relational engine (to come), no thread safety concerns.
-- 1 to 3 order of magnitude faster: zero latency, no N+1 loading problem, zero GC overhead.
+### Comparison with PostgreSQL / EF Core
+Comparison is moot:
+- GBO is truly simpler: Full C#, no `IQueryable` limitations, ambient API, no flaws linked to the Unit of Work pattern, a complete, full-featured relational engine (to come), and no thread-safety concerns.
+- 1 to 3 orders of magnitude faster: Zero latency, no N+1 loading problems, zero GC overhead.
 
-There is no comparison even possible.
+There is no possible comparison.
 
 ## Core Concepts : Ghost, Body and Segments
 The architecture relies on three fundamental concepts that separate *data storage* from *data access*.
