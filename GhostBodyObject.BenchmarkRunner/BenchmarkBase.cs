@@ -29,9 +29,9 @@
  * --------------------------------------------------------------------------
  */
 
+using Spectre.Console;
 using System.Diagnostics;
 using System.Text;
-using Spectre.Console;
 
 namespace GhostBodyObject.BenchmarkRunner
 {
@@ -182,8 +182,7 @@ namespace GhostBodyObject.BenchmarkRunner
                 {
                     gcDisplay = "[green]None[/]";
                     gcPlain = "None";
-                }
-                else
+                } else
                 {
                     gcDisplay = $"[red]{result.Gen0}/{result.Gen1}/{result.Gen2}[/]";
                     gcPlain = $"{result.Gen0}/{result.Gen1}/{result.Gen2}";
@@ -195,8 +194,7 @@ namespace GhostBodyObject.BenchmarkRunner
                 {
                     memDisplay = "[green]None[/]";
                     memPlain = "None";
-                }
-                else
+                } else
                 {
                     memDisplay = $"[red]{FormatBytes(result.BytesAllocated)}[/]";
                     memPlain = FormatBytes(result.BytesAllocated);
@@ -224,8 +222,7 @@ namespace GhostBodyObject.BenchmarkRunner
                 {
                     factorDisplay = $"[bold green]{factor:N2}[/]";
                     factorPlain = $"**{factor:N2}**";
-                }
-                else if (factor >= 0.5)
+                } else if (factor >= 0.5)
                     factorDisplay = $"[yellow]{factor:N2}[/]";
                 else
                     factorDisplay = $"[red]{factor:N2}[/]";
@@ -293,8 +290,7 @@ namespace GhostBodyObject.BenchmarkRunner
 
             var endAlloc = GC.GetTotalAllocatedBytes(true);
 
-            var result = new BenchmarkResult
-            {
+            var result = new BenchmarkResult {
                 Duration = sw.Elapsed,
                 BytesAllocated = endAlloc - startAlloc,
                 Gen0 = GC.CollectionCount(0) - startG0,
@@ -324,8 +320,7 @@ namespace GhostBodyObject.BenchmarkRunner
 
             var endAlloc = GC.GetTotalAllocatedBytes(true);
 
-            var result = new BenchmarkResult
-            {
+            var result = new BenchmarkResult {
                 Duration = sw.Elapsed,
                 BytesAllocated = endAlloc - startAlloc,
                 Gen0 = GC.CollectionCount(0) - startG0,
@@ -348,8 +343,7 @@ namespace GhostBodyObject.BenchmarkRunner
         /// </summary>
         protected async Task<BenchmarkResult> RunParallelActionAsync(int threadCount, Func<int, Task> action)
         {
-            return await RunMonitoredActionAsync(async () =>
-            {
+            return await RunMonitoredActionAsync(async () => {
                 using var startSignal = new ManualResetEventSlim(false);
                 using var readySignal = new CountdownEvent(threadCount);
 
@@ -358,8 +352,7 @@ namespace GhostBodyObject.BenchmarkRunner
                 for (int i = 0; i < threadCount; i++)
                 {
                     int localId = i;
-                    tasks[i] = Task.Run(async () =>
-                    {
+                    tasks[i] = Task.Run(async () => {
                         readySignal.Signal();
                         var spin = new SpinWait();
                         while (!startSignal.IsSet)
@@ -375,9 +368,27 @@ namespace GhostBodyObject.BenchmarkRunner
 
         public BenchmarkBase WriteComment(string comment)
         {
+            AnsiConsole.MarkupLine($"[yellow]{comment}[/]");
+            return this;
+        }
+
+        public BenchmarkBase WriteDetail(string comment)
+        {
+            AnsiConsole.MarkupLine($"[gray]{comment}[/]");
+            return this;
+        }
+
+        public BenchmarkBase WriteSpace()
+        {
+            AnsiConsole.WriteLine();
+            return this;
+        }
+
+        public BenchmarkBase WriteStep(string comment)
+        {
             AnsiConsole.WriteLine();
             var escapedComment = Markup.Escape(comment);
-            AnsiConsole.Write(new Rule($"[yellow]{escapedComment}[/]"));
+            AnsiConsole.Write(new Rule($"[magenta]{escapedComment}[/]"));
             AnsiConsole.WriteLine();
             return this;
         }

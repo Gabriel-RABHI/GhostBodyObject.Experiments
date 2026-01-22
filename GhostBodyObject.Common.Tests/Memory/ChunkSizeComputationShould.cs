@@ -1,7 +1,4 @@
 ﻿using GhostBodyObject.Common.Memory;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace GhostBodyObject.Common.Tests.Memory
 {
@@ -47,7 +44,7 @@ namespace GhostBodyObject.Common.Tests.Memory
             // Covering small linear range + transition to float logic + large values.
 
             // Check dense range 1..4096
-            for (uint size = 1; size <= 1024 * 1024 * 32; size+=4)
+            for (uint size = 1; size <= 1024 * 1024 * 32; size += 4)
             {
                 ushort index = ChunkSizeComputation.SizeToIndex(size);
                 uint capacity = ChunkSizeComputation.IndexToSize(index);
@@ -184,8 +181,7 @@ namespace GhostBodyObject.Common.Tests.Memory
             try
             {
                 ChunkSizeComputation.SizeToIndex(uint.MaxValue);
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 Assert.Fail($"SizeToIndex crashed on uint.MaxValue: {ex.Message}");
             }

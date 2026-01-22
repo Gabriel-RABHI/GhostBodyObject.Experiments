@@ -45,8 +45,7 @@ namespace GhostBodyObject.BenchmarkRunner
         [BruteForceBenchmark("GC", "Run GC Collect", "Z-SYS")]
         public void SequentialTest()
         {
-            RunMonitoredAction(() =>
-            {
+            RunMonitoredAction(() => {
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
                 GC.WaitForPendingFinalizers();
                 GC.WaitForFullGCComplete();

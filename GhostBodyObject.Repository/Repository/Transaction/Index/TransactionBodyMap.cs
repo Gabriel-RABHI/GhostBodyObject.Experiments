@@ -29,6 +29,9 @@
  * --------------------------------------------------------------------------
  */
 
+#undef THREAD_SAFE
+
+using GhostBodyObject.Common.SpinLocks;
 using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
 using System.Collections;
@@ -68,7 +71,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         private const int InitialCapacity = 16;
 
 #if THREAD_SAFE
-        private ShortMonitor _lock;
+        private ShortSpinLock _lock;
 #endif
 
         public int Count => _count;
@@ -84,6 +87,11 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             _randomParts = new short[_capacity];
 
             UpdateThresholds();
+        }
+
+        public void Release()
+        {
+            //Clear();
         }
 
         /// <summary>
@@ -335,7 +343,21 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         public TBody[] GetEntriesArray() => _entries;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Enumerator GetEnumerator() => new Enumerator(_entries);
+        public Enumerator GetEnumerator()
+        {
+#if THREAD_SAFE
+            _lock.Enter();
+            try
+            {
+#endif
+                return new Enumerator(_entries);
+#if THREAD_SAFE
+            } finally
+            {
+                _lock.Exit();
+            }
+#endif
+        }
 
         public struct Enumerator : IEnumerator<TBody>
         {
@@ -351,8 +373,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 _current = null;
             }
 
-            public TBody Current
-            {
+            public TBody Current {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _current;
             }

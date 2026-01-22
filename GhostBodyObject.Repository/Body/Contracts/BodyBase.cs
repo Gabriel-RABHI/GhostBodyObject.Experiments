@@ -50,7 +50,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
         /// Maximum array offset for small arrays (ushort max = 65535).
         /// </summary>
         public const int SmallArrayMaxOffset = ushort.MaxValue;
-        
+
         /// <summary>
         /// Maximum array element count for small arrays (11 bits = 2047).
         /// </summary>
@@ -69,24 +69,20 @@ namespace GhostBodyObject.Repository.Body.Contracts
         // VTable Header Access
         // -----------------------------------------------------------------
 
-        internal VectorTableHeader* _vTableHeader
-        {
+        internal VectorTableHeader* _vTableHeader {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (VectorTableHeader*)_vTablePtr;
         }
 
-        protected unsafe int TotalSize
-        {
+        protected unsafe int TotalSize {
             [MethodImpl(MethodImplOptions.NoInlining)]
-            get
-            {
+            get {
                 var _vt = (VectorTableHeader*)_vTablePtr;
                 if (_vt->LargeArrays)
                 {
                     ArrayMapLargeEntry* last = (ArrayMapLargeEntry*)(_data.Ptr + _vt->ArrayMapOffset + ((_vt->ArrayMapLength - 1) * sizeof(ArrayMapLargeEntry)));
                     return last->ArrayEndOffset;
-                }
-                else
+                } else
                 {
                     ArrayMapSmallEntry* last = (ArrayMapSmallEntry*)(_data.Ptr + _vt->ArrayMapOffset + ((_vt->ArrayMapLength - 1) * sizeof(ArrayMapSmallEntry)));
                     return last->ArrayEndOffset;
@@ -102,8 +98,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
             {
                 ArrayMapLargeEntry* last = (ArrayMapLargeEntry*)(body._data.Ptr + _vt->ArrayMapOffset + ((_vt->ArrayMapLength - 1) * sizeof(ArrayMapLargeEntry)));
                 return last->ArrayEndOffset;
-            }
-            else
+            } else
             {
                 ArrayMapSmallEntry* last = (ArrayMapSmallEntry*)(body._data.Ptr + _vt->ArrayMapOffset + ((_vt->ArrayMapLength - 1) * sizeof(ArrayMapSmallEntry)));
                 return last->ArrayEndOffset;
@@ -112,23 +107,19 @@ namespace GhostBodyObject.Repository.Body.Contracts
 
         public void SwapGhost(PinnedMemory<byte> ghost) => _data = ghost;
 
-        public GhostHeader* Header
-        {
+        public GhostHeader* Header {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 return (GhostHeader*)_data.Ptr;
             }
         }
 
-        public GhostId Id
-        {
+        public GhostId Id {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Header->Id;
         }
 
-        public GhostStatus Status
-        {
+        public GhostStatus Status {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Header->Status;
         }
@@ -141,8 +132,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
 
         public bool MappedDeleted => Status == GhostStatus.MappedDeleted;
 
-        public long TxnId
-        {
+        public long TxnId {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Header->TxnId;
         }
@@ -175,8 +165,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
             if (_vt->LargeArrays)
             {
                 SwapAnyArrayLarge(body, src, arrayIndex, _vt);
-            }
-            else
+            } else
             {
                 SwapAnyArraySmall(body, src, arrayIndex, _vt);
             }
@@ -288,8 +277,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
                     {
                         Buffer.MemoryCopy(body._data.Ptr + oldNextOffset, body._data.Ptr + newNextOffset, tailLength, tailLength);
                     }
-                }
-                else
+                } else
                 {
                     // -------- Shrinking: move tail forward first, then resize --------
                     if (tailLength > 0)
@@ -318,8 +306,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 }
 
                 mapEntry->ArrayLength = (uint)(src.Length / valueSize);
-            }
-            else
+            } else
             {
                 // delta != 0: need to shift subsequent arrays
                 int newTotalSize = oldTotalSize + delta;
@@ -337,8 +324,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
                     {
                         Buffer.MemoryCopy(body._data.Ptr + oldNextOffset, body._data.Ptr + newNextOffset, tailLength, tailLength);
                     }
-                }
-                else
+                } else
                 {
                     // -------- Shrinking: move tail forward first, then resize --------
                     if (tailLength > 0)
@@ -405,7 +391,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
             // -------- Size changed: need to shift subsequent arrays --------
             int oldTotalSize = GetTotalSize(body);
             int newArrayEnd = currentOffset + src.Length;
-            
+
             // Check offset limit (ushort max = 65535)
             if (newArrayEnd > SmallArrayMaxOffset)
                 throw new OverflowException($"Array end offset ({newArrayEnd}) exceeds the maximum allowed for small arrays ({SmallArrayMaxOffset} bytes).");
@@ -483,8 +469,7 @@ namespace GhostBodyObject.Repository.Body.Contracts
                 {
                     Buffer.MemoryCopy(body._data.Ptr + oldNextOffset, body._data.Ptr + newNextOffset, tailLength, tailLength);
                 }
-            }
-            else
+            } else
             {
                 // -------- Shrinking: move tail forward first, then resize --------
                 if (tailLength > 0)
@@ -503,11 +488,11 @@ namespace GhostBodyObject.Repository.Body.Contracts
             {
                 ArrayMapSmallEntry* entry = mapBase + i;
                 int newOffset = entry->ArrayOffset + delta;
-                
+
                 // Verify the new offset fits in ushort
                 if (newOffset > SmallArrayMaxOffset || newOffset < 0)
                     throw new OverflowException($"Array offset ({newOffset}) exceeds the maximum allowed for small arrays ({SmallArrayMaxOffset} bytes).");
-                    
+
                 entry->ArrayOffset = (ushort)newOffset;
             }
 

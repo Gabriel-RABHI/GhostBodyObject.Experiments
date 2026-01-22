@@ -29,11 +29,8 @@
  * --------------------------------------------------------------------------
  */
 
-using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace GhostBodyObject.Repository.Repository.Structs
 {
@@ -65,5 +62,11 @@ namespace GhostBodyObject.Repository.Repository.Structs
         // Helper to check if the slot has valid data (neither empty nor dead)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() => Value != 0 && Value != ulong.MaxValue;
+
+        public override string ToString()
+        {
+            return Value == 0 ? "-" : $"{SegmentId} -> {Offset}";
+        }
+
     }
 }

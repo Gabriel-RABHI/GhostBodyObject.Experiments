@@ -1,6 +1,5 @@
 ﻿using GhostBodyObject.HandWritten.Entities.Arrays;
 using GhostBodyObject.Repository.Repository.Transaction;
-using GhostBodyObject.Repository.Repository.Transaction.Collections;
 using GhostBodyObject.Repository.Repository.Transaction.Index;
 
 namespace GhostBodyObject.HandWritten.Entities.Repository
@@ -33,7 +32,7 @@ namespace GhostBodyObject.HandWritten.Entities.Repository
         }
 
         #region
-        private ShardedTransactionBodyMap<ArraysAsStringsAndSpansLarge> _arraysAsStringsAndSpansLargeMap;
+        private readonly ShardedTransactionBodyMap<ArraysAsStringsAndSpansLarge> _arraysAsStringsAndSpansLargeMap;
 
         public void RegisterBody(ArraysAsStringsAndSpansLarge body)
             => _arraysAsStringsAndSpansLargeMap.Set(body);
@@ -43,7 +42,7 @@ namespace GhostBodyObject.HandWritten.Entities.Repository
         #endregion
 
         #region
-        private ShardedTransactionBodyMap<ArraysAsStringsAndSpansSmall> _arraysAsStringsAndSpansSmallMap;
+        private readonly ShardedTransactionBodyMap<ArraysAsStringsAndSpansSmall> _arraysAsStringsAndSpansSmallMap;
 
         public void RegisterBody(ArraysAsStringsAndSpansSmall body)
             => _arraysAsStringsAndSpansSmallMap.Set(body);

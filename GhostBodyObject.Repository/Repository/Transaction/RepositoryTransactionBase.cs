@@ -30,7 +30,6 @@
  */
 
 using GhostBodyObject.Repository.Body.Contracts;
-using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Segment;
 
 namespace GhostBodyObject.Repository.Repository.Transaction
@@ -39,9 +38,10 @@ namespace GhostBodyObject.Repository.Repository.Transaction
     {
         private readonly GhostRepositoryBase _repository;
         private readonly bool _isReadOnly;
-        private long _openingTxnId;
-        private MemorySegmentStoreHolders _holders;
+        private readonly long _openingTxnId;
+        private readonly MemorySegmentStoreHolders _holders;
         protected RepositoryTransactionBodyIndex _bodyIndex;
+        private bool _closed;
 
         public volatile bool IsBusy;
 
@@ -50,8 +50,18 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             _repository = repository;
             _isReadOnly = isReadOnly;
             _holders = repository.Store.GetHolders();
-            _openingTxnId = repository.CurrentTransactionId;
-            _bodyIndex = new RepositoryTransactionBodyIndex(this, 1024);
+            _openingTxnId = repository.GetNewTxnId();
+            _bodyIndex = new RepositoryTransactionBodyIndex(this, maxTypeIdentifier);
+        }
+
+        public void Close()
+        {
+            if (!_closed)
+            {
+                _repository.Forget(_openingTxnId);
+                _closed = true;
+                _bodyIndex.Release();
+            }
         }
 
         public GhostRepositoryBase Repository => _repository;
@@ -62,16 +72,15 @@ namespace GhostBodyObject.Repository.Repository.Transaction
 
         public long OpeningTxnId => _openingTxnId;
 
-        public RepositoryTransactionBodyIndex BodyIndex => _bodyIndex;
-
         public void RegisterBody<TBody>(TBody body)
             where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
         {
             var map = _bodyIndex.GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
-            if (body.Inserted)
-                map.InsertedIds.Add(body.Id);
-            if (body.MappedDeleted || body.MappedModified)
-                map.MappedMutedIds.Add(body.Id);
+            if (body.Inserted || body.MappedDeleted || body.MappedModified)
+            {
+                _bodyIndex.RecordModifiedBody(body);
+                map.RecordModifiedBody(body);
+            }
             map.Set(body);
         }
 
@@ -82,7 +91,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             if (map != null)
             {
                 map.Remove(body.Id);
-                map.InsertedIds.Remove(body.Id);
+                map.RemoveModifiedBody(body);
             }
         }
     }

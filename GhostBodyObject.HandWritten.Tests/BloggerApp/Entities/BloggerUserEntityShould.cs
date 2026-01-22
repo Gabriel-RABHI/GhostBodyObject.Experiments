@@ -1,9 +1,6 @@
 ﻿using GhostBodyObject.HandWritten.Blogger;
 using GhostBodyObject.HandWritten.Blogger.Repository;
 using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace GhostBodyObject.HandWritten.Tests.BloggerApp.Entities
 {

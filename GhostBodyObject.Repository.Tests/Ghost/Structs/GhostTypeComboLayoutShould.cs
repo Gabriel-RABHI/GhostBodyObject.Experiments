@@ -1,7 +1,5 @@
-using System.Runtime.InteropServices;
 using global::GhostBodyObject.Repository.Ghost.Constants;
 using global::GhostBodyObject.Repository.Ghost.Structs;
-using Xunit;
 
 namespace GhostBodyObject.Common.Tests.Objects // Use the same namespace as GhostIdShould to be safe, or a sub-namespace
 {

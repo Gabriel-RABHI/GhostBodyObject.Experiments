@@ -30,7 +30,6 @@
  */
 
 using Spectre.Console;
-using System.Text.Json.Serialization;
 
 namespace GhostBodyObject.BenchmarkRunner
 {
@@ -121,7 +120,7 @@ namespace GhostBodyObject.BenchmarkRunner
         /// <summary>
         /// Computes and displays throughput (Ops/Sec) and Latency underneath the main results.
         /// </summary>
-        public BenchmarkResult PrintDelayPerOp(long totalOperations)
+        public BenchmarkResult PrintDelayPerOp(long totalOperations, string label = "", bool showCost = true)
         {
             if (totalOperations <= 0) return this;
 
@@ -136,13 +135,28 @@ namespace GhostBodyObject.BenchmarkRunner
             table.AddColumn(new TableColumn("Label").PadRight(2));
             table.AddColumn(new TableColumn("Value").RightAligned());
 
-            table.AddRow(
-                $"{INDENT}[Gray]Operation cost[/]".PadRight(LABEL_PADDING),
-                $"[White]{FormatOperationCost(nsPerOp)}[/]".PadLeft(VALUE_PADDING));
+            if (string.IsNullOrEmpty(label))
+            {
+                if (showCost)
+                    table.AddRow(
+                        $"{INDENT}[Gray]Cost per operation[/]".PadRight(LABEL_PADDING),
+                        $"[White]{FormatOperationCost(nsPerOp)}[/]".PadLeft(VALUE_PADDING));
 
-            table.AddRow(
-                $"{INDENT}[Gray]Operations per second[/]".PadRight(LABEL_PADDING),
-                $"[White]{FormatOpsPerSecond(opsPerSec)}[/]".PadLeft(VALUE_PADDING));
+                table.AddRow(
+                    $"{INDENT}[Gray]Operations / second[/]".PadRight(LABEL_PADDING),
+                    $"[White]{FormatOpsPerSecond(opsPerSec)}[/]".PadLeft(VALUE_PADDING));
+            } else
+            {
+                if (showCost)
+                    table.AddRow(
+                        $"{INDENT}[Gray]{label} cost[/]".PadRight(LABEL_PADDING),
+                        $"[White]{FormatOperationCost(nsPerOp)}[/]".PadLeft(VALUE_PADDING));
+
+                table.AddRow(
+                    $"{INDENT}[Gray]{label} / second[/]".PadRight(LABEL_PADDING),
+                    $"[White]{FormatOpsPerSecond(opsPerSec)}[/]".PadLeft(VALUE_PADDING));
+            }
+
 
             AnsiConsole.Write(table);
             return this;
@@ -173,9 +187,9 @@ namespace GhostBodyObject.BenchmarkRunner
             if (opsPerSec < 10_000)
                 return $"{opsPerSec:N0}";
             else if (opsPerSec < 100_000_000)
-                return $"{opsPerSec / 1_000:N1}k";
+                return $"{opsPerSec / 1_000:N1} k";
             else
-                return $"{opsPerSec / 1_000_000:N1}M";
+                return $"{opsPerSec / 1_000_000:N1} M";
         }
 
         public BenchmarkResult PrintSpace()
@@ -193,8 +207,7 @@ namespace GhostBodyObject.BenchmarkRunner
             double? opsPerSec = TotalOperations > 0 && ms > 0 ? (TotalOperations / ms) * 1000.0 : null;
             double? nsPerOp = TotalOperations > 0 && ms > 0 ? (ms * 1_000_000.0) / TotalOperations : null;
 
-            return new BenchmarkResultRecord
-            {
+            return new BenchmarkResultRecord {
                 Code = Code,
                 Label = Label,
                 DurationMs = ms,

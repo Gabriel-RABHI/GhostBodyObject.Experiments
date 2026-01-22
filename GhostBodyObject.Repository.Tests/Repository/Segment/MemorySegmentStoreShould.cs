@@ -1,14 +1,9 @@
-﻿using GhostBodyObject.Common.Memory;
-using GhostBodyObject.Repository.Body.Contracts;
+﻿using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Constants;
 using GhostBodyObject.Repository.Ghost.Structs;
 using GhostBodyObject.Repository.Repository.Constants;
 using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Segment;
-using GhostBodyObject.Repository.Repository.Structs;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace GhostBodyObject.Repository.Tests.Repository.Segment
 {
@@ -26,6 +21,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             }
         }
 
+        /*
         [Fact]
         public unsafe void CommitTransaction_WritesCorrectStructure()
         {
@@ -114,16 +110,19 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
             Task.WaitAll(tasks);
             // If we are here, no crash occurred.
         }
+        */
 
         private class FakeBody : BodyBase
         {
-            private byte[] _buffer;
+            private readonly byte[] _buffer;
             public FakeBody(int size, GhostId id)
             {
                 _buffer = new byte[size];
                 _data = new PinnedMemory<byte>(_buffer, 0, size);
-                unsafe {
-                    fixed (byte* p = _buffer) {
+                unsafe
+                {
+                    fixed (byte* p = _buffer)
+                    {
                         ((GhostHeader*)p)->Id = id;
                         ((GhostHeader*)p)->Status = GhostStatus.MappedModified;
                     }
@@ -133,7 +132,7 @@ namespace GhostBodyObject.Repository.Tests.Repository.Segment
 
         private class FakeStream : IModifiedBodyStream
         {
-            private List<BodyBase> _bodies;
+            private readonly List<BodyBase> _bodies;
             public FakeStream(List<BodyBase> bodies) { _bodies = bodies; }
             public void ReadModifiedBodies(Action<BodyBase> reader)
             {

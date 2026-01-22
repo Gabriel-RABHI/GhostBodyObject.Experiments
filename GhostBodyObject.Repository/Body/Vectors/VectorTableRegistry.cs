@@ -57,23 +57,20 @@ namespace GhostBodyObject.Repository.Body.Vectors
         {
             // -------- 1. Search for all compatible Builder classes in the AppDomain
             var validBuilders = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(assembly =>
-                {
+                .SelectMany(assembly => {
                     try
                     {
                         // Skip dynamic assemblies or those that throw on GetTypes
                         if (assembly.IsDynamic) return Type.EmptyTypes;
                         return assembly.GetTypes();
-                    }
-                    catch
+                    } catch
                     {
                         // Safely ignore assemblies that fail to enumerate types
                         return Type.EmptyTypes;
                     }
                 })
                 .Where(t => t.IsClass && t.IsSealed && t.IsAbstract) // Must be a static class
-                .Select(t => new
-                {
+                .Select(t => new {
                     Type = t,
                     // Look for the required static properties and method
                     RepoProp = t.GetProperty("RepositoryType", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static),
@@ -84,14 +81,12 @@ namespace GhostBodyObject.Repository.Body.Vectors
                 // Filter: Must have all members
                 .Where(x => x.RepoProp != null && x.BodyProp != null && x.VersionProp != null && x.Method != null)
                 // Filter: Must match current TRepository and TBody
-                .Where(x =>
-                {
+                .Where(x => {
                     var rType = x.RepoProp.GetValue(null) as Type;
                     var bType = x.BodyProp.GetValue(null) as Type;
                     return rType == typeof(TRepository) && bType == typeof(TBody);
                 })
-                .Select(x => new
-                {
+                .Select(x => new {
                     // The SourceVersion determines the Index in the table
                     Version = (int)x.VersionProp.GetValue(null),
                     Method = x.Method

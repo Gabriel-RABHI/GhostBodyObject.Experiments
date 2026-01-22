@@ -1,7 +1,4 @@
 ﻿using GhostBodyObject.Common.SpinLocks;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace GhostBodyObject.Common.Tests.SpinLocks
 {
@@ -22,8 +19,7 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
 #else
             var loops = 100_000;
 #endif
-            var action = () =>
-            {
+            var action = () => {
                 for (int i = 0; i < loops; i++)
                 {
                     SpinLock.Enter();
@@ -32,12 +28,10 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
                         var r = Interlocked.Increment(ref count);
                         Assert.True(r < 2);
                         Interlocked.Decrement(ref count);
-                    }
-                    catch
+                    } catch
                     {
                         throw;
-                    }
-                    finally
+                    } finally
                     {
                         SpinLock.Exit();
                     }
@@ -66,8 +60,7 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
             var loops = 100_000;
 #endif
 
-            var action = () =>
-            {
+            var action = () => {
                 for (int i = 0; i < loops; i++)
                 {
                     SpinLock.Enter();
@@ -76,12 +69,10 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
                         var r = Interlocked.Increment(ref count);
                         Assert.True(r < 3);
                         Interlocked.Decrement(ref count);
-                    }
-                    catch
+                    } catch
                     {
                         throw;
-                    }
-                    finally
+                    } finally
                     {
                         SpinLock.Exit();
                     }
@@ -110,8 +101,7 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
             var loops = 100_000;
 #endif
 
-            var action = () =>
-            {
+            var action = () => {
                 for (int i = 0; i < loops; i++)
                 {
                     SpinLock.Enter();
@@ -123,22 +113,18 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
                         try
                         {
                             Assert.True(count < 2);
-                        }
-                        catch
+                        } catch
                         {
                             throw;
-                        }
-                        finally
+                        } finally
                         {
                             SpinLock.Exit();
                             Interlocked.Decrement(ref count);
                         }
-                    }
-                    catch
+                    } catch
                     {
                         throw;
-                    }
-                    finally
+                    } finally
                     {
                         SpinLock.Exit();
                     }
@@ -166,8 +152,7 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
 #else
             var loops = 100_000;
 #endif
-            var action = () =>
-            {
+            var action = () => {
                 for (int i = 0; i < loops; i++)
                 {
                     if (i % 15 == 0)
@@ -178,28 +163,23 @@ namespace GhostBodyObject.Common.Tests.SpinLocks
                             var r = Interlocked.Increment(ref countWrite);
                             Assert.True(r < 2);
                             Interlocked.Decrement(ref countWrite);
-                        }
-                        catch
+                        } catch
                         {
                             throw;
-                        }
-                        finally
+                        } finally
                         {
                             SpinLock.ExitWrite();
                         }
-                    }
-                    else
+                    } else
                     {
                         SpinLock.EnterRead();
                         try
                         {
                             Assert.Equal(0, Volatile.Read(ref countWrite));
-                        }
-                        catch
+                        } catch
                         {
                             throw;
-                        }
-                        finally
+                        } finally
                         {
                             SpinLock.ExitRead();
                         }

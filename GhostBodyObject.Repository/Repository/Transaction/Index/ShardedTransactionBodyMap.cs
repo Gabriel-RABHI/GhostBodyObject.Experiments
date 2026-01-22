@@ -42,18 +42,17 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
     /// Distributes entries across multiple <see cref="TransactionBodyMap{TBody}"/> shards
     /// to reduce contention and improve cache locality in concurrent scenarios.
     /// </summary>
-    public unsafe sealed class ShardedTransactionBodyMap<TBody> : IEnumerable<TBody>, IModifiedBodyStream
+    public unsafe sealed class ShardedTransactionBodyMap<TBody> : IEnumerable<TBody>, IModifiedBodyStream, IReleasable
         where TBody : BodyBase
     {
         // Default shard count of 8 - power of 2 for fast masking
         private const int DefaultShardCount = 8;
         private readonly int _shardCount;
         private readonly int _shardMask;
-
-        private List<GhostId> _inserted;
-        private List<GhostId> _mappedMuted;
-
         private readonly TransactionBodyMap<TBody>[] _shards;
+        private List<TBody> _mutations;
+
+        public List<TBody> Mutations => _mutations;
 
         /// <summary>
         /// Initializes a new sharded transaction body map with the specified shard count and initial capacity.
@@ -75,21 +74,32 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
             }
         }
 
-        public List<GhostId> InsertedIds
-            => _inserted == null ? (_inserted = new List<GhostId>()) : _inserted;
+        public void Release()
+        {
+            for (int i = 0; i < _shardCount; i++)
+            {
+                _shards[i].Release();
+            }
+            _mutations?.Clear();
+            _mutations = null;
+        }
 
-        public List<GhostId> MappedMutedIds
-            => _mappedMuted == null ? (_mappedMuted = new List<GhostId>()) : _mappedMuted;
+        public void RecordModifiedBody(TBody body)
+        {
+            if (_mutations == null)
+                _mutations = new List<TBody>();
+            _mutations.Add(body);
+        }
 
-        
+        public void RemoveModifiedBody(TBody body)
+        {
+            _mutations.Remove(body);
+        }
+
         public void ReadModifiedBodies(Action<BodyBase> reader)
         {
-            if (_inserted != null)
-                foreach (var id in _inserted)
-                    reader(Get(id, out var exist));
-            if (_mappedMuted != null)
-                foreach (var id in _mappedMuted)
-                    reader(Get(id, out var exist));
+            foreach (TBody body in _mutations)
+                reader(body);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -126,10 +136,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         /// <summary>
         /// Gets the total count of entries across all shards.
         /// </summary>
-        public int Count
-        {
-            get
-            {
+        public int Count {
+            get {
                 int count = 0;
                 for (int i = 0; i < _shardCount; i++)
                     count += _shards[i].Count;
@@ -140,10 +148,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
         /// <summary>
         /// Gets the total capacity across all shards.
         /// </summary>
-        public int Capacity
-        {
-            get
-            {
+        public int Capacity {
+            get {
                 int capacity = 0;
                 for (int i = 0; i < _shardCount; i++)
                     capacity += _shards[i].Capacity;
@@ -209,8 +215,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Index
                 return false;
             }
 
-            public TBody Current
-            {
+            public TBody Current {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => _currentEnum.Current;
             }

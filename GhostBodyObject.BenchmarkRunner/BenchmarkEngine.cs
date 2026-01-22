@@ -30,7 +30,6 @@
  */
 
 using Spectre.Console;
-using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
@@ -146,8 +145,7 @@ namespace GhostBodyObject.BenchmarkRunner
                         if (!string.IsNullOrWhiteSpace(capturedMarkdown))
                         {
                             markdownBuilder.Append(capturedMarkdown);
-                        }
-                        else
+                        } else
                         {
                             // Fallback: generate simple table with adaptive formatting
                             markdownBuilder.AppendLine("| Label | Duration | Memory | GC 0/1/2 | Op Cost | Op/s |");
@@ -171,16 +169,14 @@ namespace GhostBodyObject.BenchmarkRunner
                         {
                             allResults.Add(result.ToRecord());
                         }
-                    }
-                    else
+                    } else
                     {
                         markdownBuilder.AppendLine("*No results captured.*");
                         markdownBuilder.AppendLine();
                     }
 
                     AnsiConsole.WriteLine();
-                }
-                catch (Exception ex)
+                } catch (Exception ex)
                 {
                     AnsiConsole.WriteException(ex);
                     markdownBuilder.AppendLine($"**Error:** {ex.Message}");
@@ -247,13 +243,11 @@ namespace GhostBodyObject.BenchmarkRunner
             File.WriteAllText(mdPath, markdownContent);
 
             // Write JSON file with formatted values
-            var jsonData = new BenchmarkDataFile
-            {
+            var jsonData = new BenchmarkDataFile {
                 RunDate = runDate,
                 Category = category,
                 Code = code,
-                Results = results.Select(r => new BenchmarkResultRecordWithFormatted
-                {
+                Results = results.Select(r => new BenchmarkResultRecordWithFormatted {
                     Code = r.Code,
                     Label = r.Label,
                     DurationMs = r.DurationMs,
@@ -391,8 +385,7 @@ namespace GhostBodyObject.BenchmarkRunner
                             if (!string.IsNullOrWhiteSpace(capturedMarkdown))
                             {
                                 markdownBuilder.Append(capturedMarkdown);
-                            }
-                            else
+                            } else
                             {
                                 markdownBuilder.AppendLine("| Label | Duration | Memory | GC 0/1/2 | Op Cost | Op/s |");
                                 markdownBuilder.AppendLine("|-------|----------|--------|----------|---------|------|");
@@ -420,8 +413,7 @@ namespace GhostBodyObject.BenchmarkRunner
                                 resultRecords);
                         }
                     }
-                }
-                catch (Exception ex)
+                } catch (Exception ex)
                 {
                     AnsiConsole.WriteException(ex);
                 }

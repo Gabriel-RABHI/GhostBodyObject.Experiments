@@ -1,25 +1,15 @@
-﻿using System.Runtime.InteropServices.JavaScript;
-using GhostBodyObject.HandWritten.BloggerApp.Entities.Post;
-using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
-using GhostBodyObject.HandWritten.Entities.Arrays;
+﻿using GhostBodyObject.HandWritten.BloggerApp.Entities.User;
 using GhostBodyObject.Repository.Body.Contracts;
-using GhostBodyObject.Repository.Ghost.Constants;
-using GhostBodyObject.Repository.Ghost.Structs;
-using GhostBodyObject.Repository.Repository;
 using GhostBodyObject.Repository.Repository.Contracts;
-using GhostBodyObject.Repository.Repository.Index;
-using GhostBodyObject.Repository.Repository.Segment;
-using GhostBodyObject.Repository.Repository.Structs;
 using GhostBodyObject.Repository.Repository.Transaction;
 using GhostBodyObject.Repository.Repository.Transaction.Collections;
-using GhostBodyObject.Repository.Repository.Transaction.Index;
 
 namespace GhostBodyObject.HandWritten.Blogger.Repository
 {
     public class BloggerTransaction : RepositoryTransactionBase, IModifiedBodyStream
     {
-        private BloggerRepository _repository;
-        private bool _closed;
+        private readonly BloggerRepository _repository;
+        private bool _validated;
 
         public BloggerRepository Repository => _repository;
 
@@ -27,32 +17,23 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         {
             if (IsReadOnly)
                 throw new InvalidOperationException("Cannot commit a read-only transaction.");
-            if (_closed)
-                throw new InvalidOperationException("Cannot commit a closed transaction.");
+            if (_validated)
+                throw new InvalidOperationException("Cannot commit a already validated (committed or rollbacked) transaction.");
 
             _repository.CommitTransaction(this, concurrently);
+            _validated = true;
         }
 
         public void Rollback()
         {
             if (IsReadOnly)
                 throw new InvalidOperationException("Cannot rollback a read-only transaction.");
+            _validated = true;
         }
 
-        public void Close()
-        {
-            if (_closed)
-                return;
-            if (!IsReadOnly)
-                Rollback();
-            _repository.Forget(this);
-        }
-
-
-        public BloggerTransaction(BloggerRepository repository, bool readOnly = false) : base(repository, readOnly, 101)
+        public BloggerTransaction(BloggerRepository repository, bool readOnly = false) : base(repository, readOnly, 1024)
         {
             _repository = repository;
-            _repository.Retain(this);
         }
 
         ~BloggerTransaction()
@@ -69,10 +50,5 @@ namespace GhostBodyObject.HandWritten.Blogger.Repository
         }
 
         public BodyCollection<BloggerUser> Users => new BodyCollection<BloggerUser>(_bodyIndex);
-    }
-
-    public static class BloggerCollections
-    {
-        public static BodyCollection<BloggerUser> BloggerUsers => BloggerContext.Transaction.Users;
     }
 }

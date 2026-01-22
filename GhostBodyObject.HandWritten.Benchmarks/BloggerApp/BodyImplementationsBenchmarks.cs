@@ -37,8 +37,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             var repository = new BloggerRepository();
             using (BloggerContext.NewWriteContext(repository))
             {
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     var user = new BloggerUser();
                     user.Active = true;
                     for (int i = 0; i < COUNT; i++)
@@ -51,8 +50,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                 .PrintSpace();
 
 
-                RunMonitoredAction(() =>
-                {
+                RunMonitoredAction(() => {
                     var user = new BloggerUser();
                     user.Active = true;
                     for (int i = 0; i < COUNT_STR; i++)

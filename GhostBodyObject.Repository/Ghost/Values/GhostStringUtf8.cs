@@ -99,10 +99,8 @@ namespace GhostBodyObject.Repository
         /// <summary>
         /// Gets the length of the string in characters (requires decoding).
         /// </summary>
-        public int Length
-        {
-            get
-            {
+        public int Length {
+            get {
                 var bytes = AsBytes();
                 return bytes.IsEmpty ? 0 : Encoding.UTF8.GetCharCount(bytes);
             }
@@ -121,11 +119,9 @@ namespace GhostBodyObject.Repository
         /// <summary>
         /// Gets the byte at the specified index.
         /// </summary>
-        public byte this[int index]
-        {
+        public byte this[int index] {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 if ((uint)index >= (uint)ByteLength)
                     ThrowIndexOutOfRange();
                 return AsBytes()[index];
@@ -1456,10 +1452,8 @@ namespace GhostBodyObject.Repository
         /// <summary>
         /// Gets the last character of the string.
         /// </summary>
-        public char Last
-        {
-            get
-            {
+        public char Last {
+            get {
                 var str = ToString();
                 return str.Length > 0 ? str[str.Length - 1] : throw new InvalidOperationException("String is empty.");
             }
@@ -1592,8 +1586,7 @@ namespace GhostBodyObject.Repository
                 if (bytes.IsEmpty) return true;
                 _ = Encoding.UTF8.GetCharCount(bytes);
                 return true;
-            }
-            catch
+            } catch
             {
                 return false;
             }

@@ -35,13 +35,11 @@ using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Index;
 using GhostBodyObject.Repository.Repository.Segment;
-using GhostBodyObject.Repository.Repository.Transaction;
 
 namespace GhostBodyObject.Repository.Repository
 {
     public class GhostRepositoryBase : IDisposable
     {
-        private object _locker = new object();
         private ShortSpinLock _spinLocker = new ShortSpinLock();
 
         /// <summary>
@@ -57,11 +55,9 @@ namespace GhostBodyObject.Repository.Repository
         /// <summary>
         /// Represents the range of transaction IDs associated with the current repository transaction.
         /// </summary>
-        private GhostRepositoryTransactionIdRange _transactionRange = new GhostRepositoryTransactionIdRange();
+        private readonly GhostRepositoryTransactionIdRange _transactionRange = new GhostRepositoryTransactionIdRange();
 
         #region PROPERTIES
-        public long CurrentTransactionId => _transactionRange.CurrentTransactionId;
-
         public long BottomTransactionId => _transactionRange.BottomTransactionId;
 
         public RepositoryGhostIndex<MemorySegmentStore> GhostIndex => _ghostIndex;
@@ -83,52 +79,18 @@ namespace GhostBodyObject.Repository.Repository
         public void CommitTransaction<T>(T commiter, bool twoStage = false)
             where T : IModifiedBodyStream
         {
-            TransactionContext context = null;
-
-            if (twoStage)
-            {
-                lock (_locker)
-                {
-                    context = _store.ReserveTransaction(commiter, _transactionRange.CurrentTransactionId);
-                    if (context != null)
-                    {
-                        _transactionRange.IncrementCurrentTransactionId();
-                    }
-                }
-
-                if (context != null)
-                {
-                    _store.WriteTransaction(context, (id, r) =>
-                    {
-                        _ghostIndex.AddGhost(r);
-                    });
-                }
-            }
-            else
-            {
-                lock (_locker)
-                {
-                    context = _store.ReserveTransaction(commiter, _transactionRange.CurrentTransactionId);
-                    if (context != null)
-                    {
-                        _store.WriteTransaction(context, (id, r) =>
-                        {
-                            _ghostIndex.AddGhost(r);
-                        });
-                        _transactionRange.IncrementCurrentTransactionId();
-                    }
-                }
-            }
+            var bottomTxnId = _transactionRange.BottomTransactionId;
+            _store.WriteTransaction(commiter, _transactionRange, (id, r) => {
+                _ghostIndex.AddGhost(bottomTxnId, r);
+            });
         }
 
-        public void Retain(RepositoryTransactionBase tnx)
-        {
-            _transactionRange.IncrementTransactionViewId(tnx.OpeningTxnId);
-        }
+        public long GetNewTxnId()
+            => _transactionRange.AddTransactionViewer();
 
-        public void Forget(RepositoryTransactionBase tnx)
+        public void Forget(long tnxId)
         {
-            if (_transactionRange.DecrementTransactionViewId(tnx.OpeningTxnId))
+            if (_transactionRange.RemoveTransactionViewer(tnxId))
             {
                 Store.UpdateHolders(_transactionRange.BottomTransactionId, _transactionRange.TopTransactionId);
             }

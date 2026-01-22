@@ -41,8 +41,8 @@ namespace GhostBodyObject.Repository.Repository.Index
         where TSegmentStore : ISegmentStore
     {
         private ShortSpinLock _lock = new ShortSpinLock();
-        private TSegmentStore _store;
-        private RepositorySingleKindGhostIndex<TSegmentStore>[] _maps;
+        private readonly TSegmentStore _store;
+        private readonly RepositorySingleKindGhostIndex<TSegmentStore>[] _maps;
 
         public RepositoryGhostIndex(TSegmentStore store)
         {
@@ -51,27 +51,25 @@ namespace GhostBodyObject.Repository.Repository.Index
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddGhost(SegmentReference r)
+        public void AddGhost(long bottomTxnId, SegmentReference r)
         {
-            var h = (GhostHeader*)_store.ToGhostHeaderPointer(r);
+            var h = _store.ToGhostHeaderPointer(r);
             if (h != null)
             {
                 var map = GetIndex(h->Id.TypeCombo, true);
-                map.AddGhost(r, h);
-            }
-            else throw new InvalidOperationException("Cannot index a missing ghost.");
+                map.AddGhost(bottomTxnId, r, h);
+            } else throw new InvalidOperationException("Cannot index a missing ghost.");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveGhost(SegmentReference r)
         {
-            var h = (GhostHeader*)_store.ToGhostHeaderPointer(r);
+            var h = _store.ToGhostHeaderPointer(r);
             if (h != null)
             {
                 var map = GetIndex(h->Id.TypeCombo, true);
                 map.RemoveGhost(r, h);
-            }
-            else throw new InvalidOperationException("Cannot index a missing ghost.");
+            } else throw new InvalidOperationException("Cannot index a missing ghost.");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -100,13 +98,11 @@ namespace GhostBodyObject.Repository.Repository.Index
                             _maps[typeCombo.Value] = typeMap;
                         }
                         typeMap = _maps[typeCombo.Value];
-                    }
-                    finally
+                    } finally
                     {
                         _lock.Exit();
                     }
-                }
-                else return null;
+                } else return null;
             }
             return typeMap;
         }
@@ -115,10 +111,10 @@ namespace GhostBodyObject.Repository.Repository.Index
     public unsafe sealed class RepositorySingleKindGhostIndex<TSegmentStore>
         where TSegmentStore : ISegmentStore
     {
-        private ISegmentStore _store;
-        private long _minTxnId;
+        private readonly ISegmentStore _store;
+        private readonly long _minTxnId;
         private long _maxTxnId;
-        private ShardedSegmentGhostMap<TSegmentStore> _map;
+        private readonly ShardedSegmentGhostMap<TSegmentStore> _map;
 
         public RepositorySingleKindGhostIndex(TSegmentStore store)
         {
@@ -129,9 +125,9 @@ namespace GhostBodyObject.Repository.Repository.Index
         public ShardedSegmentGhostMap<TSegmentStore> GhostMap => _map;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddGhost(SegmentReference r, GhostHeader* h)
+        public void AddGhost(long bottomTxnId, SegmentReference r, GhostHeader* h)
         {
-            _map.Set(r, h);
+            _map.Set(bottomTxnId, r, h);
             _maxTxnId = Math.Max(_maxTxnId, h->TxnId);
         }
 

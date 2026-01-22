@@ -41,48 +41,49 @@ namespace GhostBodyObject.Repository.Repository.Helpers
     public class GhostRepositoryTransactionIdRange
     {
         private readonly object _lock = new object();
-        private long _currentTxnId = 0;
+        private long _topTxnId = 0;
         private readonly SortedList<long, int> _views = new SortedList<long, int>();
 
-        public long CurrentTransactionId => System.Threading.Interlocked.Read(ref _currentTxnId);
-
-        public long BottomTransactionId
-        {
-            get
-            {
+        public long BottomTransactionId {
+            get {
                 lock (_lock)
                 {
                     if (_views.Count == 0)
-                        return Interlocked.Read(ref _currentTxnId);
+                        return Interlocked.Read(ref _topTxnId);
                     return _views.Keys[0];
                 }
             }
         }
 
-        public long TopTransactionId => System.Threading.Interlocked.Read(ref _currentTxnId);
+        public long TopTransactionId => Interlocked.Read(ref _topTxnId);
 
         /// <summary>
         /// Increments the current transaction identifier and returns the updated value.
         /// </summary>
         /// <returns>The new transaction identifier after incrementing the current value.</returns>
-        public long IncrementCurrentTransactionId() => Interlocked.Increment(ref _currentTxnId);
+        public long IncrementTopTransactionId()
+        {
+            lock (_lock)
+                return ++_topTxnId;
+        }
 
         /// <summary>
         /// Increment the view counter for the specific transaction id.
         /// </summary>
         /// <param name="txnId">The transaction id for wich a new viewer is registered.</param>
-        public void IncrementTransactionViewId(long txnId)
+        public long AddTransactionViewer()
         {
             lock (_lock)
             {
+                var txnId = _topTxnId;
                 if (_views.TryGetValue(txnId, out int count))
                 {
                     _views[txnId] = count + 1;
-                }
-                else
+                } else
                 {
                     _views.Add(txnId, 1);
                 }
+                return _topTxnId;
             }
         }
 
@@ -91,7 +92,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
         /// </summary>
         /// <param name="txnId"></param>
         /// <returns>True if the viewer counter drops to 0. It is a signal that the repository's Store do not have to retain the MemorySegment.</returns>
-        public bool DecrementTransactionViewId(long txnId)
+        public bool RemoveTransactionViewer(long txnId)
         {
             lock (_lock)
             {
@@ -101,8 +102,7 @@ namespace GhostBodyObject.Repository.Repository.Helpers
                     {
                         _views.Remove(txnId);
                         return true;
-                    }
-                    else
+                    } else
                     {
                         _views[txnId] = count - 1;
                         return false;

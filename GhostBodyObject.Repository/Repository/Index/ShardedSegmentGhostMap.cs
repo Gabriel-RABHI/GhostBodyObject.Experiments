@@ -60,15 +60,15 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
             _shards[i] = new SegmentGhostMap<TSegmentStore>(store, capPerShard);
         }
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private SegmentGhostMap<TSegmentStore> GetShard(GhostId id) =>  _shards[id.ShardComputation & ShardMask];
+    private SegmentGhostMap<TSegmentStore> GetShard(GhostId id) => _shards[id.ShardComputation & ShardMask];
 
     // --- CRUD OPERATIONS ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Set(SegmentReference r, GhostHeader* h)
-        => GetShard(h->Id).SetAndRemove(r, h, long.MaxValue);
+    public void Set(long bottomTxnId, SegmentReference r, GhostHeader* h)
+        => GetShard(h->Id).SetAndRemove(r, h, bottomTxnId);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Get(GhostId id, long maxTxnId, out SegmentReference r)
@@ -78,10 +78,8 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
     public bool Remove(GhostId id, long txnId)
         => GetShard(id).Remove(id, txnId);
 
-    public int Count
-    {
-        get
-        {
+    public int Count {
+        get {
             int count = 0;
             for (int i = 0; i < ShardCount; i++)
                 count += _shards[i].Count;
@@ -89,10 +87,8 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
         }
     }
 
-    public int Capacity
-    {
-        get
-        {
+    public int Capacity {
+        get {
             int capacity = 0;
             for (int i = 0; i < ShardCount; i++)
                 capacity += _shards[i].Capacity;
@@ -143,8 +139,7 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
             return false;
         }
 
-        public SegmentReference Current
-        {
+        public SegmentReference Current {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _currentEnum.Current;
         }
@@ -179,8 +174,7 @@ public unsafe sealed class ShardedSegmentGhostMap<TSegmentStore>
             return false;
         }
 
-        public SegmentReference Current
-        {
+        public SegmentReference Current {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _currentEnum.Current;
         }

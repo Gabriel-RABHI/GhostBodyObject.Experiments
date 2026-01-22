@@ -2,7 +2,6 @@
 using GhostBodyObject.HandWritten.Entities.Arrays;
 using GhostBodyObject.HandWritten.Entities.Repository;
 using GhostBodyObject.Repository;
-using GhostBodyObject.Repository.Body.Contracts;
 using System.Text;
 
 namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
@@ -751,10 +750,10 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
 
                 var dates1 = new[] { new DateTime(2020, 1, 1), new DateTime(2021, 1, 1) };
                 var dates2 = new[] { new DateTime(2022, 1, 1), new DateTime(2023, 1, 1), new DateTime(2024, 1, 1) };
-                
+
                 body.DateTimes = dates1;
                 Assert.Equal(2, body.DateTimes.Length);
-                
+
                 // Create a GhostSpan from array (implicit conversion)
                 Repository.Ghost.Values.GhostSpan<DateTime> sourceSpan = dates2;
                 body.DateTimes.SetArray(sourceSpan);
@@ -784,7 +783,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
 
                 var initialGuids = new[] { Guid.NewGuid() };
                 var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
-                
+
                 body.Guids = initialGuids;
                 body.Guids.AppendRange(newGuids.AsSpan());
 
@@ -806,7 +805,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var initialGuids = new[] { Guid.NewGuid() };
                 var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
                 Repository.Ghost.Values.GhostSpan<Guid> toAppend = newGuids;
-                
+
                 body.Guids = initialGuids;
                 body.Guids.AppendRange(toAppend);
 
@@ -824,7 +823,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
 
                 var initialGuids = new[] { Guid.NewGuid() };
                 var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
-                
+
                 body.Guids = initialGuids;
                 body.Guids.PrependRange(newGuids.AsSpan());
 
@@ -846,7 +845,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var initialGuids = new[] { Guid.NewGuid() };
                 var newGuids = new[] { Guid.NewGuid(), Guid.NewGuid() };
                 Repository.Ghost.Values.GhostSpan<Guid> toPrepend = newGuids;
-                
+
                 body.Guids = initialGuids;
                 body.Guids.PrependRange(toPrepend);
 
@@ -875,7 +874,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var guid2 = Guid.NewGuid();
                 var guid3 = Guid.NewGuid();
                 var guid4 = Guid.NewGuid();
-                
+
                 body.Guids = new[] { guid1, guid4 };
                 body.Guids.InsertRangeAt(1, new[] { guid2, guid3 }.AsSpan());
 
@@ -899,9 +898,9 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var date2 = new DateTime(2021, 1, 1);
                 var date3 = new DateTime(2022, 1, 1);
                 var date4 = new DateTime(2023, 1, 1);
-                
+
                 Repository.Ghost.Values.GhostSpan<DateTime> toInsert = new[] { date2, date3 };
-                
+
                 body.DateTimes = new[] { date1, date4 };
                 body.DateTimes.InsertRangeAt(1, toInsert);
 
@@ -932,7 +931,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var targetGuid = Guid.NewGuid();
                 var otherGuid1 = Guid.NewGuid();
                 var otherGuid2 = Guid.NewGuid();
-                
+
                 body.Guids = new[] { otherGuid1, targetGuid, otherGuid2 };
                 bool removed = body.Guids.Remove(targetGuid);
 
@@ -954,7 +953,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var guid1 = Guid.NewGuid();
                 var guid2 = Guid.NewGuid();
                 var notInArray = Guid.NewGuid();
-                
+
                 body.Guids = new[] { guid1, guid2 };
                 bool removed = body.Guids.Remove(notInArray);
 
@@ -973,7 +972,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
 
                 var duplicateGuid = Guid.NewGuid();
                 var otherGuid = Guid.NewGuid();
-                
+
                 body.Guids = new[] { duplicateGuid, otherGuid, duplicateGuid, duplicateGuid };
                 int removedCount = body.Guids.RemoveAll(duplicateGuid);
 
@@ -994,7 +993,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var guid1 = Guid.NewGuid();
                 var guid2 = Guid.NewGuid();
                 var guid3 = Guid.NewGuid();
-                
+
                 body.Guids = new[] { guid1, guid2, guid3 };
                 var popped = body.Guids.Pop();
 
@@ -1016,7 +1015,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var guid1 = Guid.NewGuid();
                 var guid2 = Guid.NewGuid();
                 var guid3 = Guid.NewGuid();
-                
+
                 body.Guids = new[] { guid1, guid2, guid3 };
                 var shifted = body.Guids.Shift();
 
@@ -1049,7 +1048,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var newGuid1 = Guid.NewGuid();
                 var newGuid2 = Guid.NewGuid();
                 var newGuid3 = Guid.NewGuid();
-                
+
                 body.Guids = new[] { guid1, guid2, guid3 };
                 body.Guids.ReplaceRange(1, 1, new[] { newGuid1, newGuid2, newGuid3 }.AsSpan());
 
@@ -1074,9 +1073,9 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var date2 = new DateTime(2021, 1, 1);
                 var date3 = new DateTime(2022, 1, 1);
                 var newDate = new DateTime(2025, 1, 1);
-                
+
                 Repository.Ghost.Values.GhostSpan<DateTime> replacement = new[] { newDate };
-                
+
                 body.DateTimes = new[] { date1, date2, date3 };
                 body.DateTimes.ReplaceRange(1, 1, replacement);
 
@@ -1097,7 +1096,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
 
                 var guids = Enumerable.Range(0, 5).Select(_ => Guid.NewGuid()).ToArray();
                 var newGuid = Guid.NewGuid();
-                
+
                 body.Guids = guids;
                 body.Guids.ReplaceRange(1, 3, new[] { newGuid }.AsSpan()); // Replace 3 with 1
 
@@ -1190,7 +1189,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var guid1 = Guid.NewGuid();
                 var guid2 = Guid.NewGuid();
                 var guid3 = Guid.NewGuid();
-                
+
                 body.Guids = new[] { guid1, guid2, guid3 };
                 body.Guids.Reverse();
 
@@ -1231,7 +1230,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var date3 = new DateTime(2022, 1, 1);
                 var date1 = new DateTime(2020, 1, 1);
                 var date2 = new DateTime(2021, 1, 1);
-                
+
                 body.DateTimes = new[] { date3, date1, date2 };
                 body.DateTimes.Sort();
 
@@ -1253,9 +1252,9 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                 var guid1 = Guid.NewGuid();
                 var guid2 = Guid.NewGuid();
                 var newGuid = Guid.NewGuid();
-                
+
                 body.Guids = new[] { guid1, guid2 };
-                
+
                 // Use ReplaceRange to set a single element at index 1
                 body.Guids.ReplaceRange(1, 1, new[] { newGuid }.AsSpan());
 
@@ -2262,8 +2261,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                     {
                         body.StringU16 = "Some content";
                         body.Guids = new[] { Guid.NewGuid() };
-                    }
-                    else
+                    } else
                     {
                         body.StringU16 = "";
                         body.Guids = Array.Empty<Guid>();
@@ -2273,8 +2271,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
                     {
                         Assert.False(body.StringU16.IsEmpty);
                         Assert.False(body.Guids.IsEmpty);
-                    }
-                    else
+                    } else
                     {
                         Assert.True(body.StringU16.IsEmpty);
                         Assert.True(body.Guids.IsEmpty);
@@ -2351,7 +2348,7 @@ namespace GhostBodyObject.HandWritten.Tests.TestModel.Entities
             }
         }
 
-       [Fact]
+        [Fact]
         public void HandleSingleElementArrays()
         {
             var repository = new TestModelRepository();

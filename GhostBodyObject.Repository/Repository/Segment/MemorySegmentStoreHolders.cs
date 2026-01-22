@@ -33,7 +33,7 @@ namespace GhostBodyObject.Repository.Repository.Segment
 {
     public class MemorySegmentStoreHolders
     {
-        private MemorySegmentHolder[] _holders;
+        private readonly MemorySegmentHolder[] _holders;
 
         public MemorySegmentStoreHolders(MemorySegmentHolder[] holders)
         {

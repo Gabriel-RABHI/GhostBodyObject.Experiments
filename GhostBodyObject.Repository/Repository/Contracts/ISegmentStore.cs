@@ -30,6 +30,7 @@
  */
 
 using GhostBodyObject.Repository.Ghost.Structs;
+using GhostBodyObject.Repository.Repository.Helpers;
 using GhostBodyObject.Repository.Repository.Structs;
 
 namespace GhostBodyObject.Repository.Repository.Contracts
@@ -38,10 +39,16 @@ namespace GhostBodyObject.Repository.Repository.Contracts
     {
         GhostHeader* ToGhostHeaderPointer(SegmentReference reference);
 
-        SegmentReference StoreGhost(PinnedMemory<byte> ghost, long txnId);
-
         void IncrementSegmentHolderUsage(SegmentReference reference);
 
         void DecrementSegmentHolderUsage(SegmentReference reference);
+
+        bool WriteTransaction<T>(T commiter, GhostRepositoryTransactionIdRange range, Action<GhostId, SegmentReference> onGhostStored)
+            where T : IModifiedBodyStream;
+    }
+
+    public unsafe interface IReleasable
+    {
+        void Release();
     }
 }

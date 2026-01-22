@@ -1,6 +1,5 @@
 ﻿using GhostBodyObject.Repository;
 using GhostBodyObject.Repository.Body.Vectors;
-using GhostBodyObject.Repository.Ghost.Values;
 
 namespace GhostBodyObject.HandWritten.BloggerApp.Entities.User
 {

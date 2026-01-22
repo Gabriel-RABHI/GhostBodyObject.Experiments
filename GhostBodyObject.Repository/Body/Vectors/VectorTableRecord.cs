@@ -29,7 +29,6 @@
  * --------------------------------------------------------------------------
  */
 
-using GhostBodyObject.Repository.Ghost.Structs;
 using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Repository.Body.Vectors

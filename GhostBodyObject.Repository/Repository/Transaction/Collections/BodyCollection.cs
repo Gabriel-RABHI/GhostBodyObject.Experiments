@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using GhostBodyObject.Repository.Body.Contracts;
+﻿using GhostBodyObject.Repository.Body.Contracts;
 using GhostBodyObject.Repository.Ghost.Structs;
-using GhostBodyObject.Repository.Repository.Index;
-using GhostBodyObject.Repository.Repository.Transaction;
+using System.Collections;
 
 namespace GhostBodyObject.Repository.Repository.Transaction.Collections
 {
@@ -29,6 +27,12 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Collections
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public TBody Retreive(GhostId id)
+        {
+            return _index.GetBody<TBody>(id);
+            
         }
 
         public BodyWhereIterator<TBody> Where(Func<TBody, bool> predicate)

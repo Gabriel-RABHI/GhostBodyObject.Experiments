@@ -1,27 +1,31 @@
 <Solution>
-  <Folder Name="/0-Measures/">
+  <Folder Name="/Core/" />
+  <Folder Name="/Core/0-Measures/">
     <Project Path="GhostBodyObject.BenchmarkRunner/GhostBodyObject.BenchmarkRunner.csproj" />
   </Folder>
-  <Folder Name="/1-Common/">
+  <Folder Name="/Core/1-Common/">
     <Project Path="GhostBodyObject.Common.Benchmarks/GhostBodyObject.Common.Benchmarks.csproj" Id="732f8069-3c06-48bb-b8fc-46bcf9514dd8" />
     <Project Path="GhostBodyObject.Common.Tests/GhostBodyObject.Common.Tests.csproj" />
     <Project Path="GhostBodyObject.Common/GhostBodyObject.Common.csproj" />
   </Folder>
-  <Folder Name="/2-Repository/">
+  <Folder Name="/Core/2-Repository/">
     <Project Path="GhostBodyObject.Repository.Benchmarks/GhostBodyObject.Repository.Benchmarks.csproj" Id="14581737-6835-438c-a2eb-1f1d189600b8" />
     <Project Path="GhostBodyObject.Repository.Tests/GhostBodyObject.Repository.Tests.csproj" Id="dcdc959e-46d9-454d-96dc-0baa40041a23" />
     <Project Path="GhostBodyObject.Repository/GhostBodyObject.Repository.csproj" Id="9b7ac0a9-8468-435b-a165-35ea32d3dd23" />
   </Folder>
-  <Folder Name="/3-Generator/">
+  <Folder Name="/Core/3-Generator/">
     <Project Path="GhostBodyObject.CodeGenerator/GhostBodyObject.CodeGenerator.csproj" Id="9ef3baab-77d1-4343-9081-074f02ff626c" />
   </Folder>
-  <Folder Name="/4-Reference/">
+  <Folder Name="/Core/4-Reference/">
     <Project Path="GhostBodyObject.HandWritten.Benchmarks/GhostBodyObject.HandWritten.Benchmarks.csproj" Id="5c0cb33e-779d-45a4-9ad7-37e865142080" />
     <Project Path="GhostBodyObject.HandWritten.Tests/GhostBodyObject.HandWritten.Tests.csproj" Id="94f66966-6710-4c9a-9042-3ff6d509c947" />
     <Project Path="GhostBodyObject.HandWritten/GhostBodyObject.HandWritten.csproj" Id="3f3a0224-21dc-4137-b264-5b511594252a" />
   </Folder>
-  <Folder Name="/8-FullStack/">
+  <Folder Name="/Core/8-FullStack/">
     <Project Path="BlazorApp.GhostBodyObject.Tests/BlazorApp.GhostBodyObject.Tests.csproj" Id="e5ab1a35-f18d-4a37-b74d-fec970a9670a" />
+  </Folder>
+  <Folder Name="/ProofOfConcept/">
+    <Project Path="GhostBodyObject.Concepts.Performances/GhostBodyObject.Concepts.Performances.csproj" Id="b15d449b-c8a5-4086-b569-92d980a3d579" />
   </Folder>
   <Project Path="GhostBodyObject.Experiments/GhostBodyObject.Experiments.csproj" />
 </Solution>

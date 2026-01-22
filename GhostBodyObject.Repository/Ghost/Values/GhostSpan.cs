@@ -111,18 +111,15 @@ namespace GhostBodyObject.Repository.Ghost.Values
         /// <summary>
         /// Gets the element at the specified index.
         /// </summary>
-        public T this[int index]
-        {
+        public T this[int index] {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
+            get {
                 if ((uint)index >= (uint)Length)
                     ThrowIndexOutOfRange();
                 return AsSpan()[index];
             }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
+            set {
                 if ((uint)index >= (uint)Length)
                     ThrowIndexOutOfRange();
                 AsWritableSpan()[index] = value;
@@ -460,8 +457,7 @@ namespace GhostBodyObject.Repository.Ghost.Values
             if (newLength < currentLength)
             {
                 RemoveRange(newLength, currentLength - newLength);
-            }
-            else
+            } else
             {
                 int toAdd = newLength - currentLength;
                 // Use a heap-allocated array to avoid stackalloc scope issues

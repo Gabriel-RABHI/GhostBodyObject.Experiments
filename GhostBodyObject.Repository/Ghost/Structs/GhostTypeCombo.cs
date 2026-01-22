@@ -30,7 +30,6 @@
  */
 
 using GhostBodyObject.Repository.Ghost.Constants;
-using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -54,8 +53,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         /// <summary>
         /// Gets the raw ushort value.
         /// </summary>
-        public ushort Value
-        {
+        public ushort Value {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _value;
         }
@@ -63,8 +61,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         /// <summary>
         /// Gets the Kind (3 bits, bits 0-2).
         /// </summary>
-        public GhostIdKind Kind
-        {
+        public GhostIdKind Kind {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (GhostIdKind)(_value & KindMask);
         }
@@ -72,8 +69,7 @@ namespace GhostBodyObject.Repository.Ghost.Structs
         /// <summary>
         /// Gets the TypeIdentifier (13 bits, bits 3-15).
         /// </summary>
-        public ushort TypeIdentifier
-        {
+        public ushort TypeIdentifier {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (ushort)((_value >> TypeShift) & TypeMask);
         }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Text;
 
 namespace GhostBodyObject.Repository.Tests.Ghost.Values
 {
@@ -83,8 +81,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 _ = ghost[5];
                 Assert.Fail("Expected IndexOutOfRangeException");
-            }
-            catch (IndexOutOfRangeException)
+            } catch (IndexOutOfRangeException)
             {
                 // Expected
             }
@@ -98,8 +95,7 @@ namespace GhostBodyObject.Repository.Tests.Ghost.Values
             {
                 _ = ghost[-1];
                 Assert.Fail("Expected IndexOutOfRangeException");
-            }
-            catch (IndexOutOfRangeException)
+            } catch (IndexOutOfRangeException)
             {
                 // Expected
             }

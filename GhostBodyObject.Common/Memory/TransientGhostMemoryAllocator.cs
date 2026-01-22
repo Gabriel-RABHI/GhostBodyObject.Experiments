@@ -32,7 +32,6 @@
 #define PER_THREAD
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace GhostBodyObject.Common.Memory
 {
@@ -71,8 +70,7 @@ namespace GhostBodyObject.Common.Memory
             {
                 var array = GC.AllocateUninitializedArray<byte>((int)physicalSize, pinned: true);
                 return new PinnedMemory<byte>(array, 0, size);
-            }
-            else
+            } else
             {
                 // Allocate physical size from arena, but return logical size directly
                 // Avoids the Slice call overhead by constructing with correct length
@@ -122,7 +120,7 @@ namespace GhostBodyObject.Common.Memory
                 //    - If block.Length <= 32KB, we treat it as Arena. 
                 //      (Even if it was a Dedicated 128KB block shrunk to < 32KB, treating it as Arena is safe 
                 //       because we will calculate a smaller capacity and potentially reallocate, which is valid).
-                
+
                 bool isDedicated = (segment.Length != ManagedArenaAllocator.DefaultPageSize) || (block.Length > LargeBlockThreshold);
 
                 if (isDedicated)
@@ -144,8 +142,7 @@ namespace GhostBodyObject.Common.Memory
                         block = new PinnedMemory<byte>(segment, 0, newSize);
                         return false; // Same base address
                     }
-                }
-                else
+                } else
                 {
                     // -------- Managed Arena Block
                     // Capacity is determined by the chunk size of the current length.
@@ -168,7 +165,7 @@ namespace GhostBodyObject.Common.Memory
                 }
             }
 
-            Reallocate:
+        Reallocate:
             // -------- Fallback: Reallocate and Copy
             var newBlock = Allocate(newSize);
             var bytesToCopy = Math.Min(block.Length, newSize);
