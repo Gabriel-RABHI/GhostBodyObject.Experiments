@@ -33,6 +33,7 @@ Raw data managed using FASTER is fast—faster than GBO. However, any attempt to
 - FASTER is low-level. GBO provides both a high-end, high-level programming experience **AND** "zero-copy" and "zero-allocation" object management. The complete API is "ambient": any operation (creation, modification, deletion of any object) requires zero API calls (no Insert or Update calls needed on entities). The persistence and transactionality is fully managed by the GBO Context/Transaction system - it is completly invisible.
 - FASTER is not transactional in the sense of an MVCC snapshot view of data from a point in time. This is a critical feature for any high-concurrency application. GBO provides true MVCC with epoch-based garbage collection of old data versions. It makes it in pare with PostgreSQL MVCC model.
 - FASTER is not ACID: The ACID Commit concept is not supported—it can recover stale writes, but it is not ACID.
+- The replication model of FASTER is not designed for high-level entities. GBO provides a simple, fast replication model based on Segment appending. It may (will) be a lot faster than FASTER replication.
 
 ### Comparison with LMDB / MDBX
 While LMDB provides the highest read performance, the write performance is far from what GBO provides:
@@ -47,7 +48,7 @@ Comparison is moot:
 - GBO is truly simpler: Full C#, no `IQueryable` limitations, ambient API, no flaws linked to the Unit of Work pattern, a complete, full-featured relational engine (to come), and no thread-safety concerns.
 - 1 to 3 orders of magnitude faster: Zero latency, no N+1 loading problems, zero GC overhead.
 
-There is no possible comparison.
+There is no possible comparison, both in term of **developper experience, code simplicity and volume, and performance**.
 
 ## Core Concepts : Ghost, Body and Segments
 The architecture relies on three fundamental concepts that separate *data storage* from *data access*.
@@ -142,9 +143,9 @@ The `BloggerAppBenchmarks.cs` file demonstrates the capabilities of the engine s
 
 ---
 ## Conclusion for Engineers
-GhostBodyObject is not just an ORM or a Cache. It is a **Memory Engine** for .NET.
+The key-point is to understand that GhostBodyObject is not just an ORM or a Cache. It is a **Memory Engine** for .NET.
 1.  **Stop optimizing GC**: Don't waste time tuning GC server modes. Use Off-Heap memory.
-2.  **Code like Domain Experts**: Define your Entities (Bodies) with rich behavior. GBO handles the "Ghost" storage transparently.
+2.  **Code like Domain Experts**: Define your Entities (Bodies) with rich behavior. GBO handles the "Ghost" storage transparently. No more DTOs, no more mapping, no more serialization, and **no more integration tests**.
 3.  **Unified Data**: One single API for In-Memory, Virtual Memory, and Persistent storage.
 
 ### The next major implementations
