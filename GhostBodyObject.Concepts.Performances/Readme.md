@@ -105,11 +105,11 @@ The `BloggerAppBenchmarks.cs` file demonstrates the capabilities of the engine s
 *Benchmark: `InsertMutateRemove_2`*
 - **What it does**: 1M writes + high-concurrency enumerations (readers) running in parallel.
 - **Key Takeaway**:
-    - **No Locking**: Readers do not block writers.
-    - **Cursor vs Instance**:
-        - `useCursor = true`: **Zero Allocation**. Extremely fast.
-        - `useCursor = false`: **Instance Mode**. Creates one Body per Ghost (traditional behavior). Slower due to GC pressure.
-    - **Outcome**: Proof that you can run analytics (aggregations, LINQ) on live production data without locking the transaction log.
+	- **No Locking**: Readers do not block writers.
+	- **Cursor vs Instance**:
+		- `useCursor = true`: **Zero Allocation**. Extremely fast.
+		- `useCursor = false`: **Instance Mode**. Creates one Body per Ghost (traditional behavior). Slower due to GC pressure.
+	- **Outcome**: Proof that you can run analytics (aggregations, LINQ) on live production data without locking the transaction log.
 
 ### OBJ-03: Virtual Memory (Out of Heap)
 *Benchmark: `InsertMutateRemove_3`*
@@ -123,9 +123,9 @@ The `BloggerAppBenchmarks.cs` file demonstrates the capabilities of the engine s
 *Benchmark: `InsertMutateRemove_4`*
 - **What it does**: Enables `SegmentStoreMode.PersistantRepository`.
 - **Key Takeaway**:
-    - **Durability**: Data is flushed to disk on Commit.
-    - **Checksums**: Every transaction is checksummed (Hash) to detect corruption or incomplete writes on restart.
-    - **Performance**: Sequential disk I/O is fast; persistence cost is negligible compared to the benefits.
+	- **Durability**: Data is flushed to disk on Commit.
+	- **Checksums**: Every transaction is checksummed (Hash) to detect corruption or incomplete writes on restart.
+	- **Performance**: Sequential disk I/O is fast; persistence cost is negligible compared to the benefits.
 
 ### OBJ-05: High-Speed Enumeration & Point Lookups
 *Benchmark: `ConcurrentEnumerations`*
