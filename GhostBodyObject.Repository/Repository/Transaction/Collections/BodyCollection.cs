@@ -31,17 +31,8 @@ namespace GhostBodyObject.Repository.Repository.Transaction.Collections
 
         public TBody Retreive(GhostId id)
         {
-            var body = _index.GetBodyMap<TBody>(TBody.GetTypeIdentifier()).Get(id, out var exists);
-            if (exists)
-                return body;
-            var g = _index.Transaction.Repository.GhostIndex.FindGhost(id, _index.Transaction.OpeningTxnId);
-            if (!g.IsEmpty() && !g.IsTombstone())
-            {
-                var pm = _index.Transaction.Repository.Store.ToGhost(g);
-                if (!pm.IsEmpty)
-                    TBody.Create(pm, false, true);
-            }
-            return default;
+            return _index.GetBody<TBody>(id);
+            
         }
 
         public BodyWhereIterator<TBody> Where(Func<TBody, bool> predicate)

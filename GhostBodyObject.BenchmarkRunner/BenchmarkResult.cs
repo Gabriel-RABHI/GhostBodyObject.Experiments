@@ -120,7 +120,7 @@ namespace GhostBodyObject.BenchmarkRunner
         /// <summary>
         /// Computes and displays throughput (Ops/Sec) and Latency underneath the main results.
         /// </summary>
-        public BenchmarkResult PrintDelayPerOp(long totalOperations, string label = "")
+        public BenchmarkResult PrintDelayPerOp(long totalOperations, string label = "", bool showCost = true)
         {
             if (totalOperations <= 0) return this;
 
@@ -137,18 +137,20 @@ namespace GhostBodyObject.BenchmarkRunner
 
             if (string.IsNullOrEmpty(label))
             {
-                table.AddRow(
-                    $"{INDENT}[Gray]Cost per operation[/]".PadRight(LABEL_PADDING),
-                    $"[White]{FormatOperationCost(nsPerOp)}[/]".PadLeft(VALUE_PADDING));
+                if (showCost)
+                    table.AddRow(
+                        $"{INDENT}[Gray]Cost per operation[/]".PadRight(LABEL_PADDING),
+                        $"[White]{FormatOperationCost(nsPerOp)}[/]".PadLeft(VALUE_PADDING));
 
                 table.AddRow(
                     $"{INDENT}[Gray]Operations / second[/]".PadRight(LABEL_PADDING),
                     $"[White]{FormatOpsPerSecond(opsPerSec)}[/]".PadLeft(VALUE_PADDING));
             } else
             {
-                table.AddRow(
-                    $"{INDENT}[Gray]{label} cost[/]".PadRight(LABEL_PADDING),
-                    $"[White]{FormatOperationCost(nsPerOp)}[/]".PadLeft(VALUE_PADDING));
+                if (showCost)
+                    table.AddRow(
+                        $"{INDENT}[Gray]{label} cost[/]".PadRight(LABEL_PADDING),
+                        $"[White]{FormatOperationCost(nsPerOp)}[/]".PadLeft(VALUE_PADDING));
 
                 table.AddRow(
                     $"{INDENT}[Gray]{label} / second[/]".PadRight(LABEL_PADDING),

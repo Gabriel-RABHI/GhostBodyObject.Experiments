@@ -368,9 +368,27 @@ namespace GhostBodyObject.BenchmarkRunner
 
         public BenchmarkBase WriteComment(string comment)
         {
+            AnsiConsole.MarkupLine($"[yellow]{comment}[/]");
+            return this;
+        }
+
+        public BenchmarkBase WriteDetail(string comment)
+        {
+            AnsiConsole.MarkupLine($"[gray]{comment}[/]");
+            return this;
+        }
+
+        public BenchmarkBase WriteSpace()
+        {
+            AnsiConsole.WriteLine();
+            return this;
+        }
+
+        public BenchmarkBase WriteStep(string comment)
+        {
             AnsiConsole.WriteLine();
             var escapedComment = Markup.Escape(comment);
-            AnsiConsole.Write(new Rule($"[yellow]{escapedComment}[/]"));
+            AnsiConsole.Write(new Rule($"[magenta]{escapedComment}[/]"));
             AnsiConsole.WriteLine();
             return this;
         }

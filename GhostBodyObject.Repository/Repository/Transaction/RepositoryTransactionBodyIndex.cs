@@ -93,10 +93,24 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
         {
             var bodyMap = GetBodyMap<TBody>(TBody.GetTypeIdentifier());
-            var body = bodyMap.Get(id, out var exists);
-            if (exists)
-                return body;
-            return null;
+            if (bodyMap != null)
+            {
+                var body = bodyMap.Get(id, out var exists);
+                if (exists)
+                    return body;
+            }
+            var g = Transaction.Repository.GhostIndex.FindGhost(id, Transaction.OpeningTxnId);
+            if (!g.IsEmpty() && !g.IsTombstone())
+            {
+                var pm = Transaction.Repository.Store.ToGhost(g);
+                if (!pm.IsEmpty)
+                {
+                    var body = TBody.Create(pm, true, true);
+                    //bodyMap = GetOrCreateBodyMap<TBody>(TBody.GetTypeIdentifier());
+                    //bodyMap.Set(body);
+                }
+            }
+            return default;
         }
 
         public Enumerator<TBody> GetEnumerator<TBody>(bool useCursor = false)
