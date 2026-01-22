@@ -1,7 +1,7 @@
 ﻿# GhostBodyObject : High Performance, Off-Heap, Zero Allocation Object Store
 ### Short Introduction
 
-After one full month of intense development, I am proud to present the first benchmarks of the **Ghost-Body-Object (GBO)** engine - the core, memory management system. Many optimizations and critical features are still to be implemented, but the results are already very promising and may not change, but positivly evolve. Whill the GBO engine is reaching the limits of what is possible in terme of performance, the performances may not evolve that much, but the feature set will grow a lot.
+After one full month of intense development, I am proud to present the first performance measurements of the Ghost-Body-Object (GBO) core memory management system. Many optimizations and features have yet to be implemented, but the results are already very promising. While the GBO engine is reaching the limits of what is possible in terms of performance—meaning raw speed may not increase significantly—the feature set will grow substantially.
 
 **Ghost-Body-Object (GBO)** is a new .NET 10+ technology designed to break the limits of the standard Garbage Collector (GC) by moving data management off-heap while maintaining a high-level, object-oriented programming model with complete ACID durability and concurrency control.
 
