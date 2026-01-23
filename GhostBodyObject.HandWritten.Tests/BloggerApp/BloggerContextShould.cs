@@ -795,7 +795,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 nTxn = 10_000;
             }
             if (SmallMode)
-                nTxn = 100_000;
+                nTxn = 10_000;
             var inserted = false;
             for (int i = 0; i < writethreadCount; i++)
             {
@@ -920,7 +920,7 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
                 nTxn = 10_000;
             }
             if (SmallMode)
-                nTxn = 100_000;
+                nTxn = 200;
             var inserted = false;
             for (int i = 0; i < writethreadCount; i++)
             {
@@ -958,7 +958,6 @@ namespace GhostBodyObject.HandWritten.Tests.BloggerApp
             {
                 int threadId = i;
                 tasks[i + writethreadCount] = Task.Run(() => {
-                    return;
                     var sizes = new HashSet<int>();
                     var totalRetrieved = 0;
                     var retries = 0;

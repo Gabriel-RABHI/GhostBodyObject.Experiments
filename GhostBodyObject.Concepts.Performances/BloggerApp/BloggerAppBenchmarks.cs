@@ -144,20 +144,23 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
 
         public void Excute((SegmentStoreMode, int, int, bool)[] transactionCounts, (bool, bool)[] enumerations)
         {
+
             foreach (var (concurrentEnumeration, useCursors) in enumerations)
+            {
+                var results = new List<BenchmarkResult>();
                 foreach (var (mode, transactionCount, objectPerTransaction, fatObjects) in transactionCounts)
                 {
                     if (mode != SegmentStoreMode.InMemoryVolatileRepository)
                     {
                         using (var dir = new BenchTempDirectory(true))
                         {
-                            InsertMutateRemove(mode, transactionCount, objectPerTransaction, fatObjects, concurrentEnumeration, useCursors, dir.DirectoryPath);
+                            results.Add(InsertMutateRemove(mode, transactionCount, objectPerTransaction, fatObjects, concurrentEnumeration, useCursors, dir.DirectoryPath));
                         }
                     } else
                     {
-                        InsertMutateRemove(mode, transactionCount, objectPerTransaction, fatObjects, concurrentEnumeration, useCursors, null);
+                        results.Add(InsertMutateRemove(mode, transactionCount, objectPerTransaction, fatObjects, concurrentEnumeration, useCursors, null));
                     }
-                    Console.Write("    Wait few GC Collet...");
+                    Console.Write("    Wait few GC Collect...");
                     for (int i = 0; i < 30; i++)
                     {
                         BenchTempDirectory.GCCollect();
@@ -167,9 +170,14 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
                     Console.Write(" done.");
                     Console.WriteLine();
                 }
+                PrintComparison(
+                        $"-",
+                        $"-",
+                        results);
+            }
         }
 
-        public void InsertMutateRemove(SegmentStoreMode mode, int transactionCount, int objectPerTransaction, bool fatObjects, bool concurrentEnumeration, bool useCursor, string path)
+        public BenchmarkResult InsertMutateRemove(SegmentStoreMode mode, int transactionCount, int objectPerTransaction, bool fatObjects, bool concurrentEnumeration, bool useCursor, string path)
         {
             var nproc = Math.Max(2, Environment.ProcessorCount / 2);
             var nthreads = concurrentEnumeration ? nproc : 1;
@@ -178,7 +186,7 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
 
             WriteSpace();
             WriteStep($"New Run {modeString}");
-            WriteComment($"Insert {(transactionCount * objectPerTransaction) / _1M}M {(fatObjects ? "[Cyan]FAT[/]" : "light")} objs, {transactionCount} txn * {objectPerTransaction} objs" + (concurrentEnumeration ? $" + {nthreads - 1} threads in {(useCursor ? "[green]cursor[/]" : "[red]instance[/]")} MVCC enumerations." : "."));
+            var title = $"Insert {(transactionCount * objectPerTransaction) / _1M}M {(fatObjects ? "[Cyan]FAT[/]" : "light")} objs, {transactionCount} txn * {objectPerTransaction} objs" + (concurrentEnumeration ? $" + {nthreads - 1} threads in {(useCursor ? "[green]cursor[/]" : "[red]instance[/]")} MVCC enumerations." : ".");
             if (!string.IsNullOrEmpty(path))
                 WriteDetail($"Storage directory : {path}");
 
@@ -193,7 +201,7 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
             long totalInsertedObjects = 0;
             long totalReadedObjects = 0;
             long totalEnumerations = 0;
-            RunParallelAction(nthreads, (nth) => {
+            return RunParallelAction(nthreads, (nth) => {
                 if (nth == 0)
                 {
                     for (int t = 0; t < transactionCount; t++)
@@ -254,18 +262,13 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
                     }
                 }
             })
-            .PrintToConsole("Results")
-            .PrintDelayPerOp(totalInsertedObjects, "Add objects", false)
+            .PrintToConsole(title)
             .PrintDelayPerOp(transactionCount, "Transactions", false)
             .PrintDelayPerOp(totalReadedObjects, "Retreived objects", false)
             .PrintDelayPerOp(totalEnumerations, "Enumerations", false)
+            .PrintDelayPerOp(totalInsertedObjects, "Add objects", false)
             .PrintSpace();
         }
-
-
-
-
-
 
         [BruteForceBenchmark("OBJ-05", "10M collection concurrent enumerations and point retreives", "Repository")]
         public void ConcurrentEnumerations()
@@ -296,6 +299,10 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
                     }
                 }
 
+                var resultsReadedObjects = new List<BenchmarkResult>();
+                var resultsRetreivesMultiTransactions = new List<BenchmarkResult>();
+                var resultsRetreivesSingleTransaction = new List<BenchmarkResult>();
+
                 if (true)
                 {
                     var nproc = Math.Max(2, Environment.ProcessorCount / 2);
@@ -306,7 +313,7 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
                     while (thcount <= nproc)
                     {
                         WriteStep($"New Run with {thcount} threads enumerating in [green]cursor[/] mode.");
-                        RunParallelAction(thcount, (nth) => {
+                        resultsReadedObjects.Add(RunParallelAction(thcount, (nth) => {
                             var sw = System.Diagnostics.Stopwatch.StartNew();
                             while (sw.ElapsedMilliseconds < 5 * 1000)
                                 using (BloggerContext.NewReadContext(repository))
@@ -317,15 +324,17 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
                                     Interlocked.Increment(ref totalEnumerations);
                                 }
                         })
-                        .PrintToConsole("Enumeration Results")
-                        .PrintDelayPerOp(totalReadedObjects, "Enumerated objects", false)
+                        .PrintToConsole($"Enumeration Results - {thcount} threads")
                         .PrintDelayPerOp(totalEnumerations, "Enumerations", false)
-                        .PrintSpace();
+                        .PrintDelayPerOp(totalReadedObjects, "Enumerated objects", false)
+                        .PrintSpace());
 
-                        RunParallelAction(thcount, (nth) => {
+                        var txnCount = 0;
+                        resultsRetreivesMultiTransactions.Add(RunParallelAction(thcount, (nth) => {
                             var rnd = new Random(nth * 9973);
                             var sw = System.Diagnostics.Stopwatch.StartNew();
                             var n = 0;
+                            var ntxn = 0;
                             while (sw.ElapsedMilliseconds < 5 * 1000)
                                 using (BloggerContext.NewReadContext(repository))
                                 {
@@ -334,49 +343,52 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
                                         var body = BloggerCollections.BloggerUsers.Retreive(ids[rnd.Next(ids.Count)]);
                                         n++;
                                     }
+                                    ntxn++;
                                 }
                             Interlocked.Add(ref totalRetreives, n);
+                            Interlocked.Add(ref txnCount, ntxn);
                         })
-                        .PrintToConsole("Point Retreive Results")
-                        .PrintDelayPerOp(totalRetreives, "Retreived objects", true)
-                        .PrintSpace();
-                        thcount *= 2;
-                    }
-                }
+                        .PrintToConsole($"Point Retreive Results - {thcount} threads - {txnCount} transactions.")
+                        .PrintDelayPerOp(txnCount, "Transactions", false)
+                        .PrintDelayPerOp(totalRetreives, "Retreived objects", false)
+                        .PrintSpace());
 
-                if (true)
-                {
-                    var nproc = Math.Max(2, Environment.ProcessorCount / 2);
-                    var thcount = 1;
-                    long totalReadedObjects = 0;
-                    long totalEnumerations = 0;
-                    long totalRetreives = 0;
-                    while (thcount <= nproc)
-                    {
-                        WriteStep($"New Run with {thcount} threads performing [red]instance[/] retreive in single context.");
-                        RunParallelAction(thcount, (nth) => {
+                        totalRetreives = 0;
+                        resultsRetreivesSingleTransaction.Add(RunParallelAction(thcount, (nth) => {
+                            var rnd = new Random(nth * 9973);
+                            var sw = System.Diagnostics.Stopwatch.StartNew();
+                            var n = 0;
                             using (BloggerContext.NewReadContext(repository))
                             {
-                                var sw = System.Diagnostics.Stopwatch.StartNew();
-                                var rnd = new Random(nth * 9973);
-                                var n = 0;
                                 while (sw.ElapsedMilliseconds < 5 * 1000)
-                                {
                                     for (int i = 0; i < 100; i++)
                                     {
                                         var body = BloggerCollections.BloggerUsers.Retreive(ids[rnd.Next(ids.Count)]);
                                         n++;
                                     }
-                                }
-                                Interlocked.Add(ref totalRetreives, n);
                             }
+                            Interlocked.Add(ref totalRetreives, n);
                         })
-                        .PrintToConsole("Enumeration and Point Retreive Results")
-                        .PrintDelayPerOp(totalRetreives, "Retreived objects", true)
-                        .PrintSpace();
+                        .PrintToConsole($"Point Retreive Results - {thcount} threads - single transaction.")
+                        .PrintDelayPerOp(totalRetreives, "Retreived objects", false)
+                        .PrintSpace());
                         thcount *= 2;
                     }
                 }
+                PrintComparison(
+                            $"Enumeration Rate",
+                            $"-",
+                            resultsReadedObjects);
+
+                PrintComparison(
+                            $"Multi Transactions Point Retreive",
+                            $"-",
+                            resultsRetreivesMultiTransactions);
+
+                PrintComparison(
+                            $"Single Transaction Point Retreive",
+                            $"-",
+                            resultsRetreivesSingleTransaction);
             }
         }
 

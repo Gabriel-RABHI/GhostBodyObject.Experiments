@@ -36,6 +36,7 @@ using GhostBodyObject.Repository.Repository.Contracts;
 using GhostBodyObject.Repository.Repository.Segment;
 using GhostBodyObject.Repository.Repository.Transaction.Index;
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace GhostBodyObject.Repository.Repository.Transaction
 {
@@ -65,12 +66,14 @@ namespace GhostBodyObject.Repository.Repository.Transaction
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ShardedTransactionBodyMap<TBody> GetBodyMap<TBody>(ushort typeIdentifier)
             where TBody : BodyBase
         {
             return (ShardedTransactionBodyMap<TBody>)_maps[typeIdentifier];
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ShardedTransactionBodyMap<TBody> GetOrCreateBodyMap<TBody>(ushort typeIdentifier)
             where TBody : BodyBase
         {
@@ -89,6 +92,7 @@ namespace GhostBodyObject.Repository.Repository.Transaction
 
         public RepositoryTransactionBase Transaction => _txn;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TBody GetBody<TBody>(GhostId id)
             where TBody : BodyBase, IHasTypeIdentifier, IBodyFactory<TBody>
         {
