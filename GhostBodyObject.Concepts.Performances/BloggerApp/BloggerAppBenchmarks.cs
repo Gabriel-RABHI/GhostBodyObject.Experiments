@@ -201,11 +201,13 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
             long totalInsertedObjects = 0;
             long totalReadedObjects = 0;
             long totalEnumerations = 0;
-            return RunParallelAction(nthreads, (nth) => {
+            var r = RunParallelAction(nthreads, (nth) => {
                 if (nth == 0)
                 {
                     for (int t = 0; t < transactionCount; t++)
                     {
+                        if (t % (transactionCount / 10) == 0)
+                            WriteDetail($"    {(int)(((double)t / (double)transactionCount)*100)}% : Txn {t} / {transactionCount} / Thread {nth}");
                         using (BloggerContext.NewWriteContext(repository))
                         {
                             if (fatObjects)
@@ -268,6 +270,26 @@ namespace GhostBodyObject.Concepts.Performances.BloggerApp
             .PrintDelayPerOp(totalEnumerations, "Enumerations", false)
             .PrintDelayPerOp(totalInsertedObjects, "Add objects", false)
             .PrintSpace();
+
+            if (transactionCount * objectPerTransaction > 15_000_000)
+            {
+                for (int i = 0; i < 30; i += 3)
+                {
+                    r = RunMonitoredAction(() => {
+                        using (BloggerContext.NewReadContext(repository))
+                        {
+                            var k = $"Initial-{i}";
+                            var n = BloggerCollections.BloggerUsers.Cursor.Count(u => u.FirstName.Contains(k));
+                            WriteDetail($"Found : {n} entities");
+                        }
+                    })
+                    .PrintToConsole($"Query {transactionCount * objectPerTransaction} entities with .Count(FirstName.Contains(\"Initial-{i}\"))")
+                    .PrintDelayPerOp(transactionCount * objectPerTransaction, "Retreived objects", false)
+                    .PrintSpace();
+                }
+            }
+
+            return r;
         }
 
         [BruteForceBenchmark("OBJ-05", "10M collection concurrent enumerations and point retreives", "Repository")]
