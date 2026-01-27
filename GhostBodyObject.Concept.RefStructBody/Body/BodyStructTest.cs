@@ -150,6 +150,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
         public object _context;
         public object _ghostOwner;
         public int _sequence;
+        public BodyStructHandle _ancestor;
     }
 
     public static class BodyStructAllocator
@@ -204,7 +205,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             {
                 list.Add(BodyStructAllocator.AllocateNew());
             }
-            Console.WriteLine($"Elapsed to create handles: {sw.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Elapsed to create handles only + list: {sw.ElapsedMilliseconds} ms");
             list.Clear();
             list = null;
         }
