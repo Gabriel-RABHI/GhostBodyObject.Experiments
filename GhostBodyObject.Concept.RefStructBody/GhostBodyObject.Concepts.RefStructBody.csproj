@@ -9,8 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GhostBodyObject.BenchmarkRunner\GhostBodyObject.BenchmarkRunner.csproj" />
-    <ProjectReference Include="..\GhostBodyObject.HandWritten\GhostBodyObject.HandWritten.csproj" />
+    <ProjectReference Include="..\GhostBodyObject.Common\GhostBodyObject.Common.csproj" />
   </ItemGroup>
 
 </Project>

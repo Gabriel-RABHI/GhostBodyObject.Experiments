@@ -39,7 +39,7 @@ using System.Runtime.InteropServices;
 namespace GhostBodyObject.Repository.Body.Contracts
 {
 
-    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 24)]
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 36)]
     public unsafe abstract class BodyBase
     {
         // -----------------------------------------------------------------

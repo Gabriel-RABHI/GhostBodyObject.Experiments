@@ -25,6 +25,7 @@
     <Project Path="BlazorApp.GhostBodyObject.Tests/BlazorApp.GhostBodyObject.Tests.csproj" Id="e5ab1a35-f18d-4a37-b74d-fec970a9670a" />
   </Folder>
   <Folder Name="/ProofOfConcept/">
+    <Project Path="GhostBodyObject.Concept.RefStructBody/GhostBodyObject.Concepts.RefStructBody.csproj" Id="aad15a6e-9193-4948-949f-896873cdf445" />
     <Project Path="GhostBodyObject.Concepts.Performances/GhostBodyObject.Concepts.Performances.csproj" Id="b15d449b-c8a5-4086-b569-92d980a3d579" />
   </Folder>
   <Project Path="GhostBodyObject.Experiments/GhostBodyObject.Experiments.csproj" />
