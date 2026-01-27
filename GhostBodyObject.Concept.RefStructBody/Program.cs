@@ -6,6 +6,8 @@ using System.Diagnostics;
 
 Console.WriteLine("Hello, World!");
 
+new TestBodyStructAccess().EnumerationTest();
+new TestBodyStructAccess().TestBodyStructAllocator();
 new TestBodyStructAccess().Test();
 
 unsafe

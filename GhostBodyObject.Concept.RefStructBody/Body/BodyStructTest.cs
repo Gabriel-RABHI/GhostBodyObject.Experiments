@@ -25,7 +25,7 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
         }
     }
 
-    public unsafe struct BodyStructHandle
+    public unsafe struct BodyStructHandle : IDisposable
     {
         internal BodyStructSlot[] _arena;
         internal ushort _index;
@@ -61,77 +61,85 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
                     Thread.MemoryBarrier();
                 }
                 while (Volatile.Read(ref _slot._sequence) != seq1);
-                int offset = 8; // ((MyVTable*)vtable)->BirthDate_Offset;
+
+                // BE CAREFULL : this works only because the ghost memory is immutable
+                // At this position, the Setter is possibly starting a mutation : but we have a coherent (ghost + vtable + owner) field set
+                //
+                // The rules is : anytime we have to change one field (ghost / vtable / owner) value
+                // it must be performer in between Increment of _sequence !
+
+                int offset = 8;
                 return *(LargeStruct*)(ghost + offset);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set {
                 ref var _slot = ref Body;
-                try
+                var spin = new SpinWait();
+
+                while (true)
                 {
-                    // A. Lock Readers (Sequence = Odd)
-                    Interlocked.Increment(ref _slot._sequence);
-                    var mm = TransientGhostMemoryAllocator.Allocate(96);
-                    _slot._ghost = mm.Ptr;
-                    _slot._ghostOwner = mm.MemoryOwner;
-                    int offset = 8;
-                    *(LargeStruct*)(_slot._ghost + offset) = value;
-                } finally
-                {
-                    // D. Unlock Readers (Sequence = Even, +2)
-                    Interlocked.Increment(ref _slot._sequence);
-                }
-            }
-
-            /*
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set {
-
-                var _slot = Body;
-                // 1. Guard Scope (Affinity + Lock)
-                _slot.GuardWrite();
-
-                // 2. Load State
-                // Optim: Check if we can write in-place without Seqlock
-                bool isMutable = !IsMemoryImmutable(_slot->GhostPtr);
-
-                if (isMutable)
-                {
-                    // *** FAST PATH (In-Place) ***
-                    // No Seqlock increment needed. Pointers are stable.
-                    // We just write the bytes directly.
-
-                    var setter = ((MyVTable*)_slot->VTablePtr)->BirthDate_Setter;
-                    setter(_slot->GhostPtr, value.Ticks);
-                } else
-                {
-                    // *** SLOW PATH (Structural Change) ***
-                    // We are moving memory (CoW). Must protect Readers.
-
-                    try
+                    int seq = Volatile.Read(ref _slot._sequence);
+                    if ((seq & 1) != 0)
                     {
-                        // A. Lock Readers (Sequence = Odd)
-                        Interlocked.Increment(ref _slot->Sequence);
-
-                        // B. Migrate / CoW
-                        // This changes _slot->GhostPtr and _slot->VTablePtr
-                        _txn.EnsureWritable(_slot, 100);
-
-                        // C. Perform Write on New Memory
-                        var setter = ((MyVTable*)_slot->VTablePtr)->BirthDate_Setter;
-                        setter(_slot->GhostPtr, value.Ticks);
-                    } finally
-                    {
-                        // D. Unlock Readers (Sequence = Even, +2)
-                        Interlocked.Increment(ref _slot->Sequence);
+                        spin.SpinOnce();
+                        continue;
                     }
-                }
+                    if (Interlocked.CompareExchange(ref _slot._sequence, seq + 1, seq) == seq)
+                    {
+                        try
+                        {
+                            var mm = TransientGhostMemoryAllocator.Allocate(96);
 
-                // 3. Release Scope
-                _txn.ReleaseWrite();
+                            // BE CAREFULL : Any mutation "in" the elements can lead to stale value read and fail !
+                            // The sync garantee only that all 3 fields are coherently grabbed by readers, not their content is coherent
+                            int offset = 8;
+                            *(LargeStruct*)(mm.Ptr + offset) = value;
+
+                            _slot._ghost = mm.Ptr;
+                            _slot._ghostOwner = mm.MemoryOwner;
+                        } finally
+                        {
+                            Volatile.Write(ref _slot._sequence, seq + 2);
+                        }
+                        return; // Success
+                    }
+                    spin.SpinOnce();
+                }
             }
-            */
+        }
+
+        public int OneIntValue {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get {
+                ref var _slot = ref Body;
+                byte* ghost = null;
+                IntPtr vtable;
+                object owner;
+                int seq1;
+            _redo:
+                do
+                {
+                    seq1 = Volatile.Read(ref _slot._sequence);
+                    if ((seq1 & 1) != 0)
+                    {
+                        Thread.SpinWait(1);
+                        goto _redo;
+                    }
+                    ghost = _slot._ghost;
+                    vtable = _slot._vtable;
+                    owner = _slot._ghostOwner;
+                    Thread.MemoryBarrier();
+                }
+                while (Volatile.Read(ref _slot._sequence) != seq1);
+                int offset = 8; // may be retreived using vtable
+                return *(int*)(ghost + offset);
+            }
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -187,6 +195,20 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
 
     public class TestBodyStructAccess
     {
+        public void TestBodyStructAllocator()
+        {
+            var runs = 100_000_000;
+            List<BodyStructHandle> list = new();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < runs; i++)
+            {
+                list.Add(BodyStructAllocator.AllocateNew());
+            }
+            Console.WriteLine($"Elapsed to create handles: {sw.ElapsedMilliseconds} ms");
+            list.Clear();
+            list = null;
+        }
+
         public unsafe void Test()
         {
             var runs = 100_000_000;
@@ -234,6 +256,41 @@ namespace GhostBodyObject.HandWritten.Benchmarks.BloggerApp
             });
             Task.WaitAll(a, b);
             Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds} ms");
+            Console.ReadKey();
+        }
+
+        public unsafe void EnumerationTest()
+        {
+            var runs = 10_000_000;
+
+            List<BodyStructHandle> list = new();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < runs; i++)
+            {
+                var h = BodyStructAllocator.AllocateNew();
+                var mm = TransientGhostMemoryAllocator.Allocate(96);
+                h.Body._ghost = mm.Ptr;
+                h.Body._ghostOwner = mm.MemoryOwner;
+                list.Add(h);
+            }
+            Console.WriteLine($"Elapsed to create handles: {sw.ElapsedMilliseconds} ms");
+
+            var sum = 0l;
+            sw = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var h in list)
+            {
+                sum += h.OneIntValue;
+            }
+            Console.WriteLine($"Elapsed Linear: {sw.ElapsedMilliseconds} ms");
+
+            list = list.Shuffle().ToList();
+            sum = 0l;
+            sw = System.Diagnostics.Stopwatch.StartNew();
+            foreach (var h in list)
+            {
+                sum += h.OneIntValue;
+            }
+            Console.WriteLine($"Elapsed Shuffle: {sw.ElapsedMilliseconds} ms");
             Console.ReadKey();
         }
     }
